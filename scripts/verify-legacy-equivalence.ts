@@ -18,6 +18,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { animationDocumentSchema } from '../src/core/schema/document';
 import { activeEffects, computeSnapshot, currentChapter } from '../src/core/runtime';
+import { migrateLegacyDocument } from '../src/core/migrate/legacy';
 
 const REPO_ROOT = resolve(import.meta.dir, '..');
 const PRIVATE_DIR = process.env.CLOTHO_PRIVATE_DIR ?? join(REPO_ROOT, '.private');
@@ -45,13 +46,12 @@ const legacy = (await import(LEGACY_RUNTIME)) as {
 };
 
 /**
- * Legacy documents differ from v1 only in the envelope field for this corpus:
- * `image` and `group` are used 0 times, so nothing else needs translating. The
- * real migrator (TASKS 1.8) handles those; here we isolate runtime behavior.
+ * Convert through the real migrator, so this check covers the migration path too
+ * rather than only the runtime. Any rewrite the migrator performs has to survive
+ * comparison against the legacy renderer's output.
  */
 function toV1(legacyJson: Record<string, unknown>): Record<string, unknown> {
-  const { version: _legacyVersion, ...rest } = legacyJson;
-  return { clothoVersion: 1, ...rest };
+  return migrateLegacyDocument(legacyJson).document;
 }
 
 /** Times worth comparing: an even sweep plus every boundary the document declares. */

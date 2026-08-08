@@ -1,6 +1,6 @@
-// Public entry for the Node-only loader (filesystem access). Kept out of the
-// core entry so browser bundles never pull node: builtins.
+// Node adapter: filesystem document loading.
 //
-// Populated by TASKS 1.7.
+// Separate entry point so a browser bundle importing "@shinkeonkim/clotho" never
+// pulls in node:fs.
 
-export {};
+export * from './loader';

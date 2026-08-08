@@ -75,13 +75,23 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   `encodeImageAsset` / `inlineAssetFromDataUri` / `sniffImageMime`
   - 씬 빌드는 동기이므로 async 리졸버는 `prefetchAssets`로 선행 해석 → `pending` 보고
   - 리졸버 예외는 에셋 단위로 격리
-- [ ] **1.8** 마이그레이터 — legacy v3/v4 → v1 (`clotho migrate`)
-  - 출처: `migrate-animations-v3.mjs`(v2→v3) 참고, 신규 작성
-  - **383개 무손실 변환 + 씬 그래프 동등성**을 회귀로 강제
-- [ ] **1.9** 검증기 API + CLI (`clotho validate`)
+- [x] **1.8** 마이그레이터 — legacy v3/v4 → v1 (`clotho migrate`)
+  - 원칙: **선언된 것이 아니라 렌더된 것을 보존한다.** group은 legacy에서 렌더러
+    분기가 없어 아무것도 그리지 않았고 자식은 절대 좌표로 독립 렌더됐다. 따라서
+    자식 좌표를 유지하고 그룹 transform을 항등으로 리셋한다(불일치 시 note 보고)
+  - `image.src` → `assets` 등록. `data:` URI는 inline, 그 외는 external
+  - **383개 무손실 변환 확인**: 4가지 명시 변경 외 모든 필드 바이트 동일, note 0건,
+    멱등, 검증 에러 0
+  - `check:legacy-equivalence`가 실제 마이그레이터를 통과하도록 갱신 → 차이 0 유지
+- [x] **1.9** 검증기 API + CLI (`clotho validate`)
   - 출처: `validate-animations.mjs` — 중복 ID / 참조 무결성 / 시간 범위
-  - v1 추가 규칙: `parentId` 순환, `assetId` 미해결, 비그룹 부모
-- [ ] **1.10** 로더 — 브라우저 fetch 로더 + `clotho/node` 파일시스템 로더 (BOM 스트립)
+  - v1 추가: `parentId` 순환·미존재·비그룹, `assetId` 미해결, 미사용 에셋,
+    flow 대상 타입, 키프레임 역순, 0 duration 이펙트
+  - **실데이터에서 기존 버그 2종 발견** (아래 참조)
+- [x] **1.10** 로더 — `core/load`(BOM·JSON·마이그레이션 게이트 + fetch 로더),
+  `clotho/node`(파일시스템). 실패 시 원인을 반환값에 담는다
+  - id를 경로에 넣기 전에 패턴 검사 (`../` 탈출 차단)
+  - `.d.ts`가 `lib.dom`에 의존하지 않도록 `Response`/`RequestCache`를 구조적 타입으로 대체
 
 ## Phase 2 — 씬 그래프 (Q4의 토대)
 
@@ -152,6 +162,17 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 - [ ] **8.6** 아이콘 라이브러리 등 호스트 의존 기능의 어댑터화
 
 ---
+
+## 검증기가 실데이터에서 찾은 기존 버그
+
+1.9 검증기를 마이그레이션된 383개 문서에 돌려 나온 경고 10건은 전부 실제 문제였다.
+
+| 문서 | 문제 |
+| --- | --- |
+| `point-in-non-convex-polygon.json` | `arrow` 2개(`ray1`/`ray2`)가 `toX`/`toY`를 쓴다. 스키마 필드는 `x2`/`y2`이므로 끝점이 해석되지 않고 **legacy에서도 렌더된 적이 없다** |
+| `http2-multiplexing` 외 4건 | `flow` 이펙트 8개가 `rect`를 대상으로 한다. legacy 엔진은 `type !== 'arrow'`를 걸러내므로 **아무것도 그리지 않았다** |
+
+두 경우 모두 조용히 실패하던 설정이다. Phase 7 역적용 때 원본 문서를 고친다.
 
 ## 추가 확정 사항
 

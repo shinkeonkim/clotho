@@ -15,3 +15,6 @@ export * from './theme';
 export * from './text';
 export * from './assets';
 export * from './runtime';
+export * from './migrate';
+export * from './validate';
+export * from './load';
