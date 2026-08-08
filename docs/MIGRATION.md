@@ -141,6 +141,12 @@ git -C .private/oh-my-blog switch -c feat/clotho
    ```
    테마는 `:root.dark`가 아니라 `data-cloth-theme="dark"`를 본다. 기존 다크 토글에
    이 속성을 함께 설정하거나, `:root.dark { --cloth-fg: …; }`로 직접 덮는다.
+
+   > clotho의 토큰과 컴포넌트는 `@layer cloth-tokens` / `@layer cloth-components`에
+   > 들어 있다. 레이어에 속하지 않은 소비처 규칙은 명시도와 무관하게 이기므로 위처럼
+   > 평범한 `:root` 매핑으로 충분하다. (레이어가 없던 초기 버전에서는 clotho의 다크
+   > 블록 명시도가 더 높아 소비처의 다크 팔레트가 조용히 무시됐다 — 7.3 통합에서
+   > 발견해 고쳤다.)
 6. **`packages/animation-studio`는 clotho-editor로 이동**(Phase 8). 그 전까지는
    import만 clotho로 바꿔 두면 동작한다.
 7. `bun run build && bun test`로 확인.
@@ -165,10 +171,15 @@ git -C .private/oh-my-blog switch -c feat/clotho
 | `src/plugins/remark-animation.mjs` | 클래스명 `anim-placeholder` → `cloth-placeholder` |
 | `src/styles/global.css` | `.anim-*` 약 100줄 삭제 |
 
-### 절차
+### 절차 — **적용 완료** (브랜치 `feat/clotho`, 커밋 전)
+
+아래는 실제로 수행하고 검증한 순서다. 검증 결과: `astro check` **0 errors**,
+`vitest run` **388 tests 통과**, `clotho validate` 383개 **에러 0**.
 
 ```bash
 git -C .private/shinkeonkim.github.io switch -c feat/clotho
+bun install
+bun add "@shinkeonkim/clotho@file:../.."   # 배포 후에는 버전 지정으로
 ```
 
 1. `bun add @shinkeonkim/clotho`
@@ -192,8 +203,33 @@ git -C .private/shinkeonkim.github.io switch -c feat/clotho
    `global.css`의 `.anim-*` 블록, `.astro` 파일들. (`animation-filter`처럼
    애니메이션 목록 UI에 쓰인 `anim-` 클래스는 엔진과 무관하므로 **바꾸지 않는다** —
    `src/features/animation-filter/`, `src/widgets/animation-grid/`, `src/pages/animations/`)
-7. **Studio(`src/dev-only/studio/`)는 clotho-editor로 이동**(Phase 8).
-8. `bun run build && bun test`로 확인. 383개 애니메이션 시각 회귀 확인.
+7. **Studio 30곳 import 치환 + 그룹 로직 재작성.** `childIds` → `parentId`:
+   - `studio-groups.ts`에 `childIdsOf(groupId)` 추가 (필드 읽기 → 스캔)
+   - 그룹 생성은 목록을 만드는 대신 멤버에 `parentId`를 설정하고, 그룹 자신의 x/y는
+     항등으로 둔다 (자식이 절대 좌표를 유지해야 첫 렌더에서 튀지 않는다)
+   - 그룹 해제는 `parentId`를 지운 뒤 그룹을 삭제한다 (순서가 반대면 트리 빌더가
+     미존재 부모로 보고한다)
+   - 요소 삭제 시 자신을 가리키던 `parentId`를 정리한다
+   - 결과적으로 약 60줄. `parentId` 모델이 오히려 단순했다
+8. **이미지 `src` → `assetId`.** 상태 계층에 `registerExternalAsset(url)` /
+   `registerInlineAsset(bytes, mime)` 추가. 아이콘 라이브러리·업로드·플레이스홀더
+   3곳이 이를 통해 에셋을 등록하고 id를 참조한다. `HistoryKind`에 `'asset'` 추가.
+9. **Studio 미리보기를 `clotho/dom`의 `mountStage`로 교체.** 이제 에디터 미리보기와
+   배포된 애니메이션이 같은 `buildScene` + `patchScene`을 지난다 — 전에는 두 구현이
+   갈라져 있어 에디터에서 맞게 보이는 것이 사이트에서 다를 수 있었다.
+10. `bunx astro check` + `bunx vitest run`으로 확인.
+
+### 삭제된 것
+
+| 대상 | 규모 |
+| --- | --- |
+| `src/entities/animation/engine/` (스키마·런타임·렌더러·마커·페이즈·로더·테스트) | 약 1,100줄 |
+| `src/entities/animation/ui/AnimationPlayer.tsx` | 270줄 |
+| `AnimationLoader.astro`의 엔진 CSS | 약 150줄 |
+| `global.css`의 `.anim-*` 블록 | 103줄 |
+| `scripts/validate-animations.mjs` | 211줄 |
+
+약 1,800줄이 패키지로 이동했고, 그 자리에 로더 래퍼(50줄)와 팔레트 매핑만 남았다.
 
 ---
 
