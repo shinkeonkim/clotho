@@ -197,14 +197,26 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   - `shinkeonkim.github.io`에 `file:../..`로 링크 후 `parseDocument`/`computeSnapshot`/
     `buildScene`/`renderDocumentToSvg`/`clotho/node` 로더 모두 해석·실행·타입 통과
   - 검증 후 저장소 원상 복구 (브랜치 삭제, 추적 파일 복원, 미커밋 0건)
-- [ ] **7.2** `oh-my-blog` 적용 — **선행 결정 필요** (MIGRATION.md §0.2)
-- [ ] **7.3** `shinkeonkim.github.io` 적용 — **선행 결정 필요**
-  - 조사 결과 뷰어만 먼저 옮기는 것이 **불가능**하다: Studio가 문서를 저장하므로
-    뷰어만 v1으로 가면 Studio가 v4를 쓰고 사이트가 못 읽어 작성 워크플로가 끊긴다.
-    Studio 그룹 로직은 `childIds`에 런타임 결합(11곳)돼 있어 재작성이 필요하다
-  - 선택 A: Studio 그룹 로직을 제자리에서 v1으로 고치고 함께 전환 (약 200줄 + 뷰어)
-  - 선택 B: Phase 8 이식을 먼저 끝내고 소비처에서 Studio 제거 후 전환 (약 9,000 LOC 선행)
-- [ ] **7.4** 양쪽 시각 회귀 최종 확인 — 7.2/7.3 이후
+- [~] **7.3** `shinkeonkim.github.io` 적용 — **브랜치 `feat/clotho`에서 완료, 커밋 전**
+  - 뷰어만 먼저 옮기는 것은 불가능했다: Studio가 문서를 저장하므로 뷰어만 v1으로 가면
+    Studio가 v4를 쓰고 사이트가 못 읽어 작성 워크플로가 끊긴다. 선택 A로 진행
+  - 383개 문서 v1 in-place 변환
+  - `src/entities/animation/engine/` 삭제 (스키마·런타임·렌더러·마커·페이즈 약 1,100줄).
+    `src/entities/animation/lib/loader.ts`가 `clotho/node`를 감싼다
+  - 뷰어: `hydrate-animations.ts`가 `createDocumentCache` + clotho `/react` 사용.
+    UI 문자열은 `koreanStrings`로 기존 한국어 유지. `AnimationPlayer.tsx` 삭제
+  - `AnimationLoader.astro`: 엔진 CSS 약 150줄 → clotho 스타일시트 import + 팔레트 매핑
+  - `global.css`: `.anim-*` 103줄 삭제
+  - Studio 30곳 import 치환 + **그룹 로직 `childIds` → `parentId` 재작성**
+    (`studio-groups.ts`에 `childIdsOf()` 추가, 그룹 생성이 목록 대신 포인터 설정)
+  - 이미지: `src` → `assetId` + `registerExternalAsset()` / `registerInlineAsset()` 신설
+  - **Studio 미리보기를 `clotho/dom`의 `mountStage`로 교체** — 에디터와 배포본이 같은
+    렌더 경로를 쓴다 (기존에는 두 구현이 갈라져 있었다)
+  - `prebuild`: `validate-animations.mjs` → `bunx clotho validate public/animations`.
+    스크립트 삭제. 383개 검증 실행 확인 (에러 0, 경고 377)
+  - **검증: `astro check` 0 errors, `vitest run` 388 tests 통과**
+- [ ] **7.2** `oh-my-blog` 적용 — 7.3과 동일 절차. `packages/animation-studio`도 같은 처리 필요
+- [ ] **7.4** 시각 회귀 최종 확인 — 빌드 산출물의 애니메이션 렌더 확인
 
 ## Phase 8 — clotho-editor 분리 (별도 저장소)
 
