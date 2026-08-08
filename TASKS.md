@@ -95,14 +95,23 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 2 — 씬 그래프 (Q4의 토대)
 
-- [ ] **2.1** `SceneNode` 타입 정의 및 `buildScene(def, t, ctx)` 골격
-- [ ] **2.2** 요소별 씬 변환 — shapes / arrows / text / image / path / polygon
-  - 출처: `render-elements/*.tsx`의 JSX를 씬 노드 생성으로 치환
-- [ ] **2.3** `code` 요소 씬 변환 + 하이라이터 주입 훅 (기본 JS 토크나이저)
-- [ ] **2.4** 이펙트 씬 변환 — highlight / pulse / flow(파티클)
-- [ ] **2.5** 마커 defs를 데이터로 — HTML 문자열 주입 제거
-- [ ] **2.6** 그룹 중첩 씬 변환 (1.3 위)
-- [ ] **2.7** 씬 그래프 골든 테스트 — 383개 × 대표 시각의 `/svg` 직렬화 스냅샷
+- [x] **2.1** `SceneNode` 타입 정의 및 `buildScene(doc, t, options)` 
+  - **어트리뷰트 이름은 SVG 표기 그대로** (`stroke-width`, `preserveAspectRatio`).
+    svg/dom/vue는 그대로 통과, react만 kebab→camel 기계적 변환 (SVG의 진짜
+    camelCase 이름은 하이픈이 없어 그대로 유지된다)
+- [x] **2.2** 요소별 씬 변환 — shapes / connectors / text / image / path / polygon
+- [x] **2.3** `code` 요소 씬 변환 + `CodeHighlighter` 주입 훅 (기본 JS 토크나이저)
+  - 줄번호 거터 폭을 `estimateMonospaceWidth`로 교체 → CJK 정렬 버그 해소
+- [x] **2.4** 이펙트 씬 변환 — highlight / pulse / flow(파티클)
+  - flow가 `line`에서도 동작하도록 확대 (legacy는 `arrow`만 허용해 조용히 무시)
+- [x] **2.5** 마커 defs를 데이터로 — `dangerouslySetInnerHTML` 제거.
+  참조된 마커만 방출하므로 화살표 없는 문서는 `<defs>`가 아예 없다
+- [x] **2.6** 그룹 중첩 씬 변환. 페인트 순서(text 마지막)를 **형제 단위**로 적용해
+  평면 문서는 legacy와 동일하고 그룹 안 text는 그룹에 남는다
+- [x] **2.7** 씬 그래프 골든 테스트
+  - 383개 × 대표 시각 씬 빌드, 어트리뷰트 값 NaN/undefined 0, 결정성, 이스케이프
+  - `check:svg-wellformed`: 1,915 프레임을 **실제 XML 파서(expat)** 로 검증.
+    문자열 휴리스틱은 `x="1"y="2"` 버그를 통과시켰고 파서만 잡아냈다
 
 ## Phase 3 — 재생 컨트롤러
 
@@ -112,8 +121,11 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 4 — 어댑터
 
-- [ ] **4.1** `/svg` — `SceneNode` → 문자열 직렬화 (순수, SSR 안전, XML 이스케이프)
-  - **가장 먼저 구현한다.** 씬 그래프 검증 수단이자 다른 어댑터의 정답지
+- [x] **4.1** `/svg` — `SceneNode` → 문자열 직렬화 (순수, SSR 안전, XML 이스케이프)
+  - 씬 그래프 검증 수단이자 다른 어댑터의 정답지
+  - `renderDocumentToSvg(doc, t)`: 정지 프레임·썸네일·SSR·정적 내보내기
+  - `standalone`은 `rawColors`를 켠다 — 스타일시트 없는 파일에서 `var(--cloth-fg)`는
+    아무것도 해석되지 않는다
 - [ ] **4.2** `/react` — 씬 매퍼 + `useSyncExternalStore` 바인딩
 - [ ] **4.3** `/react` 플레이어 UI — `ControlsBar / StepLabel / ZoomControls / Modal / icons`
   - 출처: oh-my-blog `controls-bar.tsx` 등 + `use-fullscreen / use-viewer-a11y / use-reduced-motion`
@@ -201,3 +213,4 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 | `bun run typecheck` / `lint` | 타입/린트 | O |
 | `bun run check:core-purity` | 코어에 프레임워크·DOM 의존 유입 차단 | O |
 | `bun run check:legacy-equivalence` | legacy 엔진과 렌더 동등성 차분 검증 | X (`.private` 필요) |
+| `bun run check:svg-wellformed` | 1,915 프레임을 실제 XML 파서로 검증 | X (`.private`, python3 필요) |

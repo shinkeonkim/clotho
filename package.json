@@ -59,6 +59,7 @@
     "format:check": "prettier --check .",
     "check:core-purity": "bun scripts/check-core-purity.ts",
     "check:legacy-equivalence": "bun scripts/verify-legacy-equivalence.ts",
+    "check:svg-wellformed": "bun scripts/verify-svg-wellformed.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

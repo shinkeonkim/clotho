@@ -78,14 +78,17 @@ export function migrateLegacyDocument(input: unknown): MigrationResult {
   applyGroupParents(elements, notes);
   convertImageSources(elements, assets, notes);
 
-  const document: Json = {
+  // Named `migrated` rather than `document`: a local binding by that name shadows
+  // the DOM global, which makes the core-purity check unable to tell an ordinary
+  // property write from real DOM access.
+  const migrated: Json = {
     clothoVersion: 1,
     ...rest,
     elements,
   };
-  if (Object.keys(assets).length > 0) document.assets = assets;
+  if (Object.keys(assets).length > 0) migrated.assets = assets;
 
-  return { document, notes };
+  return { document: migrated, notes };
 }
 
 /**
