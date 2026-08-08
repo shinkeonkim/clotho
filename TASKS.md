@@ -183,23 +183,51 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 7 — 역적용 (소비처 마이그레이션)
 
-- [ ] **7.1** 383개 legacy 문서를 v1으로 일괄 변환 + 시각 회귀 확인
-- [ ] **7.2** `oh-my-blog` — `packages/animation-engine` 제거, clotho 의존으로 교체
-  - `packages/schema/src/animation.ts`의 passthrough 봉투 검증도 clotho로 대체
-  - `animation-api` 저장 검증 경로 전환
-- [ ] **7.3** `shinkeonkim.github.io` — `src/entities/animation/engine` 제거, clotho 의존으로 교체
-  - `astro/zod` → `zod` 전환 영향 확인
-  - `prebuild`의 `validate-animations.mjs` → `clotho validate`
-- [ ] **7.4** 양쪽 시각 회귀 최종 확인
+절차는 [`docs/MIGRATION.md`](./docs/MIGRATION.md)에 호출 지점 전수 조사 기반으로 정리했다.
+
+- [x] **7.1** 383개 문서 v1 변환 + 렌더 동등성 검증 (`scripts/migrate-corpus.ts`)
+  - 383/383 legacy 엔진과 **렌더 동등**, 13,116 프레임 비교, 실패 0
+  - 변환 내용은 봉투 필드 하나뿐 (코퍼스에 group/image가 0건)
+  - 기본은 별도 디렉터리 출력. `--in-place`는 명시적으로 선택해야 한다
+- [x] **7.1b** 조사: 소비처 호출 지점 전수 파악
+  - oh-my-blog: 엔진 import 27곳 + studio 1곳. 심볼은 스키마 타입·런타임·플레이어뿐
+  - shinkeonkim.github.io: 엔진 import 30곳. 그중 25곳이 Studio
+  - **결론: 양쪽 다 import 경로 치환이 대부분.** 심볼 대응표를 MIGRATION.md에 작성
+- [ ] **7.2** `oh-my-blog` 적용 — **6.7 배포 대기** (설치 가능해야 빌드 검증이 된다)
+- [ ] **7.3** `shinkeonkim.github.io` 적용 — **6.7 배포 대기**
+  - Studio 25곳이 얽혀 있어 Phase 8과 함께 진행해야 한다
+- [ ] **7.4** 양쪽 시각 회귀 최종 확인 — 7.2/7.3 이후
 
 ## Phase 8 — clotho-editor 분리 (별도 저장소)
 
-- [ ] **8.1** Studio(약 9,000 LOC) 구조 조사 및 clotho 코어 의존 경계 확정
-- [ ] **8.2** `/Users/koa/004-Projects/clotho-editor` 부트스트랩
-- [ ] **8.3** 상태/히스토리/캔버스/타임라인/속성 패널 이식
-- [ ] **8.4** 그룹 편집 UI (v1 `parentId` 모델)
-- [ ] **8.5** 이미지 첨부 UI (`encodeImageAsset` + `AssetResolver` 훅)
+계획은 `clotho-editor/docs/PORTING.md`.
+
+- [x] **8.1** Studio 구조 조사 및 의존 경계 확정
+  - 8,980 LOC(shinkeonkim) / 8,751 LOC(oh-my-blog), 거의 동일
+  - **엔진에서 가져오는 것은 스키마 타입 + `computeSnapshot`/`activeAppearance`뿐.
+    렌더러는 쓰지 않는다** — 자체 캔버스 미리보기를 갖고 있기 때문
+  - 그래서 미리보기를 `buildScene` + `patchScene`으로 바꿀 수 있다. 지금은 에디터
+    렌더와 사이트 렌더가 갈라져 에디터에서 맞게 보이는 것이 배포본에서 다를 수 있다
+  - v1 필수 변경: `studio-groups.ts` 재작성(`childIds` → `parentId`),
+    이미지 첨부 UI 신설(`src` → `assetId`)
+- [x] **8.2** `/Users/koa/004-Projects/clotho-editor` 부트스트랩 (커밋 완료)
+- [ ] **8.3** 상태/히스토리/캔버스/타임라인/속성 패널 이식 — **약 9,000 LOC, 6.7 대기**
+- [ ] **8.4** 그룹 편집 UI (v1 `parentId` 모델) — legacy에 없던 기능
+- [ ] **8.5** 이미지 첨부 UI (`encodeImageAsset` + `AssetResolver`)
 - [ ] **8.6** 아이콘 라이브러리 등 호스트 의존 기능의 어댑터화
+
+## 남은 작업과 차단 요인
+
+| 항목 | 상태 | 차단 요인 |
+| --- | --- | --- |
+| 6.7 npm 배포 | 대기 | **사용자 확인** — 되돌릴 수 없고 외부로 나간다 |
+| 7.2 / 7.3 소비처 적용 | 계획 완료 | 6.7 (설치 가능해야 빌드·시각 검증이 성립) |
+| 7.4 시각 회귀 | 대기 | 7.2 / 7.3 |
+| 8.3~8.6 Studio 이식 | 계획 완료 | 6.7 + 약 9,000 LOC 작업 |
+
+7.2/7.3은 소비처 저장소를 브랜치에서 수정하는 작업이며, 절차·심볼 대응·되돌리기까지
+`docs/MIGRATION.md`에 준비돼 있다. 배포 또는 로컬 링크(`file:../clotho`) 결정이 나면
+바로 진행 가능하다.
 
 ---
 
