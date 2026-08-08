@@ -58,6 +58,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:core-purity": "bun scripts/check-core-purity.ts",
+    "check:styles": "bun scripts/check-styles.ts",
     "check:legacy-equivalence": "bun scripts/verify-legacy-equivalence.ts",
     "check:svg-wellformed": "bun scripts/verify-svg-wellformed.ts",
     "clean": "rm -rf dist"
