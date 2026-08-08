@@ -214,7 +214,12 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
     렌더 경로를 쓴다 (기존에는 두 구현이 갈라져 있었다)
   - `prebuild`: `validate-animations.mjs` → `bunx clotho validate public/animations`.
     스크립트 삭제. 383개 검증 실행 확인 (에러 0, 경고 377)
-  - **검증: `astro check` 0 errors, `vitest run` 388 tests 통과**
+  - **검증: `astro check` 0 errors · `vitest run` 388 tests 통과 ·
+    `astro build` 에러 0 · 번들 CSS에 clotho 56클래스 · 클라이언트 청크에 clotho 포함 ·
+    `anim-` 엔진 클래스 잔존 0 · 애니메이션 상세 페이지가 "clotho v1" 표시**
+  - 일괄 치환이 게시된 블로그 본문까지 건드린 것을 발견해 되돌렸다. `AGENTS.md`는
+    사실과 맞게 다시 썼다 (스키마 출처, parentId/assetId 차이, 검증 경로)
+  - **커밋하지 않았다.** 사용자 저장소이므로 검토 후 결정할 사항이다
 - [ ] **7.2** `oh-my-blog` 적용 — 7.3과 동일 절차. `packages/animation-studio`도 같은 처리 필요
 - [ ] **7.4** 시각 회귀 최종 확인 — 빌드 산출물의 애니메이션 렌더 확인
 
@@ -236,18 +241,23 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 - [ ] **8.5** 이미지 첨부 UI (`encodeImageAsset` + `AssetResolver`)
 - [ ] **8.6** 아이콘 라이브러리 등 호스트 의존 기능의 어댑터화
 
-## 남은 작업과 차단 요인
+## 남은 작업
 
-| 항목 | 상태 | 차단 요인 |
+| 항목 | 상태 | 남은 이유 |
 | --- | --- | --- |
-| 6.7 npm 배포 | 대기 | **사용자 확인** — 되돌릴 수 없고 외부로 나간다 |
-| 7.2 / 7.3 소비처 적용 | 계획 완료 | 6.7 (설치 가능해야 빌드·시각 검증이 성립) |
-| 7.4 시각 회귀 | 대기 | 7.2 / 7.3 |
-| 8.3~8.6 Studio 이식 | 계획 완료 | 6.7 + 약 9,000 LOC 작업 |
+| 6.7 npm 배포 | 대기 | **사용자 확인 필요** — 되돌릴 수 없고 외부로 나간다 |
+| 7.3 커밋 | 대기 | **사용자 검토 필요** — 브랜치 `feat/clotho`에 미커밋 상태로 둠 |
+| 7.2 `oh-my-blog` | 미착수 | 7.3과 동일 절차. 워크스페이스 4곳 + `animation-studio` 23파일 |
+| 7.4 시각 회귀 | 부분 | 빌드·마크업·CSS는 확인. 브라우저 육안 확인은 미실시 |
+| 8.3~8.6 Studio 이식 | 계획 완료 | 약 9,000 LOC. `clotho-editor/docs/PORTING.md`에 순서까지 정리 |
 
-7.2/7.3은 소비처 저장소를 브랜치에서 수정하는 작업이며, 절차·심볼 대응·되돌리기까지
-`docs/MIGRATION.md`에 준비돼 있다. 배포 또는 로컬 링크(`file:../clotho`) 결정이 나면
-바로 진행 가능하다.
+7.3의 소비처 변경은 브랜치에 미커밋으로 두었다. 사용자 저장소이므로 커밋 여부는
+검토 후 결정할 사항이다. 되돌리려면:
+
+```bash
+git -C .private/shinkeonkim.github.io checkout -- . && git switch master
+git -C .private/shinkeonkim.github.io branch -D feat/clotho
+```
 
 ---
 
