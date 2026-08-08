@@ -11,3 +11,5 @@
 export const VERSION = '0.0.0';
 
 export * from './schema';
+export * from './timing/ease';
+export * from './runtime';

@@ -44,9 +44,12 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
     (legacy 로더는 `null`로 삼켜 대문자 id 애니메이션이 렌더되지 않는 채로 배포된 적이 있다)
   - 383개 코퍼스가 v1 파서에 **거부되는지** 회귀로 고정 (마이그레이션 게이트)
   - 코어 번들 11.9KB / gzip 3.1KB. `.d.ts`는 237KB(zod 추론 인라인) → 6.2에서 검토
-- [ ] **1.2** 런타임 포팅 — `computeSnapshot / activeAppearance / currentChapter / activeEffects`
+- [x] **1.2** 런타임 포팅 — `computeSnapshot / activeAppearance / currentChapter / activeEffects`
   - 출처: `schema/runtime.ts` (양쪽 완전 동일) + `runtime.test.ts` 395줄
   - `interpolate` 명시값 지원 추가, `auto`는 기존 휴리스틱 유지
+  - `easeApply`/`lerp`는 `timing/ease`로, 색 파싱은 `runtime/color`로 분리
+  - **legacy 엔진과의 차분 검증** (`check:legacy-equivalence`): 383개 문서 ×
+    27,690 프레임 × 682만 속성 비교에서 차이 0. 참조 저장소 없으면 스킵
 - [ ] **1.3** 그룹 트리 해석 — `parentId` → 트리 빌드, transform 합성, 가시성 상속
   - 순환 참조 / 미존재 부모 / 비그룹 부모 검출
   - **legacy에 구현이 없던 기능이라 전부 신규**
@@ -156,3 +159,14 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 - 포팅 시 **출처 파일을 명시**하고, 동작 변경이 있으면 커밋 메시지에 사유를 남긴다
 - 383개 코퍼스 회귀(마이그레이션 무손실 + 씬 그래프 동등성)가 깨지면 실패로 간주한다
 - 코어에 프레임워크/DOM 의존이 새어 들어가면 실패로 간주한다 (CI에서 강제)
+- 렌더 동작을 바꾸는 변경은 `check:legacy-equivalence`가 잡는다. 의도된 변경이면
+  스크립트를 지우지 말고 이유를 남기고 갱신한다
+
+## 로컬 검증 명령
+
+| 명령 | 내용 | CI |
+| --- | --- | --- |
+| `bun test` | 유닛 + 코퍼스 회귀 | O |
+| `bun run typecheck` / `lint` | 타입/린트 | O |
+| `bun run check:core-purity` | 코어에 프레임워크·DOM 의존 유입 차단 | O |
+| `bun run check:legacy-equivalence` | legacy 엔진과 렌더 동등성 차분 검증 | X (`.private` 필요) |

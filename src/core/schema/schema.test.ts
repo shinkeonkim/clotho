@@ -237,9 +237,9 @@ describe('assets', () => {
   });
 
   it('restricts inline mime to image/*', () => {
-    expect(
-      assetSchema.safeParse({ kind: 'inline', mime: 'text/html', data: 'aGk=' }).success,
-    ).toBe(false);
+    expect(assetSchema.safeParse({ kind: 'inline', mime: 'text/html', data: 'aGk=' }).success).toBe(
+      false,
+    );
     expect(
       assetSchema.safeParse({ kind: 'inline', mime: 'image/svg+xml', data: 'aGk=' }).success,
     ).toBe(true);
@@ -292,7 +292,10 @@ describe('document envelope', () => {
   });
 
   it('keeps $schema when present and ignores it otherwise', () => {
-    const doc = animationDocumentSchema.parse({ ...minimalDoc, $schema: 'https://x/clotho-1.json' });
+    const doc = animationDocumentSchema.parse({
+      ...minimalDoc,
+      $schema: 'https://x/clotho-1.json',
+    });
     expect(doc.$schema).toBe('https://x/clotho-1.json');
     expect(animationDocumentSchema.parse(minimalDoc).$schema).toBeUndefined();
   });

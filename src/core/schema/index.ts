@@ -46,7 +46,9 @@ export function parseDocumentOrThrow(value: unknown): AnimationDocument {
   throw new Error(`invalid clotho document:\n  ${result.issues.join('\n  ')}`);
 }
 
-function formatIssues(error: { issues: readonly { path: unknown[]; message: string }[] }): string[] {
+function formatIssues(error: {
+  issues: readonly { path: unknown[]; message: string }[];
+}): string[] {
   return error.issues.map((issue) => {
     const path = issue.path.length > 0 ? issue.path.join('.') : '<root>';
     return `${path}: ${issue.message}`;

@@ -19,7 +19,10 @@ export const ID_RE = /^[a-z0-9][a-z0-9_-]*$/;
 
 export const idSchema = z
   .string()
-  .regex(ID_RE, 'id must be lowercase letters, digits, "-" or "_", starting with a letter or digit');
+  .regex(
+    ID_RE,
+    'id must be lowercase letters, digits, "-" or "_", starting with a letter or digit',
+  );
 
 export const easeSchema = z.enum(['linear', 'easeIn', 'easeOut', 'easeInOut']).default('easeInOut');
 

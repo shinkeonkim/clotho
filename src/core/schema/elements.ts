@@ -192,8 +192,6 @@ export type ElementType = AnimationElement['type'];
 /** Element types whose endpoints may anchor to other elements. */
 export const CONNECTOR_TYPES = ['line', 'arrow'] as const;
 
-export function isConnector(
-  el: AnimationElement,
-): el is LineElement | ArrowElement {
+export function isConnector(el: AnimationElement): el is LineElement | ArrowElement {
   return el.type === 'line' || el.type === 'arrow';
 }
