@@ -163,13 +163,23 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 6 — 패키징 및 공개
 
-- [ ] **6.1** 빌드 — ESM + `.d.ts`, 서브패스 exports 6종 검증
-- [ ] **6.2** 번들 크기 예산 (코어 / 어댑터별), 사이드이펙트 플래그
-- [ ] **6.3** README / API 문서 / v1 포맷 스펙 문서
-- [ ] **6.4** JSON Schema 산출물 배포 (zod → JSON Schema, `$schema` URL 확정)
-- [ ] **6.5** 프레임워크별 예제 (react / vue / vanilla / SSR)
-- [ ] **6.6** CONTRIBUTING · CHANGELOG · CI (typecheck/lint/test/build)
-- [ ] **6.7** `@shinkeonkim/clotho@0.1.0` 배포
+- [x] **6.1** 빌드 — ESM + `.d.ts`, 서브패스 exports 8종 + CLI 빈 경로 검증
+- [x] **6.2** 번들 크기 예산 (`check:size`)
+  - **진입점의 전이 폐쇄를 측정한다.** 빌드가 공유 청크로 쪼개므로 진입 파일 하나의
+    크기는 무의미하다(`core/index.js` 7KB vs 그것이 당기는 청크 50KB)
+  - 렌더 어댑터에 **zod가 없음을 검사로 강제**한다. 이미 파싱된 문서를 받으므로
+    검증기를 번들할 이유가 없고, 렌더만 하는 소비처에 gzip 9KB를 아낀다
+  - core 25KB / svg 16KB / dom·react 20KB / vue 20KB / node 6KB / cli 11KB / css 4KB (gzip)
+- [x] **6.3** README (설치·4종 사용법·API·훅·테마·i18n) / CONTRIBUTING / CHANGELOG
+- [x] **6.4** JSON Schema 산출 (`schema/clotho-1.schema.json`, zod에서 생성)
+  - `schema:check`로 zod와 동기 여부 강제. 생성물이므로 서식 대상에서 제외
+  - `$schema` URL은 호스팅 위치가 정해질 때 확정 (필드는 선택이므로 차단 요소 아님)
+- [x] **6.5** 예제 4종 (vanilla html / static-svg / react / vue) + 공용 문서 1개
+  - `.ts`/`.tsx` 예제는 **타입체크 대상에 포함**했다 (패키지명 self-reference 경로 매핑).
+    컴파일 안 되는 예제는 없는 것보다 나쁘다 — 일부러 깨뜨려 검증됨을 확인
+- [x] **6.6** CI 워크플로 (typecheck/lint/format/purity/test/build/size/styles/schema)
+- [ ] **6.7** `@shinkeonkim/clotho@0.1.0` npm 배포 — **사용자 확인 대기**
+  - 되돌릴 수 없고 외부로 나가는 작업이라 임의로 실행하지 않는다
 
 ## Phase 7 — 역적용 (소비처 마이그레이션)
 

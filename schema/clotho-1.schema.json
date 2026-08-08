@@ -1,0 +1,1191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "clotho animation document (v1)",
+  "description": "JSON-defined visualization animation. See https://github.com/shinkeonkim/clotho — docs/SCHEMA-V1.md.",
+  "$ref": "#/definitions/ClothoDocument",
+  "definitions": {
+    "ClothoDocument": {
+      "type": "object",
+      "properties": {
+        "clothoVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "$schema": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9_-]*$"
+        },
+        "title": {
+          "type": "string",
+          "default": ""
+        },
+        "description": {
+          "type": "string",
+          "default": ""
+        },
+        "category": {
+          "type": "string",
+          "default": "general"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "duration": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 5000
+        },
+        "canvas": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 800
+            },
+            "height": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "default": 500
+            },
+            "background": {
+              "type": "string",
+              "default": "transparent"
+            }
+          },
+          "additionalProperties": false,
+          "default": {
+            "width": 800,
+            "height": 500,
+            "background": "transparent"
+          }
+        },
+        "assets": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "inline"
+                  },
+                  "mime": {
+                    "type": "string",
+                    "pattern": "^image\\/[a-z0-9.+-]+$"
+                  },
+                  "data": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "mime",
+                  "data"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "external"
+                  },
+                  "url": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "url"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "ref"
+                  },
+                  "key": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "kind",
+                  "key"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "propertyNames": {
+            "minLength": 1
+          },
+          "default": {}
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "rect"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "rotation": {
+                    "type": "number",
+                    "default": 0
+                  },
+                  "appearances": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "start": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "end": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "entryMode": {
+                          "type": "string",
+                          "enum": [
+                            "instant",
+                            "fade",
+                            "slide-left",
+                            "slide-right",
+                            "slide-up",
+                            "slide-down",
+                            "zoom",
+                            "pop"
+                          ],
+                          "default": "instant"
+                        },
+                        "entryDuration": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "default": 300
+                        },
+                        "exitMode": {
+                          "type": "string",
+                          "enum": [
+                            "instant",
+                            "fade",
+                            "slide-left",
+                            "slide-right",
+                            "slide-up",
+                            "slide-down",
+                            "zoom",
+                            "pop"
+                          ],
+                          "default": "instant"
+                        },
+                        "exitDuration": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "default": 300
+                        }
+                      },
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "default": []
+                  },
+                  "tracks": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "property": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "interpolate": {
+                          "type": "string",
+                          "enum": [
+                            "auto",
+                            "number",
+                            "color",
+                            "discrete"
+                          ],
+                          "default": "auto"
+                        },
+                        "keyframes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "time": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "value": {
+                                "type": [
+                                  "string",
+                                  "number",
+                                  "boolean"
+                                ]
+                              },
+                              "ease": {
+                                "type": "string",
+                                "enum": [
+                                  "linear",
+                                  "easeIn",
+                                  "easeOut",
+                                  "easeInOut"
+                                ],
+                                "default": "easeInOut"
+                              }
+                            },
+                            "required": [
+                              "time",
+                              "value"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "minItems": 1
+                        }
+                      },
+                      "required": [
+                        "property",
+                        "keyframes"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "default": []
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "fill": {
+                    "type": "string",
+                    "default": "#a5b4fc"
+                  },
+                  "stroke": {
+                    "type": "string",
+                    "default": "#6366f1"
+                  },
+                  "strokeWidth": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 1.5
+                  },
+                  "cornerRadius": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 8
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "labelColor": {
+                    "type": "string",
+                    "default": "#0b0b0f"
+                  },
+                  "labelSize": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 14
+                  },
+                  "subtitle": {
+                    "type": "string"
+                  },
+                  "subtitleSize": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "x",
+                  "y",
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "circle"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "cx": {
+                    "type": "number"
+                  },
+                  "cy": {
+                    "type": "number"
+                  },
+                  "r": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "fill": {
+                    "type": "string",
+                    "default": "#a5b4fc"
+                  },
+                  "stroke": {
+                    "type": "string",
+                    "default": "#6366f1"
+                  },
+                  "strokeWidth": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 1.5
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "labelColor": {
+                    "type": "string",
+                    "default": "#0b0b0f"
+                  },
+                  "labelSize": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 14
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "cx",
+                  "cy",
+                  "r"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "line"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "fromId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "toId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "fromAnchor": {
+                    "type": "string",
+                    "enum": [
+                      "auto",
+                      "top",
+                      "right",
+                      "bottom",
+                      "left",
+                      "center",
+                      "top-left",
+                      "top-right",
+                      "bottom-left",
+                      "bottom-right"
+                    ],
+                    "default": "auto"
+                  },
+                  "toAnchor": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/fromAnchor"
+                  },
+                  "x1": {
+                    "type": "number"
+                  },
+                  "y1": {
+                    "type": "number"
+                  },
+                  "x2": {
+                    "type": "number"
+                  },
+                  "y2": {
+                    "type": "number"
+                  },
+                  "strokeDasharray": {
+                    "type": "string"
+                  },
+                  "headStart": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "arrow",
+                      "triangle",
+                      "triangle-open",
+                      "circle",
+                      "circle-open",
+                      "diamond",
+                      "diamond-open",
+                      "bar"
+                    ]
+                  },
+                  "headEnd": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/headStart"
+                  },
+                  "stroke": {
+                    "type": "string",
+                    "default": "#6366f1"
+                  },
+                  "strokeWidth": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 2
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "arrow"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "fromId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/fromId"
+                  },
+                  "toId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/toId"
+                  },
+                  "fromAnchor": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/fromAnchor"
+                  },
+                  "toAnchor": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/toAnchor"
+                  },
+                  "x1": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/x1"
+                  },
+                  "y1": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/y1"
+                  },
+                  "x2": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/x2"
+                  },
+                  "y2": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/y2"
+                  },
+                  "strokeDasharray": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/strokeDasharray"
+                  },
+                  "headStart": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/headStart"
+                  },
+                  "headEnd": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/headEnd"
+                  },
+                  "stroke": {
+                    "type": "string",
+                    "default": "#6366f1"
+                  },
+                  "strokeWidth": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 2
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "labelColor": {
+                    "type": "string",
+                    "default": "#0b0b0f"
+                  },
+                  "labelOffsetX": {
+                    "type": "number",
+                    "default": 0
+                  },
+                  "labelOffsetY": {
+                    "type": "number",
+                    "default": 4
+                  },
+                  "curvature": {
+                    "type": "number",
+                    "default": 0
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "text"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "fontSize": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 16
+                  },
+                  "fontWeight": {
+                    "type": [
+                      "string",
+                      "number"
+                    ],
+                    "default": 400
+                  },
+                  "color": {
+                    "type": "string",
+                    "default": "#18181b"
+                  },
+                  "textAnchor": {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "middle",
+                      "end"
+                    ],
+                    "default": "start"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "x",
+                  "y",
+                  "content"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "image"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "assetId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "alt": {
+                    "type": "string"
+                  },
+                  "preserveAspectRatio": {
+                    "type": "string",
+                    "default": "xMidYMid meet"
+                  },
+                  "opacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "x",
+                  "y",
+                  "width",
+                  "height",
+                  "assetId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "path"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "x": {
+                    "type": "number",
+                    "default": 0
+                  },
+                  "y": {
+                    "type": "number",
+                    "default": 0
+                  },
+                  "d": {
+                    "type": "string"
+                  },
+                  "fill": {
+                    "type": "string",
+                    "default": "none"
+                  },
+                  "stroke": {
+                    "type": "string",
+                    "default": "#6366f1"
+                  },
+                  "strokeWidth": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 2
+                  },
+                  "strokeDasharray": {
+                    "type": "string"
+                  },
+                  "opacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "d"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "polygon"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "points": {
+                    "type": "string"
+                  },
+                  "fill": {
+                    "type": "string",
+                    "default": "#a5b4fc"
+                  },
+                  "stroke": {
+                    "type": "string",
+                    "default": "#6366f1"
+                  },
+                  "strokeWidth": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 1.5
+                  },
+                  "opacity": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 1
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "points"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "group"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "x": {
+                    "type": "number",
+                    "default": 0
+                  },
+                  "y": {
+                    "type": "number",
+                    "default": 0
+                  }
+                },
+                "required": [
+                  "type",
+                  "id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "code"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "content": {
+                    "type": "string"
+                  },
+                  "language": {
+                    "type": "string",
+                    "default": "javascript"
+                  },
+                  "fontSize": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 12
+                  },
+                  "showLineNumbers": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "fill": {
+                    "type": "string",
+                    "default": "#1e293b"
+                  },
+                  "textColor": {
+                    "type": "string",
+                    "default": "#e2e8f0"
+                  },
+                  "padding": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 12
+                  },
+                  "cornerRadius": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 8
+                  },
+                  "title": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "x",
+                  "y",
+                  "width",
+                  "height",
+                  "content"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "default": []
+        },
+        "chapters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/ClothoDocument/properties/id"
+              },
+              "time": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "label": {
+                "type": "string",
+                "default": ""
+              },
+              "subtitle": {
+                "type": "string",
+                "default": ""
+              }
+            },
+            "required": [
+              "id",
+              "time"
+            ],
+            "additionalProperties": false
+          },
+          "default": []
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "highlight"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "elementId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "color": {
+                    "type": "string",
+                    "default": "#facc15"
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 500
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "elementId",
+                  "time"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "pulse"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "elementId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "$ref": "#/definitions/ClothoDocument/properties/effects/items/anyOf/0/properties/time"
+                  },
+                  "scale": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 1.12
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 500
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "elementId",
+                  "time"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "flow"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "elementId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "$ref": "#/definitions/ClothoDocument/properties/effects/items/anyOf/0/properties/time"
+                  },
+                  "color": {
+                    "type": "string",
+                    "default": "#facc15"
+                  },
+                  "particles": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10,
+                    "default": 3
+                  },
+                  "radius": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 4
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 800
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "elementId",
+                  "time"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "default": []
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "loop": {
+              "type": "boolean",
+              "default": true
+            },
+            "autoplay": {
+              "type": "boolean",
+              "default": true
+            },
+            "showCaption": {
+              "type": "boolean",
+              "default": false
+            },
+            "showChapterList": {
+              "type": "boolean",
+              "default": false
+            }
+          },
+          "additionalProperties": false,
+          "default": {
+            "loop": true,
+            "autoplay": true,
+            "showCaption": false,
+            "showChapterList": false
+          }
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "clothoVersion",
+        "id"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

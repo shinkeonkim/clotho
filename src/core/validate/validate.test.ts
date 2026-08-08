@@ -276,6 +276,82 @@ describe('assets (v1)', () => {
   });
 });
 
+// zod strips unknown keys, so without this an author can write a property that does
+// nothing and never find out. The corpus this package came from had 367 of them.
+describe('unknown properties', () => {
+  it('warns about a property the element type does not have', () => {
+    const result = doc({
+      elements: [{ type: 'line', id: 'l', x1: 0, y1: 0, x2: 1, y2: 1, label: 'x' }],
+    });
+    const finding = result.findings.find((f) => f.code === 'unknown-property');
+    expect(finding?.path).toBe('elements.0.label');
+    expect(finding?.message).toContain('"line" has no property "label"');
+    expect(result.ok).toBe(true); // inert, so a warning
+  });
+
+  it('catches the real cases from the corpus', () => {
+    const cases: [Record<string, unknown>, string][] = [
+      [{ type: 'circle', id: 'c', cx: 0, cy: 0, r: 1, subtitle: 'x' }, 'elements.0.subtitle'],
+      [
+        { type: 'rect', id: 'r', x: 0, y: 0, width: 1, height: 1, strokeDasharray: '4 4' },
+        'elements.0.strokeDasharray',
+      ],
+      [
+        { type: 'arrow', id: 'a', x1: 0, y1: 0, x2: 1, y2: 1, arrowEnd: 'arrow' },
+        'elements.0.arrowEnd',
+      ],
+      [
+        { type: 'text', id: 't', x: 0, y: 0, content: 'x', fontFamily: 'serif' },
+        'elements.0.fontFamily',
+      ],
+    ];
+    for (const [element, path] of cases) {
+      const result = doc({ elements: [element] });
+      const paths = result.findings.filter((f) => f.code === 'unknown-property').map((f) => f.path);
+      expect(paths, JSON.stringify(element)).toContain(path);
+    }
+  });
+
+  it('warns about an unknown effect property', () => {
+    const result = doc({
+      elements: [rect({ id: 'r' })],
+      effects: [{ type: 'pulse', id: 'e', elementId: 'r', time: 0, delay: 100 }],
+    });
+    expect(result.findings.find((f) => f.code === 'unknown-property')?.path).toBe(
+      'effects.0.delay',
+    );
+  });
+
+  it('warns about unknown document and chapter properties', () => {
+    expect(doc({ author: 'me' }).findings.find((f) => f.code === 'unknown-property')?.path).toBe(
+      'author',
+    );
+    expect(
+      doc({ chapters: [{ id: 'c', time: 0, note: 'x' }] }).findings.find(
+        (f) => f.code === 'unknown-property',
+      )?.path,
+    ).toBe('chapters.0.note');
+  });
+
+  // These are what migration replaces, so warning about them would be noise.
+  it('stays quiet about legacy fields migration handles', () => {
+    const result = validateDocument({
+      clothoVersion: 1,
+      id: 'demo',
+      duration: 100,
+      elements: [{ type: 'group', id: 'g', childIds: ['a'] }],
+    });
+    expect(result.findings.filter((f) => f.code === 'unknown-property')).toEqual([]);
+  });
+
+  it('says nothing for a document using only defined properties', () => {
+    const result = doc({
+      elements: [rect({ id: 'r', label: 'A', subtitle: 'B', cornerRadius: 4 })],
+    });
+    expect(result.findings.filter((f) => f.code === 'unknown-property')).toEqual([]);
+  });
+});
+
 describe('result shape', () => {
   it('counts errors and warnings separately', () => {
     const result = doc({

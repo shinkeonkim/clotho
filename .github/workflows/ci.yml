@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Format
+        run: bun run format:check
+
+      # The invariant the whole adapter design rests on: if the core gains a
+      # framework or DOM dependency, every adapter inherits it.
+      - name: Core purity
+        run: bun run check:core-purity
+
+      - name: Tests
+        run: bun test
+
+      - name: Build
+        run: bun run build
+
+      # Budgets also assert that rendering adapters stay free of zod.
+      - name: Size budgets
+        run: bun run check:size
+
+      - name: Stylesheet consistency
+        run: bun run check:styles
+
+      - name: JSON Schema in sync with zod
+        run: bun run schema:check
+
+      # These need the private reference repositories and skip cleanly without them,
+      # so they run locally rather than here. Listed so the gap is visible:
+      #   bun run check:legacy-equivalence
+      #   bun run check:svg-wellformed

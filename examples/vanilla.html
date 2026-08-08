@@ -1,0 +1,70 @@
+<!doctype html>
+<!--
+  Vanilla JS integration — no build step, no framework.
+
+  Serve the repo root and open this file. It imports from ../src for convenience;
+  a real page would import from "@shinkeonkim/clotho/dom".
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clotho — vanilla</title>
+    <link rel="stylesheet" href="../src/styles/clotho.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 2rem;
+        font-family: system-ui, sans-serif;
+        background: var(--cloth-surface);
+        color: var(--cloth-fg);
+      }
+      main {
+        max-width: 48rem;
+        margin: 0 auto;
+      }
+      .row {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>clotho</h1>
+      <div id="stage"></div>
+
+      <!-- Driving the player from outside its own controls. -->
+      <div class="row">
+        <button id="seek-start" type="button">Seek 0s</button>
+        <button id="seek-mid" type="button">Seek 3s</button>
+        <button id="slow" type="button">0.5x</button>
+        <button id="fast" type="button">2x</button>
+        <span id="readout"></span>
+      </div>
+    </main>
+
+    <script type="module">
+      import { parseDocumentOrThrow } from '../src/core/index.ts';
+      import { mountPlayer } from '../src/dom/index.ts';
+
+      const json = await (await fetch('./shared/document.json')).json();
+      const doc = parseDocumentOrThrow(json);
+
+      const handle = mountPlayer(document.querySelector('#stage'), doc);
+      const { player } = handle;
+
+      const readout = document.querySelector('#readout');
+      player.subscribe((state) => {
+        readout.textContent = `${(state.time / 1000).toFixed(1)}s · chapter ${state.chapterIndex + 1} · ${state.speed}x`;
+      });
+
+      document.querySelector('#seek-start').onclick = () => player.seek(0);
+      document.querySelector('#seek-mid').onclick = () => player.seek(3000);
+      document.querySelector('#slow').onclick = () => player.setSpeed(0.5);
+      document.querySelector('#fast').onclick = () => player.setSpeed(2);
+    </script>
+  </body>
+</html>

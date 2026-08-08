@@ -4,3 +4,6 @@ node_modules
 tests/fixtures
 bun.lock
 *.md
+
+# Generated from the zod schema; prettier would reformat it and break schema:check.
+schema

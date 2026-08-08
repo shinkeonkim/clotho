@@ -1,0 +1,126 @@
+{
+  "clothoVersion": 1,
+  "id": "handshake",
+  "title": "TCP handshake",
+  "description": "Three-way handshake between a client and a server",
+  "category": "protocol",
+  "tags": ["tcp", "network"],
+  "duration": 6000,
+  "canvas": { "width": 640, "height": 260, "background": "transparent" },
+  "settings": { "loop": true, "autoplay": true, "showCaption": true, "showChapterList": false },
+  "elements": [
+    {
+      "type": "rect",
+      "id": "client",
+      "x": 40,
+      "y": 90,
+      "width": 130,
+      "height": 70,
+      "fill": "#e0e7ff",
+      "stroke": "#6366f1",
+      "label": "Client",
+      "labelSize": 16,
+      "appearances": [{ "start": 0, "end": 6000 }]
+    },
+    {
+      "type": "rect",
+      "id": "server",
+      "x": 470,
+      "y": 90,
+      "width": 130,
+      "height": 70,
+      "fill": "#e0e7ff",
+      "stroke": "#6366f1",
+      "label": "Server",
+      "labelSize": 16,
+      "appearances": [{ "start": 0, "end": 6000 }]
+    },
+    {
+      "type": "arrow",
+      "id": "syn",
+      "fromId": "client",
+      "toId": "server",
+      "fromAnchor": "right",
+      "toAnchor": "left",
+      "headEnd": "arrow",
+      "stroke": "#16a34a",
+      "label": "SYN",
+      "labelOffsetY": -8,
+      "curvature": -30,
+      "appearances": [{ "start": 200, "end": 6000, "entryMode": "fade", "entryDuration": 300 }]
+    },
+    {
+      "type": "arrow",
+      "id": "synack",
+      "fromId": "server",
+      "toId": "client",
+      "fromAnchor": "left",
+      "toAnchor": "right",
+      "headEnd": "arrow",
+      "stroke": "#d97706",
+      "label": "SYN-ACK",
+      "labelOffsetY": 18,
+      "appearances": [{ "start": 2200, "end": 6000, "entryMode": "fade", "entryDuration": 300 }]
+    },
+    {
+      "type": "arrow",
+      "id": "ack",
+      "fromId": "client",
+      "toId": "server",
+      "fromAnchor": "right",
+      "toAnchor": "left",
+      "headEnd": "arrow",
+      "stroke": "#16a34a",
+      "label": "ACK",
+      "labelOffsetY": -8,
+      "curvature": 30,
+      "appearances": [{ "start": 4200, "end": 6000, "entryMode": "fade", "entryDuration": 300 }]
+    },
+    {
+      "type": "text",
+      "id": "caption",
+      "x": 320,
+      "y": 40,
+      "content": "1. SYN",
+      "fontSize": 18,
+      "fontWeight": 700,
+      "textAnchor": "middle",
+      "appearances": [{ "start": 0, "end": 6000 }],
+      "tracks": [
+        {
+          "property": "content",
+          "keyframes": [
+            { "time": 0, "value": "1. SYN" },
+            { "time": 2200, "value": "2. SYN-ACK" },
+            { "time": 4200, "value": "3. ACK — connection established" }
+          ]
+        }
+      ]
+    }
+  ],
+  "chapters": [
+    { "id": "c1", "time": 0, "label": "SYN", "subtitle": "Client opens" },
+    { "id": "c2", "time": 2200, "label": "SYN-ACK", "subtitle": "Server answers" },
+    { "id": "c3", "time": 4200, "label": "ACK", "subtitle": "Established" }
+  ],
+  "effects": [
+    {
+      "type": "flow",
+      "id": "f1",
+      "elementId": "syn",
+      "time": 200,
+      "duration": 2000,
+      "particles": 3
+    },
+    {
+      "type": "flow",
+      "id": "f2",
+      "elementId": "synack",
+      "time": 2200,
+      "duration": 2000,
+      "particles": 3
+    },
+    { "type": "pulse", "id": "p1", "elementId": "server", "time": 2000, "duration": 600 },
+    { "type": "pulse", "id": "p2", "elementId": "client", "time": 4000, "duration": 600 }
+  ]
+}

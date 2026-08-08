@@ -84,8 +84,93 @@ export function validateDocument(value: unknown): ValidationResult {
   checkParentLinks(doc, findings);
   checkTemporalBounds(doc, findings);
   checkAssets(doc, findings);
+  checkUnknownProperties(value, doc, findings);
 
   return summarize(findings, doc);
+}
+
+/**
+ * Report properties the schema does not define.
+ *
+ * zod strips unknown keys, which means an author can write a property that does
+ * absolutely nothing and never hear about it. That is not hypothetical: the 383
+ * documents this package was extracted from contain 22 `line.label`s (only `arrow`
+ * has a label), 18 `circle.subtitle`s (only `rect` does), 7 `arrow.arrowEnd`s
+ * (the field is `headEnd`), 37 `rect.strokeDasharray`s, and 182 `effect.delay`s —
+ * every one of them silently discarded for years.
+ *
+ * Warnings rather than errors: an unknown property is inert, so the document still
+ * renders. But the author asked for something and did not get it, and that deserves
+ * to be said out loud.
+ */
+function checkUnknownProperties(raw: unknown, doc: AnimationDocument, findings: Finding[]): void {
+  if (typeof raw !== 'object' || raw === null) return;
+  const input = raw as Record<string, unknown>;
+
+  compareKeys(input, doc as unknown as Record<string, unknown>, '', findings);
+
+  const rawElements = Array.isArray(input.elements) ? input.elements : [];
+  rawElements.forEach((rawElement, index) => {
+    const parsedElement = doc.elements[index];
+    if (!parsedElement || typeof rawElement !== 'object' || rawElement === null) return;
+    compareKeys(
+      rawElement as Record<string, unknown>,
+      parsedElement as unknown as Record<string, unknown>,
+      `elements.${index}`,
+      findings,
+      parsedElement.type,
+    );
+  });
+
+  const rawEffects = Array.isArray(input.effects) ? input.effects : [];
+  rawEffects.forEach((rawEffect, index) => {
+    const parsedEffect = doc.effects[index];
+    if (!parsedEffect || typeof rawEffect !== 'object' || rawEffect === null) return;
+    compareKeys(
+      rawEffect as Record<string, unknown>,
+      parsedEffect as unknown as Record<string, unknown>,
+      `effects.${index}`,
+      findings,
+      parsedEffect.type,
+    );
+  });
+
+  const rawChapters = Array.isArray(input.chapters) ? input.chapters : [];
+  rawChapters.forEach((rawChapter, index) => {
+    const parsedChapter = doc.chapters[index];
+    if (!parsedChapter || typeof rawChapter !== 'object' || rawChapter === null) return;
+    compareKeys(
+      rawChapter as Record<string, unknown>,
+      parsedChapter as unknown as Record<string, unknown>,
+      `chapters.${index}`,
+      findings,
+    );
+  });
+}
+
+/** Legacy envelope keys that migration replaces; not worth warning about. */
+const MIGRATION_ARTIFACTS = new Set(['version', 'childIds', 'src']);
+
+function compareKeys(
+  raw: Record<string, unknown>,
+  parsed: Record<string, unknown>,
+  path: string,
+  findings: Finding[],
+  kind?: string,
+): void {
+  for (const key of Object.keys(raw)) {
+    if (key in parsed) continue;
+    if (MIGRATION_ARTIFACTS.has(key)) continue;
+    const where = path === '' ? key : `${path}.${key}`;
+    const subject = kind ? `"${kind}"` : 'the document';
+    findings.push(
+      warning(
+        'unknown-property',
+        where,
+        `${subject} has no property "${key}"; it is ignored — check for a typo or a field that belongs on another type`,
+      ),
+    );
+  }
 }
 
 function isLegacyEnvelope(value: unknown): boolean {
