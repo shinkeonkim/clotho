@@ -9,4 +9,5 @@ dist
 .idea
 *.log
 examples/out
+examples/gallery/out
 .migrated

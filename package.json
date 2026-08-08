@@ -74,6 +74,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "gallery": "bun examples/gallery/index.html",
+    "gallery:build": "bun examples/gallery/build.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
@@ -88,6 +90,7 @@
     "schema:check": "bun scripts/generate-json-schema.ts --check",
     "check:legacy-equivalence": "bun scripts/verify-legacy-equivalence.ts",
     "check:svg-wellformed": "bun scripts/verify-svg-wellformed.ts",
+    "audit:editor": "bun scripts/audit-editor-coverage.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

@@ -1,0 +1,211 @@
+<!doctype html>
+<!--
+  The gallery. `bun examples/gallery/index.html`, then open the URL it prints.
+
+  Every document from documents.ts, each with its own player, plus a filmstrip view
+  that lays nine frames of a timeline side by side. The filmstrip is the part worth
+  having: playing an animation shows you one instant at a time, so a timing mistake in
+  the middle of a four-second clip is easy to miss and obvious in a strip.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>clotho — gallery</title>
+    <link rel="stylesheet" href="../../src/styles/clotho.css" />
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      body {
+        margin: 0;
+        padding: 2rem 1.5rem 6rem;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: var(--cloth-surface);
+        color: var(--cloth-fg);
+        line-height: 1.55;
+      }
+      main {
+        max-width: 62rem;
+        margin: 0 auto;
+      }
+      header h1 {
+        margin: 0 0 0.25rem;
+        font-size: 1.6rem;
+      }
+      header p {
+        margin: 0 0 1.5rem;
+        color: var(--cloth-fg-muted, #64748b);
+      }
+      nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 2rem;
+      }
+      nav a {
+        font-size: 0.82rem;
+        padding: 0.25rem 0.6rem;
+        border: 1px solid var(--cloth-border, #cbd5e1);
+        border-radius: 999px;
+        text-decoration: none;
+        color: inherit;
+      }
+      section {
+        margin-bottom: 3.5rem;
+        scroll-margin-top: 1rem;
+      }
+      section > h2 {
+        margin: 0 0 0.2rem;
+        font-size: 1.1rem;
+      }
+      .note {
+        margin: 0 0 0.9rem;
+        font-size: 0.88rem;
+        color: var(--cloth-fg-muted, #64748b);
+      }
+      .toolbar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin: 0.6rem 0 0;
+        font-size: 0.8rem;
+        color: var(--cloth-fg-muted, #64748b);
+      }
+      button.toggle {
+        font: inherit;
+        padding: 0.15rem 0.55rem;
+        border: 1px solid var(--cloth-border, #cbd5e1);
+        border-radius: 6px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+      }
+      .filmstrip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+      .filmstrip[hidden] {
+        display: none;
+      }
+      .frame {
+        border: 1px solid var(--cloth-border, #cbd5e1);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--cloth-surface-subtle, #f8fafc);
+      }
+      .frame figcaption {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.45rem;
+        color: var(--cloth-fg-muted, #64748b);
+        border-top: 1px solid var(--cloth-border, #cbd5e1);
+      }
+      .frame svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .fail {
+        border: 1px solid #dc2626;
+        border-radius: 8px;
+        padding: 0.75rem;
+        color: #dc2626;
+        font-family: ui-monospace, monospace;
+        font-size: 0.8rem;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>clotho gallery</h1>
+        <p>
+          One document per capability. Each plays with its own controls; “frames” lays the whole
+          timeline out at once. If a section shows a red box, that document failed to parse — which
+          is what this page is for.
+        </p>
+      </header>
+      <nav id="nav"></nav>
+      <div id="sections"></div>
+    </main>
+
+    <script type="module">
+      import { GALLERY } from './documents.ts';
+      import { parseDocument } from '../../src/core/index.ts';
+      import { mountPlayer } from '../../src/dom/index.ts';
+      import { renderDocumentToSvg } from '../../src/svg/index.ts';
+
+      const nav = document.querySelector('#nav');
+      const sections = document.querySelector('#sections');
+      const FRAMES = 9;
+
+      for (const entry of GALLERY) {
+        const link = document.createElement('a');
+        link.href = `#${entry.slug}`;
+        link.textContent = entry.title;
+        nav.append(link);
+
+        const section = document.createElement('section');
+        section.id = entry.slug;
+        section.innerHTML = `<h2>${entry.title}</h2><p class="note">${entry.note}</p>`;
+        sections.append(section);
+
+        // Parsing here rather than at module load so one bad document reports itself
+        // instead of blanking the page.
+        const result = parseDocument(entry.doc);
+        if (!result.ok) {
+          const box = document.createElement('div');
+          box.className = 'fail';
+          box.textContent = result.issues.map((i) => `${i.path}: ${i.message}`).join('\n');
+          section.append(box);
+          continue;
+        }
+        const doc = result.document;
+        const options = entry.assetResolver ? { assetResolver: entry.assetResolver } : {};
+
+        const stage = document.createElement('div');
+        section.append(stage);
+        mountPlayer(stage, doc, options);
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'toolbar';
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'toggle';
+        toggle.textContent = 'frames';
+        toolbar.append(
+          toggle,
+          document.createTextNode(`${doc.duration} ms · ${doc.elements.length} elements`),
+        );
+        section.append(toolbar);
+
+        const strip = document.createElement('div');
+        strip.className = 'filmstrip';
+        strip.hidden = true;
+        section.append(strip);
+
+        toggle.addEventListener('click', () => {
+          strip.hidden = !strip.hidden;
+          // Built on first reveal: nine SVG serializations per document is real work,
+          // and most visitors never open most strips.
+          if (!strip.hidden && strip.childElementCount === 0) {
+            for (let i = 0; i < FRAMES; i += 1) {
+              const time = Math.round((doc.duration * i) / (FRAMES - 1));
+              const figure = document.createElement('figure');
+              figure.className = 'frame';
+              figure.style.margin = '0';
+              figure.innerHTML = `${renderDocumentToSvg(doc, time, options)}<figcaption>${time} ms</figcaption>`;
+              strip.append(figure);
+            }
+          }
+        });
+      }
+    </script>
+  </body>
+</html>
