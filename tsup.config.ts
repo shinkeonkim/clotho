@@ -3,7 +3,10 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: {
     'core/index': 'src/core/index.ts',
+    'svg/index': 'src/svg/index.ts',
+    'dom/index': 'src/dom/index.ts',
     'react/index': 'src/react/index.ts',
+    'vue/index': 'src/vue/index.ts',
     'node/index': 'src/node/index.ts',
     'cli/index': 'src/cli/index.ts',
   },
@@ -14,7 +17,7 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   splitting: true,
-  // The stylesheet ships as-is; consumers import "clotho/styles.css".
+  // The stylesheet is copied verbatim to dist/clotho.css ("@shinkeonkim/clotho/styles.css").
   publicDir: 'src/styles',
-  external: ['react', 'react-dom', 'react/jsx-runtime'],
+  external: ['react', 'react-dom', 'react/jsx-runtime', 'vue'],
 });

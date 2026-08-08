@@ -1,7 +1,14 @@
-// Public entry for the framework-agnostic core: schema, runtime, timing,
-// geometry, theme, validation, migration. Nothing here may import React, the
-// DOM, or node: modules — see docs/ARCHITECTURE.md §1.
+// Public entry for the framework-agnostic core: schema, runtime, scene graph,
+// timing, player controller, geometry, theme, text/encoding, assets, validation,
+// migration.
 //
-// Populated by TASKS 1.1–1.6.
+// Nothing here may import a framework or touch a host global — every adapter
+// (react/vue/dom/svg) sits on top of this, so a leak here is inherited by all of
+// them. Enforced by `bun run check:core-purity`. See docs/ARCHITECTURE.md §1.
+//
+// Populated by TASKS 1.x–3.x.
 
 export const VERSION = '0.0.0';
+
+/** clotho document format version emitted by this build (docs/SCHEMA-V1.md). */
+export const FORMAT_VERSION = 1;
