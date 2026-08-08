@@ -49,6 +49,28 @@
     "./schema.json": "./schema/clotho-1.schema.json",
     "./package.json": "./package.json"
   },
+  "main": "./dist/core/index.js",
+  "module": "./dist/core/index.js",
+  "types": "./dist/core/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "svg": [
+        "./dist/svg/index.d.ts"
+      ],
+      "dom": [
+        "./dist/dom/index.d.ts"
+      ],
+      "react": [
+        "./dist/react/index.d.ts"
+      ],
+      "vue": [
+        "./dist/vue/index.d.ts"
+      ],
+      "node": [
+        "./dist/node/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
