@@ -5,20 +5,50 @@
 
 ---
 
-## 0. 전제 조건
+## 0. 전제 조건과 검증된 사실
 
 | 조건 | 상태 |
 | --- | --- |
 | 383개 문서가 v1으로 무손실 변환 | ✅ 검증 완료 (13,116 프레임 렌더 동등) |
-| clotho가 설치 가능 | ⛔ **`@shinkeonkim/clotho` 배포 필요 (TASKS 6.7)** |
+| 소비처에서 clotho가 해석·동작 | ✅ **검증 완료** (아래) |
 | 두 저장소 clean 상태 | ✅ 확인 (master / main, 미커밋 0건) |
+| 실제 적용 | ⛔ 아래 §0.2의 결정 필요 |
 
-배포 전에는 로컬 링크로 검증할 수 있다:
+### 0.1 로컬 링크는 동작한다 (검증 완료)
 
-```jsonc
-// 소비처 package.json
-"@shinkeonkim/clotho": "file:../clotho"
+배포를 기다리지 않고 검증할 수 있다. `shinkeonkim.github.io`에서 실제로 확인했다:
+
+```bash
+bun install
+bun add "@shinkeonkim/clotho@file:../.."     # .private 안에서의 상대 경로
 ```
+
+`parseDocument` / `computeSnapshot` / `buildScene` / `renderDocumentToSvg` /
+`clotho/node`의 로더가 모두 해석되고 실행됐으며 타입도 통과했다. CLI 빈(`clotho`)도
+함께 링크된다. 검증 후 저장소는 원상 복구했다(브랜치 삭제, 추적 파일 복원).
+
+### 0.2 결정이 필요한 지점: Studio와 뷰어는 함께 움직여야 한다
+
+처음에는 뷰어만 먼저 옮기고 dev-only Studio는 나중에(Phase 8) 옮기려 했으나,
+조사 결과 그것이 **불가능**하다:
+
+- Studio는 `animationDefSchema`로 문서를 **저장**한다
+  (`state/internals.ts`, `studio-save-load.ts`, `api/animations/*`).
+- 뷰어만 v1으로 옮기면 Studio가 v4를 저장하고 사이트가 그것을 읽지 못한다.
+  작성 워크플로가 끊긴다.
+- Studio의 그룹 로직은 `childIds`에 **런타임 결합**돼 있다
+  (`studio-groups.ts` 6곳, `properties.ts` 3곳, `state/elements.ts` 2곳).
+  v1은 `parentId`이므로 이 부분은 재작성이지 import 치환이 아니다.
+
+따라서 선택지는 둘이다:
+
+| 선택 | 내용 | 규모 |
+| --- | --- | --- |
+| **A** | Studio 그룹 로직을 제자리에서 v1으로 재작성하고 뷰어와 함께 전환 | 그룹 로직 약 200줄 + 뷰어 전환 |
+| **B** | Phase 8(clotho-editor 이식)을 먼저 끝내고 소비처에서 Studio를 제거한 뒤 전환 | 약 9,000 LOC 이식이 선행 |
+
+A는 곧 다른 저장소로 옮겨갈 코드를 고치는 중복 작업이지만 빠르다.
+B는 중복이 없지만 Phase 8 완료가 선행 조건이다.
 
 전환은 **반드시 브랜치에서** 한다. 두 저장소 모두 기본 브랜치에 있다.
 

@@ -193,9 +193,17 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   - oh-my-blog: 엔진 import 27곳 + studio 1곳. 심볼은 스키마 타입·런타임·플레이어뿐
   - shinkeonkim.github.io: 엔진 import 30곳. 그중 25곳이 Studio
   - **결론: 양쪽 다 import 경로 치환이 대부분.** 심볼 대응표를 MIGRATION.md에 작성
-- [ ] **7.2** `oh-my-blog` 적용 — **6.7 배포 대기** (설치 가능해야 빌드 검증이 된다)
-- [ ] **7.3** `shinkeonkim.github.io` 적용 — **6.7 배포 대기**
-  - Studio 25곳이 얽혀 있어 Phase 8과 함께 진행해야 한다
+- [x] **7.1c** 로컬 링크 검증 — 배포 없이 소비처에서 동작함을 확인
+  - `shinkeonkim.github.io`에 `file:../..`로 링크 후 `parseDocument`/`computeSnapshot`/
+    `buildScene`/`renderDocumentToSvg`/`clotho/node` 로더 모두 해석·실행·타입 통과
+  - 검증 후 저장소 원상 복구 (브랜치 삭제, 추적 파일 복원, 미커밋 0건)
+- [ ] **7.2** `oh-my-blog` 적용 — **선행 결정 필요** (MIGRATION.md §0.2)
+- [ ] **7.3** `shinkeonkim.github.io` 적용 — **선행 결정 필요**
+  - 조사 결과 뷰어만 먼저 옮기는 것이 **불가능**하다: Studio가 문서를 저장하므로
+    뷰어만 v1으로 가면 Studio가 v4를 쓰고 사이트가 못 읽어 작성 워크플로가 끊긴다.
+    Studio 그룹 로직은 `childIds`에 런타임 결합(11곳)돼 있어 재작성이 필요하다
+  - 선택 A: Studio 그룹 로직을 제자리에서 v1으로 고치고 함께 전환 (약 200줄 + 뷰어)
+  - 선택 B: Phase 8 이식을 먼저 끝내고 소비처에서 Studio 제거 후 전환 (약 9,000 LOC 선행)
 - [ ] **7.4** 양쪽 시각 회귀 최종 확인 — 7.2/7.3 이후
 
 ## Phase 8 — clotho-editor 분리 (별도 저장소)
