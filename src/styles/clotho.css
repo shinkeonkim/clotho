@@ -1,0 +1,39 @@
+/*
+ * clotho stylesheet — ships as `clotho/styles.css`.
+ *
+ * The engine emits stable class names (.anim-engine, .anim-stage-frame,
+ * .anim-caption, .anim-step-list, .anim-wrapper-*, .anim-modal-*) whose styles
+ * currently live in each consuming app's global CSS. They move here in TASKS 3.1.
+ *
+ * Theme tokens are declared up front so the renderer can reference them from
+ * day one; consumers override them on any ancestor.
+ */
+
+:root {
+  --clotho-fg: #18181b;
+  --clotho-muted: #71717a;
+  --clotho-surface: #ffffff;
+  --clotho-mat: #f4f4f5;
+  --clotho-border: #e4e4e7;
+  --clotho-accent: #6366f1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-clotho-theme='light']) {
+    --clotho-fg: #fafafa;
+    --clotho-muted: #a1a1aa;
+    --clotho-surface: #18181b;
+    --clotho-mat: #27272a;
+    --clotho-border: #3f3f46;
+    --clotho-accent: #a5b4fc;
+  }
+}
+
+:root[data-clotho-theme='dark'] {
+  --clotho-fg: #fafafa;
+  --clotho-muted: #a1a1aa;
+  --clotho-surface: #18181b;
+  --clotho-mat: #27272a;
+  --clotho-border: #3f3f46;
+  --clotho-accent: #a5b4fc;
+}

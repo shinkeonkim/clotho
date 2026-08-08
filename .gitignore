@@ -1,0 +1,10 @@
+USER_REQUEST.md
+.private
+
+node_modules
+dist
+*.tsbuildinfo
+
+.DS_Store
+.idea
+*.log
