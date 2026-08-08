@@ -248,7 +248,9 @@ describe('adapter equivalence', () => {
     const markerIds = (markup: string) =>
       [...markup.matchAll(/<marker[^>]*id="([^"]+)"/g)].map((m) => m[1]).sort();
     const expected = markerIds(svgMarkup);
-    expect(expected).toEqual(['cloth-h-arrow', 'cloth-h-circle']);
+    // Ids carry the connector's color: markers bake it in rather than inheriting via
+    // currentColor, which does not reach into a <marker> from the referencing element.
+    expect(expected).toEqual(['cloth-h-arrow-6366f1', 'cloth-h-circle-6366f1']);
     expect(markerIds(reactMarkup)).toEqual(expected);
     expect(markerIds(vueMarkup)).toEqual(expected);
   });

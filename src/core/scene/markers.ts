@@ -10,8 +10,17 @@
 //   - only the markers a frame actually references are emitted, instead of all
 //     thirteen on every stage
 //
-// Markers fill with `currentColor`, so a connector sets CSS `color` to its stroke
-// and its heads follow. That indirection is why `SceneStyle` carries `color`.
+// Markers carry their color directly rather than inheriting it.
+//
+// Legacy filled them with `currentColor` and set CSS `color` on the connector's `<g>`,
+// which does not work: `currentColor` inside a `<marker>` resolves against the marker's
+// own ancestors (`<defs>` → `<svg>`), not against the element referencing it. Every
+// arrowhead therefore rendered in the page's default text color instead of its line's —
+// verified in Chrome on a real page, where a `#94a3b8` arrow drew a near-black head.
+//
+// It fails the same way in the svg-string adapter, where a standalone file has no
+// inherited color at all. So the color is baked into the marker and its id, and
+// connectors of different colors get different markers.
 
 import type { ArrowHead } from '../schema/primitives';
 import { compactAttrs, type SceneDef, type SceneNode } from './nodes';
@@ -25,19 +34,19 @@ interface MarkerSpec {
   readonly height: number;
   /** Whether a `-start` variant exists (heads that point along the path). */
   readonly directional: boolean;
-  readonly children: readonly SceneNode[];
+  readonly children: readonly ShapeBuilder[];
 }
 
-function path(d: string, filled: boolean): SceneNode {
-  return {
+type ShapeBuilder = (color: string) => SceneNode;
+
+function path(d: string, filled: boolean): ShapeBuilder {
+  return (color) => ({
     kind: 'path',
     key: 'shape',
     attrs: compactAttrs(
-      filled
-        ? { d, fill: 'currentColor' }
-        : { d, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.5 },
+      filled ? { d, fill: color } : { d, fill: 'none', stroke: color, 'stroke-width': 1.5 },
     ),
-  };
+  });
 }
 
 const TRIANGLE_FILLED = 'M 0 0 L 10 5 L 0 10 z';
@@ -72,11 +81,11 @@ const SPECS: Record<Exclude<ArrowHead, 'none'>, MarkerSpec> = {
     height: 6,
     directional: false,
     children: [
-      {
+      (color) => ({
         kind: 'circle',
         key: 'shape',
-        attrs: compactAttrs({ cx: 5, cy: 5, r: 4, fill: 'currentColor' }),
-      },
+        attrs: compactAttrs({ cx: 5, cy: 5, r: 4, fill: color }),
+      }),
     ],
   },
   'circle-open': {
@@ -85,21 +94,21 @@ const SPECS: Record<Exclude<ArrowHead, 'none'>, MarkerSpec> = {
     height: 7,
     directional: false,
     children: [
-      {
+      (color) => ({
         kind: 'circle',
         key: 'shape',
-        // Legacy fills this white rather than with a theme token; keeping it means
-        // an open circle head stays readable on a dark stage, where `transparent`
-        // would let the line show through the middle.
+        // Legacy fills this white rather than with a theme token; keeping it means an
+        // open circle head stays readable on a dark stage, where `transparent` would let
+        // the line show through the middle.
         attrs: compactAttrs({
           cx: 5,
           cy: 5,
           r: 4,
           fill: 'white',
-          stroke: 'currentColor',
+          stroke: color,
           'stroke-width': 1.5,
         }),
-      },
+      }),
     ],
   },
   diamond: { refX: 9, width: 8, height: 8, directional: true, children: [path(DIAMOND, true)] },
@@ -109,16 +118,11 @@ const SPECS: Record<Exclude<ArrowHead, 'none'>, MarkerSpec> = {
     height: 8,
     directional: true,
     children: [
-      {
+      (color) => ({
         kind: 'path',
         key: 'shape',
-        attrs: compactAttrs({
-          d: DIAMOND,
-          fill: 'white',
-          stroke: 'currentColor',
-          'stroke-width': 1.5,
-        }),
-      },
+        attrs: compactAttrs({ d: DIAMOND, fill: 'white', stroke: color, 'stroke-width': 1.5 }),
+      }),
     ],
   },
   bar: {
@@ -127,40 +131,70 @@ const SPECS: Record<Exclude<ArrowHead, 'none'>, MarkerSpec> = {
     height: 10,
     directional: true,
     children: [
-      {
+      (color) => ({
         kind: 'rect',
         key: 'shape',
-        attrs: { x: 4, y: 0, width: 2, height: 10, fill: 'currentColor' },
-      },
+        attrs: compactAttrs({ x: 4, y: 0, width: 2, height: 10, fill: color }),
+      }),
     ],
   },
 };
 
 export type MarkerEnd = 'start' | 'end';
 
+/** Fallback when a connector has no stroke of its own. */
+export const DEFAULT_MARKER_COLOR = '#6366f1';
+
+/**
+ * Turn a color into something usable inside an element id.
+ *
+ * Colors reach here as authored: `#6366f1`, `rgb(1,2,3)`, `var(--brand)`. Only
+ * `[A-Za-z0-9-]` survives, which keeps ids valid without needing to parse color syntax.
+ */
+function colorToken(color: string): string {
+  const token = color
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return token || 'default';
+}
+
 /** Marker element id for a head, or undefined when nothing should be drawn. */
-export function markerId(head: ArrowHead | undefined, end: MarkerEnd): string | undefined {
+export function markerId(
+  head: ArrowHead | undefined,
+  end: MarkerEnd,
+  color: string = DEFAULT_MARKER_COLOR,
+): string | undefined {
   if (!head || head === 'none') return undefined;
   const spec = SPECS[head];
   if (!spec) return undefined;
-  if (!spec.directional) return `${MARKER_ID_PREFIX}-${head}`;
-  return end === 'start' ? `${MARKER_ID_PREFIX}-${head}-start` : `${MARKER_ID_PREFIX}-${head}`;
+  const suffix = colorToken(color);
+  if (!spec.directional) return `${MARKER_ID_PREFIX}-${head}-${suffix}`;
+  return end === 'start'
+    ? `${MARKER_ID_PREFIX}-${head}-start-${suffix}`
+    : `${MARKER_ID_PREFIX}-${head}-${suffix}`;
 }
 
 /** `url(#…)` reference for a `marker-start` / `marker-end` attribute. */
-export function markerUrl(head: ArrowHead | undefined, end: MarkerEnd): string | undefined {
-  const id = markerId(head, end);
+export function markerUrl(
+  head: ArrowHead | undefined,
+  end: MarkerEnd,
+  color?: string,
+): string | undefined {
+  const id = markerId(head, end, color);
   return id === undefined ? undefined : `url(#${id})`;
 }
 
-function buildDef(head: Exclude<ArrowHead, 'none'>, end: MarkerEnd): SceneDef {
+function buildDef(head: Exclude<ArrowHead, 'none'>, end: MarkerEnd, color: string): SceneDef {
   const spec = SPECS[head];
   const isStart = spec.directional && end === 'start';
+  const id = markerId(head, end, color)!;
   return {
-    key: markerId(head, end)!,
+    key: id,
     kind: 'marker',
     attrs: compactAttrs({
-      id: markerId(head, end)!,
+      id,
       viewBox: '0 0 10 10',
       refX: isStart ? 1 : spec.refX,
       refY: 5,
@@ -169,7 +203,7 @@ function buildDef(head: Exclude<ArrowHead, 'none'>, end: MarkerEnd): SceneDef {
       // Non-directional heads (circles) must not rotate with the path.
       orient: spec.directional ? (isStart ? 'auto-start-reverse' : 'auto') : undefined,
     }),
-    children: spec.children,
+    children: spec.children.map((build) => build(color)),
   };
 }
 
@@ -179,25 +213,30 @@ function buildDef(head: Exclude<ArrowHead, 'none'>, end: MarkerEnd): SceneDef {
  * Emitting only what is referenced keeps the DOM small when a page holds several
  * stages, and means a document with no arrows produces no `<defs>` at all.
  */
-export function collectMarkerDefs(
-  used: Iterable<{ head: ArrowHead | undefined; end: MarkerEnd }>,
-): SceneDef[] {
+export interface MarkerUse {
+  readonly head: ArrowHead | undefined;
+  readonly end: MarkerEnd;
+  /** The connector's stroke. Different colors produce different markers. */
+  readonly color?: string;
+}
+
+export function collectMarkerDefs(used: Iterable<MarkerUse>): SceneDef[] {
   const byId = new Map<string, SceneDef>();
-  for (const { head, end } of used) {
+  for (const { head, end, color } of used) {
     if (!head || head === 'none' || !SPECS[head]) continue;
-    const def = buildDef(head, end);
+    const def = buildDef(head, end, color ?? DEFAULT_MARKER_COLOR);
     if (!byId.has(def.key)) byId.set(def.key, def);
   }
   return [...byId.values()].sort((a, b) => a.key.localeCompare(b.key));
 }
 
 /** Every marker definition, for hosts that would rather emit one shared `<defs>`. */
-export function allMarkerDefs(): SceneDef[] {
+export function allMarkerDefs(color: string = DEFAULT_MARKER_COLOR): SceneDef[] {
   const heads = Object.keys(SPECS) as Exclude<ArrowHead, 'none'>[];
   return collectMarkerDefs(
     heads.flatMap((head) => [
-      { head, end: 'start' as MarkerEnd },
-      { head, end: 'end' as MarkerEnd },
+      { head, end: 'start' as MarkerEnd, color },
+      { head, end: 'end' as MarkerEnd, color },
     ]),
   );
 }

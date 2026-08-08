@@ -179,8 +179,86 @@ describe('connectors', () => {
   });
 
   it('references only the markers it uses', () => {
-    const scene = buildScene(connected({ headEnd: 'arrow' }), 0);
-    expect(scene.defs.map((d) => d.key)).toEqual(['cloth-h-arrow']);
+    const scene = buildScene(connected({ headEnd: 'arrow', stroke: '#6366f1' }), 0);
+    expect(scene.defs.map((d) => d.key)).toEqual(['cloth-h-arrow-6366f1']);
+  });
+
+  // Markers bake in their color because `currentColor` inside a <marker> resolves
+  // against <defs>, not against the element referencing it — so a shared marker drew
+  // every arrowhead in the page's default text color.
+  it('gives connectors of different colors different markers', () => {
+    const scene = buildScene(
+      doc({
+        elements: [
+          {
+            type: 'arrow',
+            id: 'a',
+            x1: 0,
+            y1: 0,
+            x2: 1,
+            y2: 1,
+            headEnd: 'arrow',
+            stroke: '#ff0000',
+            appearances: ALWAYS,
+          },
+          {
+            type: 'arrow',
+            id: 'b',
+            x1: 0,
+            y1: 0,
+            x2: 1,
+            y2: 1,
+            headEnd: 'arrow',
+            stroke: '#00ff00',
+            appearances: ALWAYS,
+          },
+        ],
+      }),
+      0,
+    );
+    expect(scene.defs.map((d) => d.key).sort()).toEqual([
+      'cloth-h-arrow-00ff00',
+      'cloth-h-arrow-ff0000',
+    ]);
+  });
+
+  it('fills the marker with the connector stroke, not currentColor', () => {
+    const scene = buildScene(connected({ headEnd: 'arrow', stroke: '#123456' }), 0);
+    const shape = scene.defs[0]!.children[0]!;
+    expect(shape.attrs.fill).toBe('#123456');
+  });
+
+  it('shares one marker between connectors of the same color', () => {
+    const scene = buildScene(
+      doc({
+        elements: [
+          {
+            type: 'arrow',
+            id: 'a',
+            x1: 0,
+            y1: 0,
+            x2: 1,
+            y2: 1,
+            headEnd: 'arrow',
+            stroke: '#abc',
+            appearances: ALWAYS,
+          },
+          {
+            type: 'arrow',
+            id: 'b',
+            x1: 0,
+            y1: 0,
+            x2: 1,
+            y2: 1,
+            headEnd: 'arrow',
+            stroke: '#abc',
+            appearances: ALWAYS,
+          },
+        ],
+      }),
+      0,
+    );
+    expect(scene.defs).toHaveLength(1);
   });
 
   it('emits no defs when nothing has a head', () => {
@@ -518,13 +596,19 @@ describe('flow particles', () => {
 
 describe('markers', () => {
   it('names directional heads with a start variant', () => {
-    expect(markerId('arrow', 'end')).toBe('cloth-h-arrow');
-    expect(markerId('arrow', 'start')).toBe('cloth-h-arrow-start');
+    expect(markerId('arrow', 'end', '#f00')).toBe('cloth-h-arrow-f00');
+    expect(markerId('arrow', 'start', '#f00')).toBe('cloth-h-arrow-start-f00');
   });
 
   it('gives non-directional heads one id for both ends', () => {
-    expect(markerId('circle', 'start')).toBe('cloth-h-circle');
-    expect(markerId('circle', 'end')).toBe('cloth-h-circle');
+    expect(markerId('circle', 'start', '#f00')).toBe('cloth-h-circle-f00');
+    expect(markerId('circle', 'end', '#f00')).toBe('cloth-h-circle-f00');
+  });
+
+  it('makes an id-safe token from any color syntax', () => {
+    expect(markerId('arrow', 'end', 'rgb(1, 2, 3)')).toBe('cloth-h-arrow-rgb-1-2-3');
+    expect(markerId('arrow', 'end', 'var(--brand)')).toBe('cloth-h-arrow-var-brand');
+    expect(markerId('arrow', 'end', 'red')).toBe('cloth-h-arrow-red');
   });
 
   it('returns nothing for none or undefined', () => {
@@ -533,28 +617,28 @@ describe('markers', () => {
   });
 
   it('wraps ids in a url() reference', () => {
-    expect(markerUrl('diamond', 'end')).toBe('url(#cloth-h-diamond)');
+    expect(markerUrl('diamond', 'end', '#f00')).toBe('url(#cloth-h-diamond-f00)');
   });
 
   it('deduplicates and sorts collected defs', () => {
     const defs = collectMarkerDefs([
-      { head: 'arrow', end: 'end' },
-      { head: 'arrow', end: 'end' },
-      { head: 'bar', end: 'end' },
-      { head: 'none', end: 'end' },
-      { head: undefined, end: 'start' },
+      { head: 'arrow', end: 'end', color: '#f00' },
+      { head: 'arrow', end: 'end', color: '#f00' },
+      { head: 'bar', end: 'end', color: '#f00' },
+      { head: 'none', end: 'end', color: '#f00' },
+      { head: undefined, end: 'start', color: '#f00' },
     ]);
-    expect(defs.map((d) => d.key)).toEqual(['cloth-h-arrow', 'cloth-h-bar']);
+    expect(defs.map((d) => d.key)).toEqual(['cloth-h-arrow-f00', 'cloth-h-bar-f00']);
   });
 
   it('orients a start marker so it points back along the path', () => {
-    const [def] = collectMarkerDefs([{ head: 'arrow', end: 'start' }]);
+    const [def] = collectMarkerDefs([{ head: 'arrow', end: 'start', color: '#f00' }]);
     expect(def!.attrs.orient).toBe('auto-start-reverse');
     expect(def!.attrs.refX).toBe(1);
   });
 
   it('leaves non-directional markers unoriented', () => {
-    const [def] = collectMarkerDefs([{ head: 'circle', end: 'end' }]);
+    const [def] = collectMarkerDefs([{ head: 'circle', end: 'end', color: '#f00' }]);
     expect(def!.attrs.orient).toBeUndefined();
   });
 

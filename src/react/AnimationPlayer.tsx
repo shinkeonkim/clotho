@@ -5,7 +5,15 @@
 // speed slider, restart, chapter caption. What changed is where the logic lives — the
 // component now only observes the browser and renders.
 
-import { createElement, useCallback, useMemo, useRef, type ReactElement } from 'react';
+import {
+  createElement,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactElement,
+} from 'react';
 import type { AnimationDocument } from '../core/schema/document';
 import { buildScene } from '../core/scene/build';
 import type { SceneOptions } from '../core/scene/context';
@@ -64,14 +72,22 @@ export function AnimationPlayer({
   const reducedMotion = useReducedMotion();
   const inView = useInView(rootRef);
 
-  // The core decides the rule; the component only supplies the observations.
-  const shouldRun = effectivePlayback(state.playing, inView, reducedMotion);
-  if (shouldRun !== state.playing) {
-    // Reconciling during render would be a side effect; the player publishes
-    // asynchronously so this is safe to call from an event-free path.
-    if (shouldRun) player.play();
+  /**
+   * What the viewer asked for, tracked separately from whether the clock is running.
+   *
+   * Conflating the two breaks in both directions: scrolling away would look like the
+   * viewer pressing pause (so it never resumes), and pressing pause while off screen
+   * would be undone the moment it scrolls back. The DOM and Vue adapters keep the same
+   * split.
+   */
+  const [userWantsPlayback, setUserWantsPlayback] = useState(doc.settings.autoplay);
+
+  // Applying the rule in an effect, not during render: play/pause mutate the player and
+  // start a frame loop, which a render pass must not do.
+  useEffect(() => {
+    if (effectivePlayback(userWantsPlayback, inView, reducedMotion)) player.play();
     else player.pause();
-  }
+  }, [player, userWantsPlayback, inView, reducedMotion]);
 
   const scene = useMemo(() => buildScene(doc, state.time, options), [doc, state.time, options]);
 
@@ -111,7 +127,7 @@ export function AnimationPlayer({
               {
                 type: 'button',
                 className: CLASS.button,
-                onClick: () => player.toggle(),
+                onClick: () => setUserWantsPlayback((wanted) => !wanted),
                 title: state.playing ? strings.pause : strings.play,
                 'aria-label': state.playing ? strings.pause : strings.play,
               },
@@ -122,7 +138,10 @@ export function AnimationPlayer({
               {
                 type: 'button',
                 className: CLASS.button,
-                onClick: () => player.restart(),
+                onClick: () => {
+                  player.restart();
+                  setUserWantsPlayback(true);
+                },
                 title: strings.restart,
                 'aria-label': strings.restart,
               },

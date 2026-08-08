@@ -131,7 +131,11 @@ export function mountPlayer(
   restartButton.textContent = strings.restartIcon;
   restartButton.title = strings.restart;
   restartButton.setAttribute('aria-label', strings.restart);
-  restartButton.addEventListener('click', () => player.restart());
+  restartButton.addEventListener('click', () => {
+    player.restart();
+    userWantsPlayback = true;
+    applyPlayback();
+  });
   actions.append(restartButton);
 
   const speedLabel = document.createElement('label');

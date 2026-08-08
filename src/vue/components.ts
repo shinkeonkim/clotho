@@ -59,13 +59,17 @@ export const AnimationPlayer = defineComponent({
     const reducedMotion = ref(false);
 
     const apply = (): void => {
-      if (effectivePlayback(userWantsPlayback, inView.value, reducedMotion.value)) player.play();
-      else player.pause();
+      if (effectivePlayback(userWantsPlayback.value, inView.value, reducedMotion.value)) {
+        player.play();
+      } else {
+        player.pause();
+      }
     };
 
-    // Tracked separately from `state.playing`: the observers must not undo an
-    // explicit pause, and an explicit play must not survive going off screen.
-    let userWantsPlayback = state.value.playing;
+    // Tracked separately from `state.playing`: the observers must not undo an explicit
+    // pause, and an explicit play must not survive going off screen. Reactive so the
+    // control's label follows the intent rather than the clock.
+    const userWantsPlayback = ref(props.doc.settings.autoplay);
 
     let observer: IntersectionObserver | null = null;
     let media: MediaQueryList | null = null;
@@ -126,7 +130,7 @@ export const AnimationPlayer = defineComponent({
                 title: state.value.playing ? strings.value.pause : strings.value.play,
                 'aria-label': state.value.playing ? strings.value.pause : strings.value.play,
                 onClick: () => {
-                  userWantsPlayback = !state.value.playing;
+                  userWantsPlayback.value = !userWantsPlayback.value;
                   apply();
                 },
               },
@@ -139,7 +143,11 @@ export const AnimationPlayer = defineComponent({
                 class: CLASS.button,
                 title: strings.value.restart,
                 'aria-label': strings.value.restart,
-                onClick: () => player.restart(),
+                onClick: () => {
+                  player.restart();
+                  userWantsPlayback.value = true;
+                  apply();
+                },
               },
               strings.value.restartIcon,
             ),

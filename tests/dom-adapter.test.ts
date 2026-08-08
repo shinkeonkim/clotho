@@ -191,7 +191,7 @@ describe('patchScene', () => {
     const svg = svgElement();
     patchScene(svg, buildScene(doc, 0));
     const marker = svg.querySelector('marker');
-    expect(marker?.getAttribute('id')).toBe('cloth-h-arrow');
+    expect(marker?.getAttribute('id')).toBe('cloth-h-arrow-6366f1');
     patchScene(svg, buildScene(doc, 500));
     expect(svg.querySelectorAll('marker')).toHaveLength(1);
     expect(svg.querySelector('marker')).toBe(marker);

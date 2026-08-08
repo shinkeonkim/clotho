@@ -1,14 +1,17 @@
 // line and arrow → scene nodes. Ported from legacy render-elements/arrows.tsx.
 //
-// Both set CSS `color` to their stroke so their `currentColor`-filled markers match.
-// An unresolvable connector produces no node and a diagnostic, where legacy
-// returned null and said nothing.
+// Markers now carry their color rather than inheriting it (see scene/markers.ts), so
+// the connector passes its stroke when referencing one. CSS `color` is still set, which
+// costs nothing and keeps any host CSS that keyed off it working.
+//
+// An unresolvable connector produces no node and a diagnostic, where legacy returned
+// null and said nothing.
 
 import type { ArrowElement, LineElement } from '../../schema/elements';
 import type { ArrowHead } from '../../schema/primitives';
 import { curveControlPoint, resolveEndpoints, type Endpoints } from '../../geometry/anchors';
 import { resolveElementColor } from '../../theme/colors';
-import { markerUrl } from '../markers';
+import { markerUrl, type MarkerUse } from '../markers';
 import { compactAttrs, type SceneNode } from '../nodes';
 import type { ElementState, SceneContext } from '../context';
 import { report } from '../context';
@@ -69,8 +72,8 @@ export function buildLine(
       stroke,
       'stroke-width': num(state, 'strokeWidth'),
       'stroke-dasharray': str(state, 'strokeDasharray'),
-      'marker-start': markerUrl(head(state, 'headStart'), 'start'),
-      'marker-end': markerUrl(head(state, 'headEnd'), 'end'),
+      'marker-start': markerUrl(head(state, 'headStart'), 'start', stroke),
+      'marker-end': markerUrl(head(state, 'headEnd'), 'end', stroke),
     }),
     ...(stroke ? { style: { color: stroke } } : {}),
   };
@@ -102,8 +105,8 @@ export function buildArrow(
         stroke,
         'stroke-width': num(state, 'strokeWidth'),
         'stroke-dasharray': str(state, 'strokeDasharray'),
-        'marker-start': markerUrl(head(state, 'headStart'), 'start'),
-        'marker-end': markerUrl(head(state, 'headEnd'), 'end'),
+        'marker-start': markerUrl(head(state, 'headStart'), 'start', stroke),
+        'marker-end': markerUrl(head(state, 'headEnd'), 'end', stroke),
       }),
     },
   ];
@@ -135,16 +138,19 @@ export function buildArrow(
   };
 }
 
-/** Heads referenced by every connector in the document, for marker collection. */
-export function collectUsedHeads(
-  ctx: SceneContext,
-): { head: ArrowHead | undefined; end: 'start' | 'end' }[] {
-  const used: { head: ArrowHead | undefined; end: 'start' | 'end' }[] = [];
+/**
+ * Heads referenced by every connector, with the stroke each one is drawn in.
+ *
+ * The color travels with the head because markers bake it in — see scene/markers.ts.
+ */
+export function collectUsedHeads(ctx: SceneContext): MarkerUse[] {
+  const used: MarkerUse[] = [];
   for (const el of ctx.doc.elements) {
     if (el.type !== 'line' && el.type !== 'arrow') continue;
     const state = ctx.snapshot.get(el.id) ?? {};
-    used.push({ head: head(state, 'headStart'), end: 'start' });
-    used.push({ head: head(state, 'headEnd'), end: 'end' });
+    const color = str(state, 'stroke');
+    used.push({ head: head(state, 'headStart'), end: 'start', color });
+    used.push({ head: head(state, 'headEnd'), end: 'end', color });
   }
   return used;
 }
