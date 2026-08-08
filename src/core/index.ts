@@ -10,5 +10,4 @@
 
 export const VERSION = '0.0.0';
 
-/** clotho document format version emitted by this build (docs/SCHEMA-V1.md). */
-export const FORMAT_VERSION = 1;
+export * from './schema';

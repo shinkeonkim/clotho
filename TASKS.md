@@ -38,9 +38,12 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 1 — 코어 스키마 및 런타임
 
-- [ ] **1.1** v1 스키마 구현 — `primitives / elements / effects / assets / document`
+- [x] **1.1** v1 스키마 구현 — `primitives / elements / effects / assets / document`
   - legacy 포팅 + v1 변경 6종(`parentId`, `interpolate`, `assets`, `category`, `clothoVersion: 1`)
-  - shinkeonkim의 스키마 테스트 6종 이식 후 v1로 갱신
+  - `parseDocument` / `parseDocumentOrThrow` — 실패 시 이슈 목록을 반환값에 담는다
+    (legacy 로더는 `null`로 삼켜 대문자 id 애니메이션이 렌더되지 않는 채로 배포된 적이 있다)
+  - 383개 코퍼스가 v1 파서에 **거부되는지** 회귀로 고정 (마이그레이션 게이트)
+  - 코어 번들 11.9KB / gzip 3.1KB. `.d.ts`는 237KB(zod 추론 인라인) → 6.2에서 검토
 - [ ] **1.2** 런타임 포팅 — `computeSnapshot / activeAppearance / currentChapter / activeEffects`
   - 출처: `schema/runtime.ts` (양쪽 완전 동일) + `runtime.test.ts` 395줄
   - `interpolate` 명시값 지원 추가, `auto`는 기존 휴리스틱 유지

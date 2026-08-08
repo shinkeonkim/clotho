@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'bun:test';
 import { hasCorpus, loadCorpus, CORPUS_DIR } from './corpus';
+import { isLegacyDocument, parseDocument } from '../src/core/schema';
 
 const describeCorpus = hasCorpus() ? describe : describe.skip;
 
@@ -35,6 +36,22 @@ describeCorpus(`animation corpus (${CORPUS_DIR})`, () => {
   it('has filenames matching the document id', () => {
     for (const entry of entries) {
       expect((entry.json as { id: string }).id, `${entry.file}`).toBe(entry.id);
+    }
+  });
+
+  it('is recognized as legacy, not clotho v1', () => {
+    for (const entry of entries) {
+      expect(isLegacyDocument(entry.json), `${entry.id}`).toBe(true);
+    }
+  });
+
+  // The migration gate: legacy documents must not slip into the v1 runtime
+  // unparsed. TASKS 1.8 extends this to assert migrate() → parse succeeds for
+  // all of them, which is what makes the gate safe rather than merely closed.
+  it('is rejected by the v1 parser until migrated', () => {
+    for (const entry of entries) {
+      const result = parseDocument(entry.json);
+      expect(result.ok, `${entry.id} parsed as v1 without migration`).toBe(false);
     }
   });
 });
