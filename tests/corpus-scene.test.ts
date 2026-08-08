@@ -11,7 +11,7 @@
 // during development.
 
 import { describe, expect, it } from 'bun:test';
-import { CORPUS_DIR, hasCorpus, loadCorpus } from './corpus';
+import { CORPUS_DIR, corpusFormat, hasCorpus, loadCorpus } from './corpus';
 import { migrateLegacyDocument } from '../src/core/migrate/legacy';
 import { parseDocument } from '../src/core/schema';
 import { buildScene } from '../src/core/scene/build';
@@ -21,9 +21,17 @@ import type { AnimationDocument } from '../src/core/schema/document';
 
 const describeCorpus = hasCorpus() ? describe : describe.skip;
 
+/**
+ * Every corpus document as a v1 document, migrating first only if it needs it.
+ *
+ * The corpus may be legacy or already migrated; the scene graph is what is under test
+ * either way, so this normalizes rather than assuming.
+ */
 function documents(): { id: string; doc: AnimationDocument }[] {
+  const migrate = corpusFormat() === 'legacy';
   return loadCorpus().flatMap((entry) => {
-    const parsed = parseDocument(migrateLegacyDocument(entry.json).document);
+    const input = migrate ? migrateLegacyDocument(entry.json).document : entry.json;
+    const parsed = parseDocument(input);
     return parsed.ok ? [{ id: entry.id, doc: parsed.document }] : [];
   });
 }

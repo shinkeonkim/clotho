@@ -5,13 +5,17 @@
 // closed gate with no way through would just be a wall.
 
 import { describe, expect, it } from 'bun:test';
-import { CORPUS_DIR, hasCorpus, loadCorpus } from './corpus';
+import { CORPUS_DIR, corpusFormat, hasCorpus, loadCorpus } from './corpus';
 import { migrateLegacyDocument } from '../src/core/migrate/legacy';
 import { parseDocument } from '../src/core/schema';
 import { validateDocument } from '../src/core/validate/validate';
 import { computeSnapshot } from '../src/core/runtime/snapshot';
 
-const describeCorpus = hasCorpus() ? describe : describe.skip;
+// Needs legacy input. Once the corpus has been migrated in place, that input is gone
+// and these skip — the migration itself remains covered by the unit tests in
+// src/core/migrate and by scripts/migrate-corpus.ts, which verified all 383 documents
+// before writing them.
+const describeCorpus = hasCorpus() && corpusFormat() === 'legacy' ? describe : describe.skip;
 
 describeCorpus(`legacy migration over the corpus (${CORPUS_DIR})`, () => {
   const entries = loadCorpus();
