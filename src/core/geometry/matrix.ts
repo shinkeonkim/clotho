@@ -63,6 +63,20 @@ export function applyToPoint(m: Matrix, p: Point): Point {
 }
 
 /**
+ * Inverse transform, or null when the matrix is degenerate (zero scale).
+ *
+ * Needed to place a connector's endpoint: an arrow living inside one group but
+ * anchored to an element inside another resolves that endpoint in root space,
+ * then has to express it in its own local space.
+ */
+export function invert(m: Matrix): Matrix | null {
+  const [a, b, c, d, e, f] = m;
+  const det = a * d - b * c;
+  if (det === 0 || !Number.isFinite(det)) return null;
+  return [d / det, -b / det, -c / det, a / det, (c * f - d * e) / det, (b * e - a * f) / det];
+}
+
+/**
  * Compose a group's own transform: translate to its origin, then rotate about it.
  *
  * Rotating about the group origin rather than an arbitrary point is what makes a

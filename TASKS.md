@@ -55,18 +55,26 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   - `geometry/matrix`: SVG 6-값 아핀 행렬. 그룹 내부 요소를 가리키는 커넥터 앵커를
     루트 좌표로 풀기 위해 필요 (legacy는 그룹이 동작하지 않아 전부 절대 좌표였다)
   - **legacy에 구현이 없던 기능이라 전부 신규**
-- [ ] **1.4** 순수 유틸 포팅 — `clock / playback / ease / stage-geometry / theme-colors / focus-trap`
-  - 출처: oh-my-blog (테스트 포함)
-- [ ] **1.5** 페이즈 스타일 재작성 — `entryStyle / exitStyle`
-  - **CSS 문자열(px) 반환 → 구조화 transform 데이터로 변경** (어댑터 중립성 필수 조건)
-  - 출처: `phase-styles.ts` + `phase-styles.test.ts`
-- [ ] **1.6** 텍스트/인코딩 모듈 (Q6)
-  - `estimateTextWidth` — East Asian Width 기반. `code` 요소의 `fontSize * 0.6` 고정폭 버그 해소
-  - `escapeXmlText / escapeXmlAttr` — `/svg` 직렬화 필수
-  - `toBase64 / fromBase64` — `TextEncoder` 기반, Node·브라우저 공용
-  - `segmentGraphemes` — `Intl.Segmenter`
-  - 폰트 폴백 체인 기본값
-- [ ] **1.7** 에셋 모듈 (Q3) — `AssetResolver` 인터페이스, `inline/external/ref` 해석, `encodeImageAsset`
+- [x] **1.4** 순수 유틸 포팅 — `timing/clock · playback`, `geometry/stage`, `theme/colors`
+  - 출처: oh-my-blog (테스트 포함). `focus-trap`은 모달 전용이라 4.3으로 이동
+  - `geometry/anchors`: 앵커·커넥터 끝점 해석을 React 컴포넌트에서 분리.
+    **그룹 변환을 통과하도록 확장** (legacy는 좌표가 전부 절대라 필요 없었다)
+- [x] **1.5** 페이즈 스타일 재작성 — `entryStyle / exitStyle`
+  - **CSS 문자열(px) 반환 → `Matrix` 반환으로 변경.** SVG `transform` 속성은 px를
+    받지 않으므로 legacy 문자열은 svg/dom/vue 어댑터에서 재사용 불가였다
+  - 슬라이드 200단위·zoom 0.2·pop 0.4 등 수치는 그대로 유지 (383개의 시각 정체성)
+  - 중심점이 없는 요소(group/code)는 zoom을 페이드로 강등
+- [x] **1.6** 텍스트/인코딩 모듈 (Q6)
+  - `estimateMonospaceWidth` — EAW 기반. **legacy 버그 확인·수정**: `text.length`를
+    셌으므로 한글 `'가나'`를 14.4로 계산했으나 monospace 실폭은 28.8이다
+  - `escapeXmlText / escapeXmlAttr` + XML 1.0 금지 제어문자 제거
+  - `toBase64 / fromBase64` — `TextEncoder` 기반. 플랫폼 디코더와 일치 검증
+  - `segmentGraphemes` — `Intl.Segmenter`, 미지원 시 코드포인트 폴백
+  - CJK 계열을 명시한 폰트 폴백 체인 기본값
+- [x] **1.7** 에셋 모듈 (Q3) — `AssetResolver`, `inline/external/ref` 해석,
+  `encodeImageAsset` / `inlineAssetFromDataUri` / `sniffImageMime`
+  - 씬 빌드는 동기이므로 async 리졸버는 `prefetchAssets`로 선행 해석 → `pending` 보고
+  - 리졸버 예외는 에셋 단위로 격리
 - [ ] **1.8** 마이그레이터 — legacy v3/v4 → v1 (`clotho migrate`)
   - 출처: `migrate-animations-v3.mjs`(v2→v3) 참고, 신규 작성
   - **383개 무손실 변환 + 씬 그래프 동등성**을 회귀로 강제

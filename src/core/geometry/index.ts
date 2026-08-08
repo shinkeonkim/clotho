@@ -1,3 +1,5 @@
-// Pure geometry: affine transforms, stage sizing, anchor resolution.
+// Pure geometry: affine transforms, stage sizing, anchors.
 
 export * from './matrix';
+export * from './stage';
+export * from './anchors';
