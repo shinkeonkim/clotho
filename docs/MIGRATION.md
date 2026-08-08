@@ -112,10 +112,16 @@ bun scripts/migrate-corpus.ts --in-place
 | `packages/schema/src/animation.ts` | passthrough 봉투 검증 |
 | `apps/animation-api/src/animations/*` | 저장 시 검증 |
 
-### 절차
+### 절차 — **적용 완료** (브랜치 `feat/clotho`, 커밋 전)
+
+검증 결과: `packages/schema` **353 tests 통과 / typecheck 0 errors**,
+`packages/animation-studio` **typecheck 0 errors**, 나머지 워크스페이스는
+**기준선과 에러 수 동일**(web 48 / admin 13 / animation-api 24 — 전부 워크스페이스
+빌드 순서로 인한 기존 문제).
 
 ```bash
 git -C .private/oh-my-blog switch -c feat/clotho
+bun install
 ```
 
 1. **의존 추가** — `apps/web`, `apps/admin`, `packages/animation-studio`,
@@ -147,9 +153,30 @@ git -C .private/oh-my-blog switch -c feat/clotho
    > 평범한 `:root` 매핑으로 충분하다. (레이어가 없던 초기 버전에서는 clotho의 다크
    > 블록 명시도가 더 높아 소비처의 다크 팔레트가 조용히 무시됐다 — 7.3 통합에서
    > 발견해 고쳤다.)
-6. **`packages/animation-studio`는 clotho-editor로 이동**(Phase 8). 그 전까지는
-   import만 clotho로 바꿔 두면 동작한다.
-7. `bun run build && bun test`로 확인.
+6. **`packages/animation-studio`**: 7.3과 동일한 v1 변환 (그룹 `parentId`, 이미지
+   `assetId`, 미리보기를 `mountStage`로). 드롭·붙여넣기가 data URI로 오므로
+   `registerDataUriAsset()`를 추가해 inline 에셋으로 저장한다.
+   `Studio.tsx`는 `AnimationStage` + `usePlayer`로 — 에디터가 타임라인의 주인이고
+   플레이어는 미리보기 중일 때만 시계를 공급한다.
+7. **`packages/animation-engine` 삭제** + 세 워크스페이스의 의존 제거.
+8. `bun test`로 확인.
+
+### API 계약에서 드러난 것
+
+`packages/schema`가 clotho 스키마를 재수출하자 저장 경로 테스트 6개가 깨졌는데,
+전부 **예전 passthrough 스키마가 통과시키던 무효한 문서**였다:
+`width`/`height` 없는 `rect`, `id`/`time` 없는 `chapter`. 렌더될 수 없는 문서가
+저장되고 있었다는 뜻이다.
+
+기존 클라이언트를 깨지 않으면서 검증을 얻기 위해 저장 경로에 두 가지를 넣었다:
+
+- **legacy 페이로드 자동 마이그레이션.** `version: 3|4`가 오면 v1으로 옮겨 저장한다.
+- **봉투 필드 자동 채움.** 에디터가 `{ id }`만 보내는 새 문서 생성처럼 봉투가 없는
+  페이로드에는 `clothoVersion: 1`을 채운다. 클라이언트가 포맷 버전을 알 이유가 없다.
+
+부수적으로 실제 버그도 하나 나왔다. update 페이로드의 `id`/`updatedAt` 금지 검사가
+**무력화돼 있었다** — zod가 refinement 전에 그 키들을 제거해버려 "반드시 실패해야 하는"
+계약 두 개가 조용히 통과하고 있었다. `.passthrough()`로 고쳤다.
 
 ---
 

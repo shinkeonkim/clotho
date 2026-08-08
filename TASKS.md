@@ -220,7 +220,19 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   - 일괄 치환이 게시된 블로그 본문까지 건드린 것을 발견해 되돌렸다. `AGENTS.md`는
     사실과 맞게 다시 썼다 (스키마 출처, parentId/assetId 차이, 검증 경로)
   - **커밋하지 않았다.** 사용자 저장소이므로 검토 후 결정할 사항이다
-- [ ] **7.2** `oh-my-blog` 적용 — 7.3과 동일 절차. `packages/animation-studio`도 같은 처리 필요
+- [~] **7.2** `oh-my-blog` 적용 — **브랜치 `feat/clotho`에서 완료, 커밋 전**
+  - `packages/animation-engine` 삭제, 세 워크스페이스의 의존 제거
+  - `packages/schema/src/animation.ts`를 clotho 재수출로 교체. 예전 passthrough 봉투
+    검증은 사실상 아무것도 검증하지 않았다
+  - `apps/web/app/globals.css`에서 `.anim-*` 규칙 69개 제거 → clotho 스타일시트 import
+  - `animation-studio` 23파일을 7.3과 동일하게 v1 변환. `registerDataUriAsset()` 추가
+    (드롭·붙여넣기가 data URI로 온다)
+  - `Studio.tsx`를 `AnimationStage` + `usePlayer`로 — 에디터가 타임라인의 주인
+  - **저장 경로에서 실제 버그 발견**: update 페이로드의 `id`/`updatedAt` 금지 검사가
+    무력화돼 있었다(zod가 refinement 전에 키를 제거). `.passthrough()`로 수정
+  - 레거시 클라이언트 호환을 위해 저장 시 자동 마이그레이션 + 봉투 필드 자동 채움
+  - **검증: `packages/schema` 353 tests · typecheck 0 · `animation-studio` typecheck 0 ·
+    나머지 워크스페이스는 기준선과 에러 수 동일**
 - [ ] **7.4** 시각 회귀 최종 확인 — 빌드 산출물의 애니메이션 렌더 확인
 
 ## Phase 8 — clotho-editor 분리 (별도 저장소)
