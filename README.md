@@ -187,18 +187,33 @@ UI 문자열 기본값은 영어이며 부분 오버라이드가 가능하다. �
 
 ## 문서 포맷
 
-전체 스펙은 [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md). 요소 10종
-(`rect · circle · line · arrow · text · image · path · polygon · group · code`),
+애니메이션을 직접 쓰려면 [`docs/AUTHORING.md`](./docs/AUTHORING.md)부터 읽는다.
+필드별 정의는 [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md)에 있다.
+
+요소 10종 (`rect · circle · line · arrow · text · image · path · polygon · group · code`),
 등장 구간(`appearances`)과 속성 트랙(`tracks`)으로 이루어진 타임라인, 이펙트 3종
 (`highlight · pulse · flow`), 챕터.
 
 legacy v3/v4 문서는 런타임이 직접 받지 않는다. `clotho migrate`를 통과해야 한다.
 
-## 설계
+## 예제
 
-- [`docs/RESEARCH.md`](./docs/RESEARCH.md) — 기존 두 구현체 실측 조사
+```bash
+bun run gallery     # 기능별 문서 9개 — 요소 10종, 전이 8종, 이징 4종, 반복 패턴
+```
+
+각 문서에 "무엇을 볼 것인가"가 붙어 있고, **frames** 버튼이 타임라인 전체를 한 번에
+펼친다. [`examples/README.md`](./examples/README.md) 참고.
+
+## 문서
+
+- [`docs/AUTHORING.md`](./docs/AUTHORING.md) — **애니메이션 저작 공식 문서**
+- [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md) — v1 문서 포맷 명세
 - [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — 씬 그래프, 어댑터, 재생 컨트롤러
-- [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md) — v1 문서 포맷
+- [`docs/RESEARCH.md`](./docs/RESEARCH.md) — 기존 두 구현체 실측 조사
+- [`docs/MIGRATION.md`](./docs/MIGRATION.md) — legacy 문서·코드 이전
+- [`docs/AUDIT-EDITOR.md`](./docs/AUDIT-EDITOR.md) — 에디터 기능 커버리지 감사
+- [`docs/PROPOSALS.md`](./docs/PROPOSALS.md) — 확장 기획안 14건
 - [`TASKS.md`](./TASKS.md) — 작업 계획과 진행 상황
 
 에디터는 별도 패키지 `clotho-editor`로 분리된다.
