@@ -7,3 +7,6 @@ bun.lock
 
 # Generated from the zod schema; prettier would reformat it and break schema:check.
 schema
+
+# Frozen copy of the engine clotho replaces; reformatting it would defeat the point.
+tests/reference

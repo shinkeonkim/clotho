@@ -3,7 +3,14 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'node_modules/**', '.private/**', 'tests/fixtures/**'],
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '.private/**',
+      'tests/fixtures/**',
+      // Frozen reference implementation — linting it would invite editing it.
+      'tests/reference/**',
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

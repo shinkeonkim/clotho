@@ -24,16 +24,29 @@ const REPO_ROOT = resolve(import.meta.dir, '..');
 const PRIVATE_DIR = process.env.CLOTHO_PRIVATE_DIR ?? join(REPO_ROOT, '.private');
 const CORPUS_DIR =
   process.env.CLOTHO_CORPUS_DIR ?? join(PRIVATE_DIR, 'shinkeonkim.github.io/public/animations');
-const LEGACY_RUNTIME = join(
+/**
+ * The reference implementation, preferring the live copy but falling back to the frozen
+ * one vendored under tests/reference.
+ *
+ * The fallback matters: once the consumers finish migrating, the live copy is deleted
+ * along with the package it lived in — and this check would quietly start skipping at
+ * exactly the point where "does clotho still render what the old engine rendered?" stops
+ * being reproducible any other way.
+ */
+const LIVE_LEGACY_RUNTIME = join(
   PRIVATE_DIR,
   'oh-my-blog/packages/animation-engine/src/schema/runtime.ts',
 );
+const VENDORED_LEGACY_RUNTIME = join(REPO_ROOT, 'tests/reference/legacy-runtime.ts');
+const LEGACY_RUNTIME = existsSync(LIVE_LEGACY_RUNTIME)
+  ? LIVE_LEGACY_RUNTIME
+  : VENDORED_LEGACY_RUNTIME;
 
 const VERBOSE = process.argv.includes('--verbose');
 const MAX_EXAMPLES = 10;
 
 if (!existsSync(CORPUS_DIR) || !existsSync(LEGACY_RUNTIME)) {
-  console.log('legacy equivalence check SKIPPED — .private/ reference repos not present.');
+  console.log('legacy equivalence check SKIPPED — no corpus to compare against.');
   console.log(`  corpus: ${CORPUS_DIR}`);
   console.log(`  legacy: ${LEGACY_RUNTIME}`);
   process.exit(0);
@@ -165,8 +178,10 @@ for (const file of files) {
   if (VERBOSE) console.log(`  ${file}: ok`);
 }
 
+const reference = LEGACY_RUNTIME === LIVE_LEGACY_RUNTIME ? 'live' : 'vendored';
 console.log(
-  `legacy equivalence: ${documents}/${files.length} documents, ${frames} frames, ${comparisons} property comparisons`,
+  `legacy equivalence [${reference} reference]: ${documents}/${files.length} documents, ` +
+    `${frames} frames, ${comparisons} property comparisons`,
 );
 
 if (failures.length > 0) {

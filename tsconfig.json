@@ -45,5 +45,7 @@
     "tsup.config.ts",
     "eslint.config.js"
   ],
-  "exclude": ["node_modules", "dist", ".private"]
+  // tests/reference holds a frozen copy of the engine clotho replaces. It is compared
+  // against at run time, never edited, and was written under looser compiler settings.
+  "exclude": ["node_modules", "dist", ".private", "tests/reference"]
 }
