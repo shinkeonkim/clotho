@@ -11,7 +11,14 @@ import {
   interpolationSchema,
 } from './primitives';
 import { assetSchema, assetMapSchema, base64Schema } from './assets';
-import { elementSchema, imageElementSchema, groupElementSchema, isConnector } from './elements';
+import {
+  ELEMENT_TYPES,
+  elementSchema,
+  elementTypeSchema,
+  imageElementSchema,
+  groupElementSchema,
+  isConnector,
+} from './elements';
 import { effectSchema } from './effects';
 import {
   FORMAT_VERSION,
@@ -354,5 +361,17 @@ describe('parseDocument', () => {
       /invalid clotho document/,
     );
     expect(parseDocumentOrThrow(minimalDoc).id).toBe('demo');
+  });
+});
+
+describe('elementTypeSchema', () => {
+  it('enumerates exactly the ten types the union discriminates on', () => {
+    const fromUnion = elementSchema.options.map((option) => option.shape.type.value).sort();
+    expect([...ELEMENT_TYPES].sort()).toEqual(fromUnion);
+  });
+
+  it('rejects a name that is not an element type', () => {
+    expect(elementTypeSchema.safeParse('rect').success).toBe(true);
+    expect(elementTypeSchema.safeParse('rectangle').success).toBe(false);
   });
 });

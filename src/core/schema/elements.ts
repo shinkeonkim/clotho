@@ -189,6 +189,28 @@ export type CodeElement = z.infer<typeof codeElementSchema>;
 export type AnimationElement = z.infer<typeof elementSchema>;
 export type ElementType = AnimationElement['type'];
 
+/**
+ * The ten element type names, as a runtime value.
+ *
+ * `ElementType` is a compile-time union; anything that has to *enumerate* the types —
+ * an editor's insert menu, a validator, a JSON Schema consumer — needs them at runtime
+ * too, and deriving both from one list keeps them from drifting.
+ */
+export const elementTypeSchema = z.enum([
+  'rect',
+  'circle',
+  'line',
+  'arrow',
+  'text',
+  'image',
+  'path',
+  'polygon',
+  'group',
+  'code',
+]);
+
+export const ELEMENT_TYPES = elementTypeSchema.options;
+
 /** Element types whose endpoints may anchor to other elements. */
 export const CONNECTOR_TYPES = ['line', 'arrow'] as const;
 
