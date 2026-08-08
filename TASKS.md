@@ -50,8 +50,10 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   - `easeApply`/`lerp`는 `timing/ease`로, 색 파싱은 `runtime/color`로 분리
   - **legacy 엔진과의 차분 검증** (`check:legacy-equivalence`): 383개 문서 ×
     27,690 프레임 × 682만 속성 비교에서 차이 0. 참조 저장소 없으면 스킵
-- [ ] **1.3** 그룹 트리 해석 — `parentId` → 트리 빌드, transform 합성, 가시성 상속
-  - 순환 참조 / 미존재 부모 / 비그룹 부모 검출
+- [x] **1.3** 그룹 트리 해석 — `parentId` → 트리 빌드, transform 합성, 가시성 상속
+  - 순환 참조 / 미존재 부모 / 비그룹 부모 / 자기 부모 검출 후 **재루팅**하여 렌더는 계속
+  - `geometry/matrix`: SVG 6-값 아핀 행렬. 그룹 내부 요소를 가리키는 커넥터 앵커를
+    루트 좌표로 풀기 위해 필요 (legacy는 그룹이 동작하지 않아 전부 절대 좌표였다)
   - **legacy에 구현이 없던 기능이라 전부 신규**
 - [ ] **1.4** 순수 유틸 포팅 — `clock / playback / ease / stage-geometry / theme-colors / focus-trap`
   - 출처: oh-my-blog (테스트 포함)

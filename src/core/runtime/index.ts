@@ -5,3 +5,4 @@ export * from './interpolation';
 export * from './snapshot';
 export * from './chapters';
 export * from './effects';
+export * from './tree';
