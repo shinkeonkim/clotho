@@ -1,0 +1,194 @@
+// Vue components: a static stage and a player with controls.
+//
+// Defined with `defineComponent` + a render function rather than SFCs, so the package
+// ships without needing a Vue compiler in its build.
+
+import {
+  computed,
+  defineComponent,
+  h,
+  onMounted,
+  onUnmounted,
+  ref,
+  type PropType,
+  type VNode,
+} from 'vue';
+import type { AnimationDocument } from '../core/schema/document';
+import { buildScene } from '../core/scene/build';
+import type { SceneOptions } from '../core/scene/context';
+import { effectivePlayback } from '../core/timing/playback';
+import { CLASS, defaultStrings, type Strings } from '../dom/strings';
+import { renderSceneSvg } from './scene';
+import { usePlayer } from './usePlayer';
+
+/** A single frame with no clock, for thumbnails and editor-driven time. */
+export const AnimationStage = defineComponent({
+  name: 'ClothAnimationStage',
+  props: {
+    doc: { type: Object as PropType<AnimationDocument>, required: true },
+    time: { type: Number, required: true },
+    options: { type: Object as PropType<SceneOptions>, default: () => ({}) },
+    className: { type: String, default: undefined },
+  },
+  setup(props) {
+    const scene = computed(() => buildScene(props.doc, props.time, props.options));
+    return () =>
+      h(
+        'div',
+        { class: CLASS.stageFrame, 'data-mat': scene.value.showMat ? 'true' : 'false' },
+        renderSceneSvg(scene.value, props.className ?? CLASS.stageSvg),
+      );
+  },
+});
+
+export const AnimationPlayer = defineComponent({
+  name: 'ClothAnimationPlayer',
+  props: {
+    doc: { type: Object as PropType<AnimationDocument>, required: true },
+    options: { type: Object as PropType<SceneOptions>, default: () => ({}) },
+    strings: { type: Object as PropType<Partial<Strings>>, default: () => ({}) },
+    hideControls: { type: Boolean, default: false },
+    className: { type: String, default: undefined },
+  },
+  setup(props) {
+    const strings = computed<Strings>(() => ({ ...defaultStrings, ...props.strings }));
+    const { player, state } = usePlayer(props.doc);
+
+    const root = ref<HTMLElement | null>(null);
+    const inView = ref(true);
+    const reducedMotion = ref(false);
+
+    const apply = (): void => {
+      if (effectivePlayback(userWantsPlayback, inView.value, reducedMotion.value)) player.play();
+      else player.pause();
+    };
+
+    // Tracked separately from `state.playing`: the observers must not undo an
+    // explicit pause, and an explicit play must not survive going off screen.
+    let userWantsPlayback = state.value.playing;
+
+    let observer: IntersectionObserver | null = null;
+    let media: MediaQueryList | null = null;
+    const onMotionChange = (): void => {
+      reducedMotion.value = media?.matches === true;
+      apply();
+    };
+
+    onMounted(() => {
+      if (root.value && typeof IntersectionObserver !== 'undefined') {
+        observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) inView.value = entry.isIntersecting;
+            apply();
+          },
+          { threshold: 0.1 },
+        );
+        observer.observe(root.value);
+      }
+      if (typeof globalThis.matchMedia === 'function') {
+        media = globalThis.matchMedia('(prefers-reduced-motion: reduce)');
+        reducedMotion.value = media.matches;
+        media.addEventListener('change', onMotionChange);
+      }
+      apply();
+    });
+
+    onUnmounted(() => {
+      observer?.disconnect();
+      media?.removeEventListener('change', onMotionChange);
+    });
+
+    const scene = computed(() => buildScene(props.doc, state.value.time, props.options));
+
+    const wrapperClass = computed(() =>
+      props.className ? `${CLASS.wrapper} ${props.className}` : CLASS.wrapper,
+    );
+
+    return () => {
+      if (reducedMotion.value) {
+        return h('div', { ref: root, class: wrapperClass.value }, [
+          h('div', { class: CLASS.reduced }, [
+            h('p', [h('strong', props.doc.title)]),
+            props.doc.description ? h('p', props.doc.description) : null,
+            h('p', { class: 'cloth-wrapper-reduced-note' }, strings.value.reducedMotionNote),
+          ]),
+        ]);
+      }
+
+      const controls: VNode[] = props.hideControls
+        ? []
+        : [
+            h(
+              'button',
+              {
+                type: 'button',
+                class: CLASS.button,
+                title: state.value.playing ? strings.value.pause : strings.value.play,
+                'aria-label': state.value.playing ? strings.value.pause : strings.value.play,
+                onClick: () => {
+                  userWantsPlayback = !state.value.playing;
+                  apply();
+                },
+              },
+              state.value.playing ? strings.value.pauseIcon : strings.value.playIcon,
+            ),
+            h(
+              'button',
+              {
+                type: 'button',
+                class: CLASS.button,
+                title: strings.value.restart,
+                'aria-label': strings.value.restart,
+                onClick: () => player.restart(),
+              },
+              strings.value.restartIcon,
+            ),
+            h('label', { class: CLASS.speed, title: strings.value.speed }, [
+              h('input', {
+                type: 'range',
+                min: 0.25,
+                max: 3,
+                step: 0.25,
+                value: state.value.speed,
+                'aria-label': strings.value.speed,
+                onInput: (event: Event) =>
+                  player.setSpeed(Number((event.target as HTMLInputElement).value)),
+              }),
+              h('span', { class: CLASS.speedValue }, `${state.value.speed.toFixed(2)}x`),
+            ]),
+          ];
+
+      const caption =
+        props.doc.settings.showCaption && scene.value.chapter
+          ? h('div', { class: CLASS.caption }, [
+              h(
+                'span',
+                { class: CLASS.captionNum },
+                strings.value.chapterLabel(
+                  scene.value.chapter.index + 1,
+                  scene.value.chapters.length,
+                ),
+              ),
+              scene.value.chapter.chapter.label
+                ? h('span', { class: CLASS.captionLabel }, scene.value.chapter.chapter.label)
+                : null,
+            ])
+          : null;
+
+      return h('div', { ref: root, class: wrapperClass.value }, [
+        h('div', { class: CLASS.header }, [
+          h('div', { class: CLASS.title }, props.doc.title),
+          controls.length > 0 ? h('div', { class: CLASS.actions }, controls) : null,
+        ]),
+        h('div', { class: CLASS.body }, [
+          h(
+            'div',
+            { class: CLASS.stageFrame, 'data-mat': scene.value.showMat ? 'true' : 'false' },
+            renderSceneSvg(scene.value, CLASS.stageSvg),
+          ),
+          caption,
+        ]),
+      ]);
+    };
+  },
+});

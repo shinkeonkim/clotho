@@ -16,6 +16,7 @@ export * from './text';
 export * from './assets';
 export * from './runtime';
 export * from './scene';
+export * from './player';
 export * from './migrate';
 export * from './validate';
 export * from './load';

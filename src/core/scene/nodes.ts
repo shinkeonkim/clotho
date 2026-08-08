@@ -111,11 +111,40 @@ export interface Scene {
   readonly diagnostics: readonly SceneDiagnostic[];
 }
 
-/** Drop undefined entries so adapters never emit empty attributes. */
+/**
+ * Decimal places kept on numeric attributes.
+ *
+ * Six is far past what any renderer resolves — a 1000-unit canvas would need to be
+ * scaled a million times before the seventh digit reached one pixel.
+ */
+export const ATTR_PRECISION = 6;
+
+/**
+ * Round to `ATTR_PRECISION`, collapsing -0 to 0.
+ *
+ * Rounding belongs here rather than in each adapter's serializer. When only the
+ * svg-string adapter rounded, React and Vue handed the raw float to the DOM and
+ * emitted `cx="178.33333333333331"` where the string adapter emitted
+ * `cx="178.333333"` — the same position, but no longer the *same output*, which
+ * defeats the point of having one scene graph. Rounding at construction makes every
+ * adapter agree byte for byte.
+ */
+export function roundAttrNumber(value: number): number {
+  if (Number.isInteger(value)) return value === 0 ? 0 : value;
+  if (!Number.isFinite(value)) return 0;
+  const rounded = Number(value.toFixed(ATTR_PRECISION));
+  return Object.is(rounded, -0) ? 0 : rounded;
+}
+
+/**
+ * Drop undefined and empty entries, and round numbers, so every adapter receives
+ * final values.
+ */
 export function compactAttrs(attrs: SceneAttrs): SceneAttrs {
   const out: SceneAttrs = {};
   for (const [key, value] of Object.entries(attrs)) {
-    if (value !== undefined && value !== '') out[key] = value;
+    if (value === undefined || value === '') continue;
+    out[key] = typeof value === 'number' ? roundAttrNumber(value) : value;
   }
   return out;
 }

@@ -14,7 +14,7 @@
 // and its heads follow. That indirection is why `SceneStyle` carries `color`.
 
 import type { ArrowHead } from '../schema/primitives';
-import type { SceneDef, SceneNode } from './nodes';
+import { compactAttrs, type SceneDef, type SceneNode } from './nodes';
 
 /** Prefix for marker element ids. */
 export const MARKER_ID_PREFIX = 'cloth-h';
@@ -32,9 +32,11 @@ function path(d: string, filled: boolean): SceneNode {
   return {
     kind: 'path',
     key: 'shape',
-    attrs: filled
-      ? { d, fill: 'currentColor' }
-      : { d, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.5 },
+    attrs: compactAttrs(
+      filled
+        ? { d, fill: 'currentColor' }
+        : { d, fill: 'none', stroke: 'currentColor', 'stroke-width': 1.5 },
+    ),
   };
 }
 
@@ -70,7 +72,11 @@ const SPECS: Record<Exclude<ArrowHead, 'none'>, MarkerSpec> = {
     height: 6,
     directional: false,
     children: [
-      { kind: 'circle', key: 'shape', attrs: { cx: 5, cy: 5, r: 4, fill: 'currentColor' } },
+      {
+        kind: 'circle',
+        key: 'shape',
+        attrs: compactAttrs({ cx: 5, cy: 5, r: 4, fill: 'currentColor' }),
+      },
     ],
   },
   'circle-open': {
@@ -85,7 +91,14 @@ const SPECS: Record<Exclude<ArrowHead, 'none'>, MarkerSpec> = {
         // Legacy fills this white rather than with a theme token; keeping it means
         // an open circle head stays readable on a dark stage, where `transparent`
         // would let the line show through the middle.
-        attrs: { cx: 5, cy: 5, r: 4, fill: 'white', stroke: 'currentColor', 'stroke-width': 1.5 },
+        attrs: compactAttrs({
+          cx: 5,
+          cy: 5,
+          r: 4,
+          fill: 'white',
+          stroke: 'currentColor',
+          'stroke-width': 1.5,
+        }),
       },
     ],
   },
@@ -99,7 +112,12 @@ const SPECS: Record<Exclude<ArrowHead, 'none'>, MarkerSpec> = {
       {
         kind: 'path',
         key: 'shape',
-        attrs: { d: DIAMOND, fill: 'white', stroke: 'currentColor', 'stroke-width': 1.5 },
+        attrs: compactAttrs({
+          d: DIAMOND,
+          fill: 'white',
+          stroke: 'currentColor',
+          'stroke-width': 1.5,
+        }),
       },
     ],
   },
@@ -141,7 +159,7 @@ function buildDef(head: Exclude<ArrowHead, 'none'>, end: MarkerEnd): SceneDef {
   return {
     key: markerId(head, end)!,
     kind: 'marker',
-    attrs: {
+    attrs: compactAttrs({
       id: markerId(head, end)!,
       viewBox: '0 0 10 10',
       refX: isStart ? 1 : spec.refX,
@@ -150,7 +168,7 @@ function buildDef(head: Exclude<ArrowHead, 'none'>, end: MarkerEnd): SceneDef {
       markerHeight: spec.height,
       // Non-directional heads (circles) must not rotate with the path.
       orient: spec.directional ? (isStart ? 'auto-start-reverse' : 'auto') : undefined,
-    },
+    }),
     children: spec.children,
   };
 }

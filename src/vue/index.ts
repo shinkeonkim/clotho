@@ -1,6 +1,9 @@
-// Public entry for the Vue 3 adapter: SceneNode → vnodes via h().
-// Vue is an optional peer; importing this subpath requires it.
+// Vue 3 adapter: scene mapper, player binding, and components.
 //
-// Populated by TASKS 4.6.
+// vue is an optional peer; importing this subpath requires it.
 
-export {};
+export * from './scene';
+export * from './usePlayer';
+export { AnimationPlayer, AnimationStage } from './components';
+export { defaultStrings, koreanStrings, CLASS } from '../dom/strings';
+export type { Strings } from '../dom/strings';

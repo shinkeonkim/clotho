@@ -24,12 +24,13 @@ export interface SerializeOptions {
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const XLINK_NS = 'http://www.w3.org/1999/xlink';
 
+/**
+ * Numbers arrive already rounded by `compactAttrs`, so this only stringifies. Doing
+ * the rounding here instead would make this adapter's output differ from React's and
+ * Vue's, which hand the raw value to the DOM.
+ */
 function formatNumber(value: number): string {
-  if (Number.isInteger(value)) return String(value);
-  // Six decimals is well past SVG rendering precision and keeps output stable
-  // enough to snapshot; -0 would otherwise serialize as "-0".
-  const rounded = Number(value.toFixed(6));
-  return String(Object.is(rounded, -0) ? 0 : rounded);
+  return String(value);
 }
 
 function serializeAttrs(attrs: SceneAttrs): string {

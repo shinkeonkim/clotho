@@ -115,9 +115,14 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 3 — 재생 컨트롤러
 
-- [ ] **3.1** `createPlayer(def, opts)` — play/pause/seek/setSpeed/subscribe/destroy
-  - 내부는 순수 `advanceTime()`, rAF는 주입 가능한 스케줄러 (테스트용 가짜 시계, SSR no-op)
-- [ ] **3.2** 챕터 추적, 루프/종료 처리, 축소 모션 연동(`effectivePlayback`)
+- [x] **3.1** `createPlayer(doc, opts)` — play/pause/toggle/seek/restart/setSpeed/setLoop/subscribe/destroy
+  - 내부는 순수 `advanceTime()`. **rAF는 코어 밖(`clotho/dom`)에 있다** — 코어 순수성
+    검사가 host global을 막으므로, 코어는 인터페이스 + `createManualScheduler`(테스트)
+    + `noopScheduler`(SSR 기본값)만 갖는다. react/vue는 dom 어댑터의 것을 재사용
+  - 첫 프레임 타임스탬프를 경과시간으로 세지 않고, 64ms 초과 프레임을 클램프한다
+    (백그라운드 탭·디버거 정지 후 재생헤드가 순간이동하는 것을 막는다)
+  - 종료 후 play는 처음부터 다시 시작한다 (재생 버튼이 먹통이 되지 않게)
+- [x] **3.2** 챕터 추적, 루프/종료 처리, 상태 변화 없으면 알림 생략(불필요한 리렌더 방지)
 
 ## Phase 4 — 어댑터
 
@@ -126,14 +131,23 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   - `renderDocumentToSvg(doc, t)`: 정지 프레임·썸네일·SSR·정적 내보내기
   - `standalone`은 `rawColors`를 켠다 — 스타일시트 없는 파일에서 `var(--cloth-fg)`는
     아무것도 해석되지 않는다
-- [ ] **4.2** `/react` — 씬 매퍼 + `useSyncExternalStore` 바인딩
-- [ ] **4.3** `/react` 플레이어 UI — `ControlsBar / StepLabel / ZoomControls / Modal / icons`
-  - 출처: oh-my-blog `controls-bar.tsx` 등 + `use-fullscreen / use-viewer-a11y / use-reduced-motion`
-- [ ] **4.4** `/dom` — 바닐라 어댑터. 최초 마운트 후 속성만 패치(요소 재생성 회피)
-- [ ] **4.5** `/dom` 플레이어 UI (프레임워크 없는 컨트롤)
-- [ ] **4.6** `/vue` — `h()` 매퍼 + `shallowRef` 바인딩 + 플레이어 컴포넌트
-- [ ] **4.7** UI 문자열 i18n — 기본 영어 + 주입 옵션 (현재 한국어 하드코딩)
-- [ ] **4.8** 어댑터 간 출력 동등성 테스트 (동일 씬 → 동일 SVG 구조)
+- [x] **4.2** `/react` — 씬 매퍼 + `useSyncExternalStore` 바인딩
+  - `toReactPropName`: kebab→camel. `data-*`/`aria-*`는 통과, `xml:space` 등은 명시 매핑
+  - 플레이어를 `doc.id`/`doc.duration`으로 키잉 (legacy는 `def` 객체 전체에 의존해
+    부모 리렌더마다 재생이 처음으로 되돌아갔다)
+- [x] **4.3** `/react` 플레이어 UI + 훅 (`usePlayer / useReducedMotion / useInView / useFullscreen`)
+- [x] **4.4** `/dom` — 바닐라 어댑터. 키 기반 패치로 요소를 재사용한다
+  (12초 애니메이션 = 720프레임. 매 프레임 재생성하면 포커스·선택·CSS 전환이 날아간다)
+- [x] **4.5** `/dom` 플레이어 UI (프레임워크 없는 컨트롤)
+- [x] **4.6** `/vue` — `h()` 매퍼 + `shallowRef` 바인딩 + `defineComponent` 컴포넌트
+  - Vue는 미지의 어트리뷰트를 그대로 통과시키므로 변환이 아예 필요 없다
+- [x] **4.7** UI 문자열 i18n — 기본 영어 + `koreanStrings` 제공 + 부분 오버라이드
+- [x] **4.8** 어댑터 간 출력 동등성 테스트
+  - 10종 요소·3종 이펙트·그룹·전환을 모두 쓰는 픽스처로 svg/react/vue 트리 비교
+  - **실제 차이 발견**: 반올림이 직렬화기에만 있어 react/vue는 `cx="178.33333333333331"`,
+    svg는 `cx="178.333333"`을 냈다. 반올림을 `compactAttrs`(씬 그래프)로 옮겨
+    모든 어댑터가 바이트 단위로 일치하게 했다
+  - `/dom`은 happy-dom으로 별도 검증 (트리 일치 + 프레임 간 요소 재사용)
 
 ## Phase 5 — 스타일
 

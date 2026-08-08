@@ -1,7 +1,9 @@
-// Public entry for the vanilla-DOM adapter: SceneNode → live SVG elements.
-// No framework peer. Patches attributes in place after first mount rather than
-// recreating nodes, so long animations do not thrash the DOM.
+// Vanilla-DOM adapter: no framework peer at all.
 //
-// Populated by TASKS 4.4–4.5.
+// Also home to the browser frame scheduler, which the React and Vue adapters reuse —
+// the core cannot own it without touching a host global.
 
-export {};
+export * from './scheduler';
+export * from './patch';
+export * from './mount';
+export * from './strings';
