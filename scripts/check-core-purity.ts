@@ -26,17 +26,27 @@ const FORBIDDEN_IMPORTS = [
 /**
  * Host globals the core may never touch. The core receives time from an injected
  * scheduler and geometry from data, so it never needs these.
+ *
+ * Each pattern is anchored with a lookbehind that excludes member access, because
+ * clotho's own domain object is named `document` — `result.document.id` is
+ * ordinary core code, `document.querySelector(...)` is not. A local binding that
+ * shadows a global name can be exempted with an ignore comment (see below).
  */
+const NOT_MEMBER = '(?<![.\\w$])';
 const FORBIDDEN_GLOBALS = [
-  /\bdocument\s*\./,
-  /\bwindow\s*\./,
-  /\brequestAnimationFrame\s*\(/,
-  /\bcancelAnimationFrame\s*\(/,
-  /\blocalStorage\b/,
-  /\bnavigator\s*\./,
-  /\bbtoa\s*\(/, // Latin-1 only; use core/text toBase64 instead (SCHEMA-V1 §2.3)
-  /\batob\s*\(/,
+  new RegExp(`${NOT_MEMBER}document\\s*\\.`),
+  new RegExp(`${NOT_MEMBER}window\\s*\\.`),
+  new RegExp(`${NOT_MEMBER}requestAnimationFrame\\s*\\(`),
+  new RegExp(`${NOT_MEMBER}cancelAnimationFrame\\s*\\(`),
+  new RegExp(`${NOT_MEMBER}localStorage\\b`),
+  new RegExp(`${NOT_MEMBER}navigator\\s*\\.`),
+  // btoa/atob are Latin-1 only; use core/text toBase64 (docs/SCHEMA-V1.md §2.3).
+  new RegExp(`${NOT_MEMBER}btoa\\s*\\(`),
+  new RegExp(`${NOT_MEMBER}atob\\s*\\(`),
 ];
+
+/** Escape hatch for a line that only looks like a violation. */
+const IGNORE_MARKER = 'clotho-purity-ignore-next-line';
 
 const IMPORT_RE = /(?:^|\n)\s*(?:import|export)[\s\S]*?from\s*['"]([^'"]+)['"]/g;
 const DYNAMIC_IMPORT_RE = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
@@ -74,13 +84,24 @@ function check(file: string): Violation[] {
   const rel = relative(REPO_ROOT, file);
   const found: Violation[] = [];
 
+  // Lines whose predecessor carries the ignore marker. Read from `raw` so the
+  // marker survives comment stripping.
+  const rawLines = raw.split('\n');
+  const exempt = new Set<number>();
+  rawLines.forEach((line, i) => {
+    if (line.includes(IGNORE_MARKER)) exempt.add(i + 2); // 1-indexed next line
+  });
+
   for (const re of [IMPORT_RE, DYNAMIC_IMPORT_RE]) {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(code)) !== null) {
       const spec = m[1]!;
-      if (FORBIDDEN_IMPORTS.some((f) => f.test(spec))) {
-        found.push({ file: rel, line: lineOf(code, m.index), detail: `imports "${spec}"` });
+      // Report the line holding the specifier, not the match start: a multi-line
+      // import statement begins at the preceding newline and would be off by one.
+      const line = lineOf(code, code.indexOf(spec, m.index));
+      if (FORBIDDEN_IMPORTS.some((f) => f.test(spec)) && !exempt.has(line)) {
+        found.push({ file: rel, line, detail: `imports "${spec}"` });
       }
     }
   }
@@ -89,9 +110,11 @@ function check(file: string): Violation[] {
     const g = new RegExp(re.source, 'g');
     let m: RegExpExecArray | null;
     while ((m = g.exec(code)) !== null) {
+      const line = lineOf(code, m.index);
+      if (exempt.has(line)) continue;
       found.push({
         file: rel,
-        line: lineOf(code, m.index),
+        line,
         detail: `uses host global \`${m[0].trim()}\``,
       });
     }
