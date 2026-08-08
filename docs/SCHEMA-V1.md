@@ -1,6 +1,6 @@
-# clotho 문서 포맷 v1 (초안)
+# clotho 문서 포맷 v1
 
-**상태: 초안 — 구현 착수 전 확정 필요.** 기존 legacy v3/v4를 대체하는 새 체계다.
+**상태: 확정 (2026-08-08).** 기존 legacy v3/v4를 대체하는 새 체계다.
 근거는 [`RESEARCH.md`](./RESEARCH.md), 구조 결정은 [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 설계 태도: **이유 있는 것만 바꾼다.** legacy v4는 383개 실문서로 검증된 포맷이므로
@@ -13,7 +13,7 @@
 
 ```jsonc
 {
-  "clotho": 1,                       // 포맷 버전. 이 필드의 존재가 clotho 문서임을 뜻한다
+  "clothoVersion": 1,                // 포맷 버전. 이 필드의 존재가 clotho 문서임을 뜻한다
   "$schema": "…/clotho-1.json",      // 선택. 에디터 자동완성용
   "id": "bellman-ford",              // ^[a-z0-9][a-z0-9_-]*$
   "title": "벨만-포드",
@@ -31,7 +31,7 @@
 }
 ```
 
-**버전 판별**: `clotho` 필드가 있으면 v1. 없고 `version: 3|4`면 legacy이며 런타임이 직접
+**버전 판별**: `clothoVersion` 필드가 있으면 v1. 없고 `version: 3|4`면 legacy이며 런타임이 직접
 받지 않고 `migrate()`를 통과해야 한다. `1 < 4`이라 `version` 숫자를 재사용하면 다운그레이드로
 오독되므로 필드 이름 자체를 바꿨다.
 
@@ -112,7 +112,7 @@ legacy enum은 `network|cache|algorithm|architecture|flow|protocol|general` 7종
 ### 2.5 `version: 3 | 4` 제거
 
 두 값의 스키마 차이가 **전혀 없었다**(리터럴만 다름). 구조 차이 없는 버전 분기는
-검증만 복잡하게 만든다. `clotho: 1`로 대체한다.
+검증만 복잡하게 만든다. `clothoVersion: 1`로 대체한다.
 
 ### 2.6 코드 요소: 하이라이터 주입
 
@@ -134,7 +134,7 @@ legacy `code`는 `language` 필드를 받지만 렌더러는 JS 키워드 집합
 
 | legacy | v1 | 손실 |
 | --- | --- | --- |
-| `version: 3 \| 4` | `clotho: 1` | 없음 |
+| `version: 3 \| 4` | `clothoVersion: 1` | 없음 |
 | `category` enum 값 | 동일 문자열 | 없음 |
 | `group.childIds: ["a","b"]` | 각 자식에 `parentId` 부여 | 없음. **legacy에서 미동작이었으므로 시각 회귀도 없음** |
 | `image.src: "url"` | `assets[gen] = {kind:'external', url}` + `assetId` | 없음 |
@@ -147,13 +147,23 @@ legacy `code`는 `language` 필드를 받지만 렌더러는 JS 키워드 집합
 
 역방향(`v1 → legacy`)은 제공하지 않는다. 소비처를 v1으로 전환하는 것이 목표다.
 
-## 5. 확정 필요 항목
+## 5. 확정 사항 (2026-08-08)
 
-| # | 항목 | 제안 |
+| # | 항목 | 결정 |
 | --- | --- | --- |
-| S1 | 판별 필드명 `clotho` vs `clothoVersion` vs `formatVersion` | `clotho` (간결, 충돌 없음) |
-| S2 | `assets`를 객체 맵 vs 배열 | 객체 맵 (id 조회 O(1), 중복 불가) |
-| S3 | 그룹 좌표를 상대 vs 절대 | 상대 (중첩의 의미가 성립) |
-| S4 | 그룹 entry/exit를 자식에 상속시킬지 | 상속 (그룹이 하나의 단위로 등장/퇴장) |
-| S5 | `$schema` 호스팅 URL | 4.4에서 JSON Schema 배포 시 확정 |
-| S6 | `settings`에 재생 UI 관련 값을 계속 둘지 | 문서에 유지 (작성자 의도), 플레이어 옵션이 오버라이드 |
+| S1 | 판별 필드명 | **`clothoVersion: 1`** |
+| S2 | `assets` 자료구조 | 객체 맵 (id 조회 O(1), 중복 불가) |
+| S3 | 그룹 자식 좌표 | 부모 기준 상대 (중첩의 의미가 성립) |
+| S4 | 그룹 entry/exit 상속 | 상속. 그룹이 하나의 단위로 등장/퇴장 |
+| S5 | `$schema` 호스팅 URL | 6.4에서 JSON Schema 배포 시 확정. 필드는 선택 |
+| S6 | `settings` 위치 | 문서에 유지(작성자 의도). 플레이어 옵션이 오버라이드 |
+
+추가로 v1에서 확정한 것:
+
+- **`image.alt`** (선택) — legacy에는 a11y 대체 텍스트 수단이 전혀 없었다. 공개 패키지로서
+  이미지에 접근성 라벨 경로를 제공한다.
+- **`assets.inline.data`는 순수 base64만 받는다.** `data:image/png;base64,…` 접두사를 붙인
+  문자열은 파싱 단계에서 거부하고 명확한 메시지를 준다(흔한 작성 실수). `mime`이 따로 있으므로
+  접두사는 중복 정보다.
+- **`mime`은 `image/*`로 제한한다.** `image/svg+xml`도 허용하나, `<image href>`로 참조되는
+  SVG는 스크립트가 실행되지 않는 맥락임을 전제로 한다.

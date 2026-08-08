@@ -13,7 +13,7 @@ JSON 기반 시각화 애니메이션 패키지. 조사는 [`docs/RESEARCH.md`](
 | # | 결정 |
 | --- | --- |
 | Q1 | zod를 dependency로 두는 것 허용 |
-| Q2 | **새 버저닝 체계 도입.** `clotho: 1` 신규 포맷. 소비처도 새 시스템으로 전환 |
+| Q2 | **새 버저닝 체계 도입.** `clothoVersion: 1` 신규 포맷. 소비처도 새 시스템으로 전환 |
 | Q3 | **group·image 기능 실제 사용.** 이미지는 base64 인라인 + 호스트 훅 API 양쪽 지원. 에디터가 이미지 첨부 UI를 만들 수 있는 인터페이스 제공 |
 | Q4 | **React 외 바닐라JS·Vue.js도 지원.** → 씬 그래프 + 어댑터 구조 |
 | Q5 | npm `clotho` 선점됨 → **`@shinkeonkim/clotho`** 로 배포 |
@@ -32,13 +32,14 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 - [x] **0.4** 프로젝트 스캐폴딩 (bun, TypeScript, tsup, eslint/prettier)
 - [x] **0.5** 383개 legacy JSON 코퍼스를 회귀 픽스처로 연결
 - [x] **0.6** v1 포맷 초안 작성 → `docs/SCHEMA-V1.md`
-- [ ] **0.7** v1 포맷 초안 리뷰 및 확정 (`SCHEMA-V1.md` §5 항목 S1~S6)
-- [ ] **0.8** 패키지명 `@shinkeonkim/clotho`로 전환 + 어댑터 서브패스 골격
+- [x] **0.7** v1 포맷 확정 (`SCHEMA-V1.md` §5 — S1~S6 결정 완료)
+- [x] **0.8** 패키지명 `@shinkeonkim/clotho`로 전환 + 어댑터 서브패스 골격
+- [x] **0.9** 코어 순수성 검사기 (`check:core-purity`)
 
 ## Phase 1 — 코어 스키마 및 런타임
 
 - [ ] **1.1** v1 스키마 구현 — `primitives / elements / effects / assets / document`
-  - legacy 포팅 + v1 변경 6종(`parentId`, `interpolate`, `assets`, `category`, `clotho: 1`)
+  - legacy 포팅 + v1 변경 6종(`parentId`, `interpolate`, `assets`, `category`, `clothoVersion: 1`)
   - shinkeonkim의 스키마 테스트 6종 이식 후 v1로 갱신
 - [ ] **1.2** 런타임 포팅 — `computeSnapshot / activeAppearance / currentChapter / activeEffects`
   - 출처: `schema/runtime.ts` (양쪽 완전 동일) + `runtime.test.ts` 395줄
@@ -98,11 +99,11 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 5 — 스타일
 
-- [ ] **5.1** `.anim-*` CSS를 패키지 자산으로 추출 (`@shinkeonkim/clotho/styles.css`)
+- [ ] **5.1** CSS를 패키지 자산으로 추출 (`@shinkeonkim/clotho/styles.css`)
   - 출처: oh-my-blog `globals.css` 약 500줄 (상위집합)
+  - **클래스명 접두사 `anim-` → `cloth-`** 로 전환 (확정). 소비처 CSS 수정 동반
 - [ ] **5.2** 테마 토큰화 — 소비처 CSS 변수 의존을 clotho 토큰으로 감싸고 오버라이드 가능하게
-- [ ] **5.3** 클래스명 접두사 재검토 (`anim-` → `clotho-`, 충돌 회피)
-- [ ] **5.4** 라이트/다크 · 축소 모션 · 반응형 회귀 확인
+- [ ] **5.3** 라이트/다크 · 축소 모션 · 반응형 회귀 확인
 
 ## Phase 6 — 패키징 및 공개
 
@@ -136,15 +137,15 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ---
 
-## 남은 열린 질문
+## 추가 확정 사항
 
-| # | 질문 | 제안 |
+| # | 항목 | 결정 |
 | --- | --- | --- |
-| S1~S6 | v1 포맷 세부 (`docs/SCHEMA-V1.md` §5) | 0.7에서 확정 |
-| N1 | Vue 지원 범위 — Vue 3만인지 2.7도 포함인지 | Vue 3만 (`h()` API 안정) |
-| N2 | 어댑터를 서브패스 유지 vs 별도 패키지 분리 | 서브패스 유지 (씬 그래프 계약 버전 어긋남 방지) |
-| N3 | CSS 클래스 접두사 `anim-` 유지 여부 | `clotho-`로 변경 제안 (5.3). 소비처 CSS 수정 발생 |
-| N4 | 폰트 메트릭을 추정만 할지 실측 훅도 둘지 | 추정 기본 + 실측 훅 제공 |
+| S1~S6 | v1 포맷 세부 | `docs/SCHEMA-V1.md` §5에 확정 기록 |
+| N1 | Vue 지원 범위 | **Vue 3부터** (`h()` API 안정) |
+| N2 | 어댑터 배포 형태 | 서브패스 유지 (씬 그래프 계약 버전 어긋남 방지) |
+| N3 | CSS 클래스 접두사 | **`cloth-`** (`anim-`에서 전환) |
+| N4 | 폰트 메트릭 | 추정 기본 + 실측 주입 훅 제공 |
 
 ## 작업 원칙
 

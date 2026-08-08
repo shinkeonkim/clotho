@@ -11,7 +11,7 @@ elements · Vue vnodes · 실 DOM · SVG 문자열로 옮긴다. 렌더 로직�
 
 ```jsonc
 {
-  "clotho": 1,
+  "clothoVersion": 1,
   "id": "bellman-ford",
   "title": "벨만-포드",
   "duration": 12000,

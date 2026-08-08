@@ -1,12 +1,14 @@
 /*
- * clotho stylesheet — ships as `clotho/styles.css`.
+ * clotho stylesheet — ships as `@shinkeonkim/clotho/styles.css`.
  *
- * The engine emits stable class names (.anim-engine, .anim-stage-frame,
- * .anim-caption, .anim-step-list, .anim-wrapper-*, .anim-modal-*) whose styles
- * currently live in each consuming app's global CSS. They move here in TASKS 3.1.
+ * Adapters emit stable class names under the `cloth-` prefix (.cloth-engine,
+ * .cloth-stage-frame, .cloth-caption, .cloth-step-list, .cloth-wrapper-*,
+ * .cloth-modal-*). The legacy implementations used `anim-`, which is generic
+ * enough to collide with host stylesheets; the rename lands with the CSS
+ * extraction in TASKS 5.1.
  *
- * Theme tokens are declared up front so the renderer can reference them from
- * day one; consumers override them on any ancestor.
+ * Theme tokens are declared up front so adapters can reference them from day
+ * one; consumers override them on any ancestor.
  */
 
 :root {
