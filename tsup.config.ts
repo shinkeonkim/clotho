@@ -8,6 +8,7 @@ export default defineConfig({
     'react/index': 'src/react/index.ts',
     'vue/index': 'src/vue/index.ts',
     'node/index': 'src/node/index.ts',
+    'gif/index': 'src/gif/index.ts',
     'cli/index': 'src/cli/index.ts',
   },
   format: ['esm'],

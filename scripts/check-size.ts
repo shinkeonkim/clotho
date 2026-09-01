@@ -44,7 +44,8 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   react: { file: 'react/index.js', gzipBudget: 25_000, note: 'react is external; no zod' },
   vue: { file: 'vue/index.js', gzipBudget: 24_000, note: 'vue is external; no zod' },
   node: { file: 'node/index.js', gzipBudget: 8_000, note: 'loader + schema (needs zod)' },
-  cli: { file: 'cli/index.js', gzipBudget: 14_000, note: 'validate + migrate (needs zod)' },
+  gif: { file: 'gif/index.js', gzipBudget: 24_000, note: 'scene renderer + GIF encoder' },
+  cli: { file: 'cli/index.js', gzipBudget: 28_000, note: 'validate + migrate + GIF (needs zod)' },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
 };
 

@@ -32,6 +32,19 @@
         max-width: 62rem;
         margin: 0 auto;
       }
+      body.is-focused {
+        padding: 1rem;
+      }
+      body.is-focused main {
+        max-width: 72rem;
+      }
+      body.is-focused header p,
+      body.is-focused nav {
+        display: none;
+      }
+      body.is-focused section {
+        margin-bottom: 0;
+      }
       header h1 {
         margin: 0 0 0.25rem;
         font-size: 1.6rem;
@@ -39,6 +52,15 @@
       header p {
         margin: 0 0 1.5rem;
         color: var(--cloth-fg-muted, #64748b);
+      }
+      .gallery-theme {
+        margin: 0 0 1rem;
+        padding: 0.4rem 0.7rem;
+        border: 1px solid var(--cloth-border);
+        border-radius: 0.5rem;
+        background: var(--cloth-surface-elevated);
+        color: var(--cloth-fg);
+        cursor: pointer;
       }
       nav {
         display: flex;
@@ -131,6 +153,7 @@
           is what this page is for.
         </p>
       </header>
+      <button id="theme" class="gallery-theme" type="button">theme: auto</button>
       <nav id="nav"></nav>
       <div id="sections"></div>
     </main>

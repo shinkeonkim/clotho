@@ -33,6 +33,7 @@
       "@kokoa/clotho/dom": ["src/dom/index.ts"],
       "@kokoa/clotho/svg": ["src/svg/index.ts"],
       "@kokoa/clotho/node": ["src/node/index.ts"],
+      "@kokoa/clotho/gif": ["src/gif/index.ts"],
       "@kokoa/clotho/styles.css": ["src/styles/clotho.css"]
     }
   },

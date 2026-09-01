@@ -26,7 +26,7 @@
   "elements": [ /* §2.1, §2.2 */ ],
   "chapters": [ { "id": "c1", "time": 2000, "label": "Round 1", "subtitle": "" } ],
   "effects":  [ { "type": "pulse", "id": "p1", "elementId": "n-a", "time": 2000 } ],
-  "settings": { "loop": true, "autoplay": true, "showCaption": false, "showChapterList": false },
+  "settings": { "loop": true, "autoplay": true, "showCaption": false, "showChapterList": false, "chapterListPosition": "right" },
   "updatedAt": "2026-08-08T00:00:00Z"
 }
 ```

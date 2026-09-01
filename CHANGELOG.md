@@ -6,6 +6,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-01
+
+### Added
+
+- React, Vue, DOM 플레이어에 `auto | light | dark` 테마 선택 API와 테마별 CSS 토큰
+  오버라이드 경로를 추가했다.
+- gallery의 아홉 애니메이션을 각각 독립된 README GIF로 제공한다.
+- `renderDocumentToGif`/`writeDocumentGif` Node API와 `clotho gif` CLI를 추가했다.
+- `defineAnimation`, `appear`, `track`, `repeatAppearances`, `stagger`, `effects.*` 타입 안전 저작 헬퍼를 추가했다.
+- 챕터 목록을 좌·우·상·하에 배치하는 `settings.chapterListPosition`을 추가했다.
+
+### Fixed
+
+- `auto` connector anchor가 중심이 아니라 상대 endpoint를 향하는 외곽점을 고른다.
+- 원형 요소의 대각선 anchor가 중심에 겹치지 않고 원주 위에 배치된다.
+- chapter가 없는 DOM 플레이어에 빈 하단 막대가 표시되던 문제를 수정했다.
+- chapter 표시는 기존 형식인 `Chapter n / total, label`로 복원했다.
+- Bun gallery의 라이트·다크 색상 대비와 anchor 예제 배치를 개선했다.
+- anchor 예제의 시작점은 고정하고 움직이는 hub의 경계를 연결선이 추적하게 했다.
+
+## [0.1.0] - 2026-09-01
+
 First release. clotho extracts the animation engine that grew inside two blogs into a
 standalone package, and rebuilds its render layer to be framework-agnostic.
 

@@ -1,6 +1,6 @@
 {
   "name": "@kokoa/clotho",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "JSON-defined visualization animations — framework-agnostic scene graph with React, Vue, vanilla, and SVG-string adapters",
   "license": "MIT",
   "author": "kokoa",
@@ -20,6 +20,7 @@
   "files": [
     "dist",
     "schema",
+    "docs/assets/gallery/*.gif",
     "README.md",
     "LICENSE"
   ],
@@ -54,6 +55,10 @@
       "types": "./dist/node/index.d.ts",
       "default": "./dist/node/index.js"
     },
+    "./gif": {
+      "types": "./dist/gif/index.d.ts",
+      "default": "./dist/gif/index.js"
+    },
     "./styles.css": "./dist/clotho.css",
     "./schema.json": "./schema/clotho-1.schema.json",
     "./package.json": "./package.json"
@@ -77,6 +82,9 @@
       ],
       "node": [
         "./dist/node/index.d.ts"
+      ],
+      "gif": [
+        "./dist/gif/index.d.ts"
       ]
     }
   },
@@ -85,6 +93,7 @@
     "dev": "tsup --watch",
     "gallery": "bun examples/gallery/index.html",
     "gallery:build": "bun examples/gallery/build.ts",
+    "gallery:gifs": "bun examples/gallery/export-gifs.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
@@ -104,6 +113,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "gifenc": "^1.0.3",
     "zod": "^3.24.1"
   },
   "peerDependencies": {

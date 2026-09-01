@@ -8,6 +8,7 @@
 //
 //   clotho validate <path...> [--json] [--quiet] [--strict]
 //   clotho migrate  <path...> [--write] [--json]
+//   clotho gif      <input.json> <output.gif> [--fps 12] [--width 800]
 //
 // Paths may be files or directories; directories are scanned for *.json.
 
@@ -16,18 +17,25 @@ import { join, relative, resolve } from 'node:path';
 import { formatFindings, validateDocument, type Finding } from '../core/validate/validate';
 import { migrateLegacyDocument, needsMigration } from '../core/migrate/legacy';
 import { stripBom } from '../core/text/base64';
+import { animationDocumentSchema } from '../core/schema/document';
+import { writeDocumentGif } from '../node/gif';
 
 const USAGE = `clotho — JSON-defined visualization animations
 
 Usage:
   clotho validate <path...> [options]   Check documents against the v1 schema and semantic rules
   clotho migrate  <path...> [options]   Convert legacy (version 3/4) documents to v1
+  clotho gif <input.json> <output.gif>   Render a document as an animated GIF
 
 Options:
   --write     migrate only: rewrite files in place (default is a dry run)
   --json      machine-readable output
   --quiet     exit code only, no output
   --strict    validate only: treat warnings as failures
+  --fps N     gif only: frames per second (default: 12)
+  --width N   gif only: output width in pixels (default: canvas width)
+  --once      gif only: play once instead of looping forever
+  --background COLOR  gif only: opaque raster background (default: #ffffff)
   -h, --help  show this help
 
 Exit codes:
@@ -43,11 +51,29 @@ interface Args {
   readonly quiet: boolean;
   readonly strict: boolean;
   readonly help: boolean;
+  readonly fps?: number;
+  readonly width?: number;
+  readonly once: boolean;
+  readonly background?: string;
 }
 
 function parseArgs(argv: string[]): Args {
-  const flags = new Set(argv.filter((a) => a.startsWith('-')));
-  const positional = argv.filter((a) => !a.startsWith('-'));
+  const positional: string[] = [];
+  const flags = new Set<string>();
+  const values = new Map<string, string>();
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index]!;
+    if (arg === '--fps' || arg === '--width' || arg === '--background') {
+      const value = argv[index + 1];
+      if (value === undefined) throw new Error(`${arg} needs a value`);
+      values.set(arg, value);
+      index += 1;
+    } else if (arg.startsWith('-')) {
+      flags.add(arg);
+    } else {
+      positional.push(arg);
+    }
+  }
   return {
     command: positional[0],
     paths: positional.slice(1),
@@ -56,7 +82,26 @@ function parseArgs(argv: string[]): Args {
     quiet: flags.has('--quiet'),
     strict: flags.has('--strict'),
     help: flags.has('-h') || flags.has('--help'),
+    fps: values.has('--fps') ? Number(values.get('--fps')) : undefined,
+    width: values.has('--width') ? Number(values.get('--width')) : undefined,
+    once: flags.has('--once'),
+    background: values.get('--background'),
   };
+}
+
+async function runGif(args: Args): Promise<number> {
+  if (args.paths.length !== 2) throw new Error('gif needs one input JSON file and one output GIF path');
+  const [input, output] = args.paths as [string, string];
+  const value = readJson(await readFile(resolve(input), 'utf-8'));
+  const doc = animationDocumentSchema.parse(value);
+  await writeDocumentGif(doc, resolve(output), {
+    fps: args.fps,
+    width: args.width,
+    repeat: args.once ? -1 : 0,
+    background: args.background,
+  });
+  if (!args.quiet) console.log(`wrote ${output}`);
+  return 0;
 }
 
 /** Expand files and directories into a flat, sorted list of JSON files. */
@@ -251,7 +296,7 @@ async function main(): Promise<number> {
     return args.command === undefined && !args.help ? 2 : 0;
   }
 
-  if (args.command !== 'validate' && args.command !== 'migrate') {
+  if (args.command !== 'validate' && args.command !== 'migrate' && args.command !== 'gif') {
     console.error(`unknown command: ${args.command}\n`);
     console.error(USAGE);
     return 2;
@@ -264,7 +309,9 @@ async function main(): Promise<number> {
   }
 
   try {
-    return args.command === 'validate' ? await runValidate(args) : await runMigrate(args);
+    if (args.command === 'validate') return await runValidate(args);
+    if (args.command === 'migrate') return await runMigrate(args);
+    return await runGif(args);
   } catch (cause) {
     console.error(`clotho: ${(cause as Error).message}`);
     return 2;

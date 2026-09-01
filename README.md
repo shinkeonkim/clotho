@@ -9,6 +9,20 @@ JSON으로 정의하는 시각화 애니메이션 패키지.
 렌더 결과는 프레임워크 중립 **씬 그래프**로 만들어지고, 얇은 어댑터가 이를 React
 elements · Vue vnodes · 실 DOM · SVG 문자열로 옮긴다. 렌더 로직은 한 곳에만 있다.
 
+## 애니메이션 갤러리
+
+각 예시는 독립된 문서이며 아래 GIF도 라이브러리의 `writeDocumentGif`로 생성했다.
+
+| 요소와 전이 | 이징과 보간 |
+| --- | --- |
+| ![Ten element types](./docs/assets/gallery/elements.gif) | ![Entry and exit modes](./docs/assets/gallery/transitions.gif) |
+| ![Easing curves](./docs/assets/gallery/easing.gif) | ![Interpolation modes](./docs/assets/gallery/interpolation.gif) |
+| 반복 패턴과 효과 | 연결과 그룹 |
+| ![Iteration patterns](./docs/assets/gallery/iteration.gif) | ![Effects](./docs/assets/gallery/effects.gif) |
+| ![Anchors and arrowheads](./docs/assets/gallery/connectors.gif) | ![Nested groups](./docs/assets/gallery/groups.gif) |
+| 챕터 | |
+| ![Chapters and captions](./docs/assets/gallery/chapters.gif) | |
+
 ```jsonc
 {
   "clothoVersion": 1,
@@ -94,6 +108,47 @@ const svg = renderDocumentToSvg(doc, 6000, { standalone: true });
 
 DOM도 프레임워크도 필요 없다. 프레임 단위로 호출하면 그대로 정지 프레임 시퀀스가 된다.
 
+### 애니메이션 GIF 내보내기
+
+```ts
+import { writeDocumentGif } from '@kokoa/clotho/gif';
+
+await writeDocumentGif(doc, 'knapsack.gif', {
+  fps: 12,
+  width: 800,
+  background: '#ffffff',
+});
+```
+
+CLI에서도 같은 렌더 경로를 쓴다.
+
+```bash
+clotho gif animations/knapsack.json knapsack.gif --fps 12 --width 800
+```
+
+### 코드 기반 저작 헬퍼
+
+헬퍼는 별도 런타임 포맷을 만들지 않는다. 타입 검사를 돕고 반복 패턴을 펼친 뒤, 에디터와
+CLI가 그대로 읽을 수 있는 평범한 v1 JSON 데이터를 반환한다.
+
+```ts
+import { appear, defineAnimation, effects, repeatAppearances, stagger, track } from '@kokoa/clotho';
+
+const doc = defineAnimation({
+  clothoVersion: 1,
+  id: 'queue',
+  duration: 3000,
+  elements: [{
+    type: 'circle', id: 'item', cx: 40, cy: 80, r: 16,
+    appearances: repeatAppearances({ count: 3, duration: 600, gap: 200 }),
+    tracks: [track('cx', [{ time: 0, value: 40 }, { time: 3000, value: 600, ease: 'easeOut' }])],
+  }],
+  effects: stagger(['item'], 150, (elementId, time, index) =>
+    effects.pulse({ id: `pulse-${index}`, elementId, time }),
+  ),
+});
+```
+
 ## 진입점
 
 | 진입점 | 내용 | peer | gzip |
@@ -103,7 +158,8 @@ DOM도 프레임워크도 필요 없다. 프레임 단위로 호출하면 그대
 | `…/dom` | 바닐라 JS 어댑터 + 브라우저 스케줄러 | 없음 | 20KB |
 | `…/react` | React 어댑터 + 컴포넌트·훅 | react, react-dom | 20KB |
 | `…/vue` | Vue 3 어댑터 + 컴포넌트 | vue | 20KB |
-| `…/node` | 파일시스템 로더 | 없음 | 6KB |
+| `…/node` | 파일시스템 문서 로더 | 없음 | 별도 진입점 |
+| `…/gif` | Node/Bun용 애니메이션 GIF 렌더러 | 없음 | 별도 진입점 |
 | `…/styles.css` | 스타일시트 | 없음 | 4KB |
 | `…/schema.json` | v1 JSON Schema (에디터 자동완성용) | — | — |
 
@@ -116,6 +172,7 @@ DOM도 프레임워크도 필요 없다. 프레임 단위로 호출하면 그대
 clotho validate animations/            # 스키마 + 의미 검증
 clotho validate animations/ --strict   # 경고도 실패로
 clotho migrate  animations/ --write    # legacy v3/v4 → v1 변환
+clotho gif animations/a.json a.gif --fps 12 --width 800
 ```
 
 검증기는 스키마가 잡지 못하는 것들을 본다: 중복 id, 참조 무결성, 시간 범위,
@@ -167,9 +224,29 @@ buildScene(doc, t, {
 ### 테마
 
 스타일시트는 `--cloth-*` 토큰에 라이트·다크 기본값을 모두 담고 있어 설정 없이 동작한다.
-자기 팔레트를 쓰려면 한 겹만 매핑한다:
+플레이어별로 `theme="light" | "dark" | "auto"`를 지정할 수 있고, DOM 어댑터도 같은
+`theme` 옵션을 받는다.
+
+```tsx
+<AnimationPlayer doc={doc} theme="dark" />
+```
+
+자기 팔레트를 쓰려면 테마별 토큰을 매핑한다:
 
 ```css
+[data-cloth-theme='light'] {
+  --cloth-fg: var(--light-fg);
+  --cloth-surface: var(--light-surface);
+  --cloth-accent: var(--light-brand);
+}
+
+[data-cloth-theme='dark'] {
+  --cloth-fg: var(--dark-fg);
+  --cloth-surface: var(--dark-surface);
+  --cloth-accent: var(--dark-brand);
+}
+
+/* auto 모드의 기본 토큰도 필요하면 :root에서 바꾼다. */
 :root {
   --cloth-fg: var(--color-fg);
   --cloth-accent: var(--brand-500);
@@ -178,6 +255,21 @@ buildScene(doc, t, {
 
 테마는 기본적으로 `prefers-color-scheme`을 따르고, 어느 조상에든 `data-cloth-theme`을
 두면 그것이 이긴다.
+
+### 챕터 목록 위치
+
+`showChapterList`가 켜져 있고 실제 챕터가 있을 때만 목록이 보인다. 위치는 문서에서
+좌·우·상·하로 지정하며 기본값은 기존 사이드바와 같은 `right`다.
+
+```json
+{
+  "settings": {
+    "showCaption": true,
+    "showChapterList": true,
+    "chapterListPosition": "right"
+  }
+}
+```
 
 ### i18n
 

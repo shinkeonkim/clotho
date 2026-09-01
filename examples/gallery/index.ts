@@ -5,9 +5,31 @@ import { GALLERY } from './documents';
 
 const nav = document.querySelector<HTMLElement>('#nav');
 const sections = document.querySelector<HTMLElement>('#sections');
+const themeButton = document.querySelector<HTMLButtonElement>('#theme');
 const FRAMES = 9;
 
-if (!nav || !sections) throw new Error('Gallery root elements are missing');
+if (!nav || !sections || !themeButton) throw new Error('Gallery root elements are missing');
+const themeControl = themeButton;
+
+const themes = ['auto', 'light', 'dark'] as const;
+const params = new URLSearchParams(location.search);
+const initialTheme = themes.includes(params.get('theme') as (typeof themes)[number])
+  ? (params.get('theme') as (typeof themes)[number])
+  : 'auto';
+let themeIndex = themes.indexOf(initialTheme);
+
+function applyTheme(theme: (typeof themes)[number]): void {
+  if (theme === 'auto') delete document.documentElement.dataset.clothTheme;
+  else document.documentElement.dataset.clothTheme = theme;
+  themeControl.textContent = `theme: ${theme}`;
+}
+
+applyTheme(initialTheme);
+themeControl.addEventListener('click', () => {
+  themeIndex = (themeIndex + 1) % themes.length;
+  const theme = themes[themeIndex]!;
+  applyTheme(theme);
+});
 
 for (const entry of GALLERY) {
   const link = document.createElement('a');
@@ -66,4 +88,12 @@ for (const entry of GALLERY) {
       }
     }
   });
+}
+
+const focus = params.get('focus');
+if (focus) {
+  document.body.classList.add('is-focused');
+  for (const section of sections.querySelectorAll<HTMLElement>('section')) {
+    section.hidden = section.id !== focus;
+  }
 }

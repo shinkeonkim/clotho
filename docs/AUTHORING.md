@@ -57,7 +57,7 @@ frame(t) = f(document, t)
   "elements": [],
   "chapters": [],
   "effects": [],
-  "settings": { "loop": true, "autoplay": true, "showCaption": true, "showChapterList": false }
+  "settings": { "loop": true, "autoplay": true, "showCaption": true, "showChapterList": false, "chapterListPosition": "right" }
 }
 ```
 
@@ -437,6 +437,9 @@ frame(t) = f(document, t)
 ```
 
 `settings.showCaption`을 켜면 현재 챕터가 무대 아래에 나온다.
+`settings.showChapterList`를 켜면 전체 단계 목록이 나오며, `chapterListPosition`을
+`left | right | top | bottom` 중 하나로 지정할 수 있다. 챕터가 비어 있으면 두 표시 모두
+렌더링되지 않는다.
 
 ### 효과
 

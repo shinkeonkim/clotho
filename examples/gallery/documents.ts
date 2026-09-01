@@ -184,8 +184,8 @@ const ELEMENTS: Doc = doc({
       type: 'polygon',
       id: 'poly',
       points: '210,215 250,150 290,215',
-      fill: '#fef08a',
-      stroke: '#ca8a04',
+      fill: 'var(--cloth-surface-elevated, #fafafa)',
+      stroke: 'var(--cloth-accent, #6366f1)',
       opacity: 0.9,
       appearances: whole(4000),
     },
@@ -737,6 +737,19 @@ const ANCHORS = [
   'bottom-right',
 ] as const;
 
+const ANCHOR_LABEL_POSITION: Record<(typeof ANCHORS)[number], readonly [number, number]> = {
+  auto: [70, 30],
+  top: [360, 22],
+  right: [650, 110],
+  bottom: [360, 202],
+  left: [70, 110],
+  center: [650, 202],
+  'top-left': [170, 34],
+  'top-right': [550, 34],
+  'bottom-left': [170, 186],
+  'bottom-right': [550, 186],
+};
+
 const HEADS = [
   'none',
   'arrow',
@@ -762,17 +775,37 @@ const CONNECTORS: Doc = doc({
       cx: 360,
       cy: 110,
       r: 34,
-      fill: '#fef08a',
-      stroke: '#ca8a04',
+      fill: 'var(--cloth-surface-subtle, #f4f4f5)',
+      stroke: 'var(--cloth-accent, #6366f1)',
       label: 'hub',
       appearances: whole(3000),
+      tracks: [
+        {
+          property: 'cx',
+          keyframes: [
+            { time: 0, value: 360 },
+            { time: 750, value: 410, ease: 'easeInOut' },
+            { time: 1500, value: 310, ease: 'easeInOut' },
+            { time: 2250, value: 390, ease: 'easeInOut' },
+            { time: 3000, value: 360, ease: 'easeInOut' },
+          ],
+        },
+        {
+          property: 'cy',
+          keyframes: [
+            { time: 0, value: 110 },
+            { time: 750, value: 140, ease: 'easeInOut' },
+            { time: 1500, value: 82, ease: 'easeInOut' },
+            { time: 2250, value: 128, ease: 'easeInOut' },
+            { time: 3000, value: 110, ease: 'easeInOut' },
+          ],
+        },
+      ],
     },
-    // Anchors are resolved against the *target element's* box, so each spoke lands on a
+    // Anchors are resolved against the target shape, so each spoke lands on a
     // different point of the same hub.
     ...ANCHORS.flatMap((anchor, i) => {
-      const angle = (i / ANCHORS.length) * Math.PI * 2 - Math.PI / 2;
-      const x = Math.round(360 + Math.cos(angle) * 250);
-      const y = Math.round(110 + Math.sin(angle) * 78);
+      const [x, y] = ANCHOR_LABEL_POSITION[anchor];
       return [
         {
           type: 'rect' as const,
@@ -781,8 +814,8 @@ const CONNECTORS: Doc = doc({
           y: y - 13,
           width: 68,
           height: 26,
-          fill: '#f1f5f9',
-          stroke: '#94a3b8',
+          fill: 'var(--cloth-surface-elevated, #fafafa)',
+          stroke: 'var(--cloth-muted, #71717a)',
           strokeWidth: 1,
           cornerRadius: 6,
           label: anchor,
@@ -794,9 +827,11 @@ const CONNECTORS: Doc = doc({
           id: `an-${i}-arr`,
           fromId: `an-${i}`,
           toId: 'hub',
-          fromAnchor: 'auto' as const,
+          // Keep the spoke origin fixed while the moving hub demonstrates target
+          // tracking. This makes start- and end-anchor behaviour easy to distinguish.
+          fromAnchor: 'center' as const,
           toAnchor: anchor,
-          stroke: '#94a3b8',
+          stroke: 'var(--cloth-muted, #71717a)',
           strokeWidth: 1.5,
           headEnd: 'arrow' as const,
           appearances: whole(3000),
@@ -814,7 +849,7 @@ const CONNECTORS: Doc = doc({
           y1: y,
           x2: x + 110,
           y2: y,
-          stroke: INK,
+          stroke: 'var(--cloth-accent, #6366f1)',
           strokeWidth: 2,
           headEnd: head,
           appearances: whole(3000),
@@ -826,7 +861,7 @@ const CONNECTORS: Doc = doc({
           y: y + 4,
           content: head,
           fontSize: 11,
-          color: '#475569',
+          color: 'var(--cloth-muted, #71717a)',
           appearances: whole(3000),
         },
       ];
@@ -1080,7 +1115,7 @@ export const GALLERY: readonly GalleryEntry[] = [
   {
     slug: 'connectors',
     title: 'Anchors and arrowheads',
-    note: 'Ten anchors against one hub, and every arrowhead. `auto` picks the side facing the other end.',
+    note: 'Ten anchors track a moving hub, plus every arrowhead. `auto` picks the side facing the other end.',
     doc: CONNECTORS,
   },
   {

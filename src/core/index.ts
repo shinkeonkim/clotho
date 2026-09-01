@@ -20,3 +20,4 @@ export * from './player';
 export * from './migrate';
 export * from './validate';
 export * from './load';
+export * from './authoring';
