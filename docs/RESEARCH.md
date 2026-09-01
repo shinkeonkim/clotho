@@ -1,7 +1,6 @@
 # 기존 애니메이션 시스템 조사 (2026-08-08)
 
-`clotho` 패키지의 출발점이 되는 두 기존 구현체(`.private/shinkeonkim.github.io`,
-`.private/oh-my-blog`)를 실측 조사한 결과를 정리한다. 이후 설계·구현 판단의 근거 문서다.
+`clotho` 패키지의 출발점이 되는 두 기존 구현체(`.private/shinkeonkim.github.io`, `.private/oh-my-blog`)를 실측 조사한 결과를 정리한다. 이후 설계·구현 판단의 근거 문서다.
 
 ---
 
@@ -15,9 +14,7 @@
 | 데이터 자산 | `shinkeonkim.github.io/public/animations/*.json` **383개** (v4 350개 / v3 33개) |
 | 에디터(Studio) | 양쪽 약 **8,700~9,000 LOC**, 거의 동일. `clotho-editor`로 분리 대상 |
 
-> USER_REQUEST.md에는 "shinkeonkim.github.io가 더 고도화"라고 적혀 있으나, 엔진 코드 기준으로는
-> oh-my-blog 쪽이 뒤에 갈라져 나가며 기능이 더 추가된 상태다. 반대로 데이터·검증 도구는
-> shinkeonkim.github.io에만 있다. **clotho는 양쪽의 합집합**을 취해야 한다.
+> USER_REQUEST.md에는 "shinkeonkim.github.io가 더 고도화"라고 적혀 있으나, 엔진 코드 기준으로는 oh-my-blog 쪽이 뒤에 갈라져 나가며 기능이 더 추가된 상태다. 반대로 데이터·검증 도구는 shinkeonkim.github.io에만 있다. **clotho는 양쪽의 합집합**을 취해야 한다.
 
 ---
 
@@ -27,27 +24,26 @@
 
 `shinkeonkim.github.io/src/entities/animation/engine/` ↔ `oh-my-blog/packages/animation-engine/src/`
 
-| 파일 | diff 라인 수 | 비고 |
-| --- | --- | --- |
-| `schema/keys.ts` | 0 | 완전 동일 |
-| `schema/runtime.ts` | 0 | 완전 동일 (스냅샷 계산 핵심) |
-| `schema/primitives.ts` | 4 | `astro/zod` ↔ `zod` import 차이뿐 |
-| `schema/elements.ts` | 4 | 동일 |
-| `schema/effects.ts` | 4 | 동일 |
-| `schema/document.ts` | 4 | 동일 |
-| `phase-styles.ts` | 0 | 완전 동일 |
-| `markers.ts` | 0 | 완전 동일 |
-| `render-elements/index.tsx` | 0 | 완전 동일 |
-| `render-elements/shapes.tsx` | 0 | 완전 동일 |
-| `render-elements/code.tsx` | 0 | 완전 동일 |
-| `render-elements/effects.ts` | 0 | 완전 동일 |
-| `render-elements/flow-particle.tsx` | 0 | 완전 동일 |
-| `render-elements/arrows.tsx` | 6 | oh-my-blog가 `resolveElementColor` 적용 |
-| `render-elements/text-image.tsx` | 6 | 동일 사유 |
-| `engine.tsx` | 99 | 아래 2.2 참조 |
+| 파일                                | diff 라인 수 | 비고                                    |
+| ----------------------------------- | ------------ | --------------------------------------- |
+| `schema/keys.ts`                    | 0            | 완전 동일                               |
+| `schema/runtime.ts`                 | 0            | 완전 동일 (스냅샷 계산 핵심)            |
+| `schema/primitives.ts`              | 4            | `astro/zod` ↔ `zod` import 차이뿐       |
+| `schema/elements.ts`                | 4            | 동일                                    |
+| `schema/effects.ts`                 | 4            | 동일                                    |
+| `schema/document.ts`                | 4            | 동일                                    |
+| `phase-styles.ts`                   | 0            | 완전 동일                               |
+| `markers.ts`                        | 0            | 완전 동일                               |
+| `render-elements/index.tsx`         | 0            | 완전 동일                               |
+| `render-elements/shapes.tsx`        | 0            | 완전 동일                               |
+| `render-elements/code.tsx`          | 0            | 완전 동일                               |
+| `render-elements/effects.ts`        | 0            | 완전 동일                               |
+| `render-elements/flow-particle.tsx` | 0            | 완전 동일                               |
+| `render-elements/arrows.tsx`        | 6            | oh-my-blog가 `resolveElementColor` 적용 |
+| `render-elements/text-image.tsx`    | 6            | 동일 사유                               |
+| `engine.tsx`                        | 99           | 아래 2.2 참조                           |
 
-**해석**: 코어(스키마 + 런타임 + SVG 렌더러)는 사실상 하나의 코드베이스다. clotho로 뽑아낼 때
-의미 있는 병합 충돌이 발생하지 않는다. 이것이 이 프로젝트의 가장 큰 호재다.
+**해석**: 코어(스키마 + 런타임 + SVG 렌더러)는 사실상 하나의 코드베이스다. clotho로 뽑아낼 때 의미 있는 병합 충돌이 발생하지 않는다. 이것이 이 프로젝트의 가장 큰 호재다.
 
 ### 2.2 oh-my-blog에만 있는 것 (엔진 개선분 — clotho가 흡수해야 함)
 
@@ -64,6 +60,7 @@
 | `AnimationPlayer.tsx`, `index.ts` | 패키지 진입점 |
 
 엔진 차이(`engine.tsx` 99줄)의 실질 내용:
+
 - `initialTime`, `onPlaybackEnd` prop 추가
 - `timeRef` + `advanceTime()` 도입 (setState 함수형 업데이트 제거)
 - effect 의존성을 `def` 통째 → `def.duration`, `def.settings.loop`로 좁힘 (불필요한 재시작 방지)
@@ -109,18 +106,18 @@
 
 ### 3.2 요소 10종과 실사용 빈도 (383개 전수 집계)
 
-| type | 출현 수 | 비고 |
-| --- | ---: | --- |
-| `rect` | 2,304 | label/subtitle 내장 |
-| `text` | 1,783 | |
-| `circle` | 823 | |
-| `arrow` | 587 | `fromId`/`toId` 앵커 연결 또는 좌표 직접 지정, `curvature` |
-| `line` | 477 | |
-| `code` | 19 | 코드 블록 렌더 |
-| `path` | 9 | |
-| `polygon` | 5 | |
-| `image` | 0 | **스키마엔 있으나 실데이터 미사용** |
-| `group` | 0 | **스키마엔 있으나 실데이터 미사용** |
+| type      | 출현 수 | 비고                                                       |
+| --------- | ------: | ---------------------------------------------------------- |
+| `rect`    |   2,304 | label/subtitle 내장                                        |
+| `text`    |   1,783 |                                                            |
+| `circle`  |     823 |                                                            |
+| `arrow`   |     587 | `fromId`/`toId` 앵커 연결 또는 좌표 직접 지정, `curvature` |
+| `line`    |     477 |                                                            |
+| `code`    |      19 | 코드 블록 렌더                                             |
+| `path`    |       9 |                                                            |
+| `polygon` |       5 |                                                            |
+| `image`   |       0 | **스키마엔 있으나 실데이터 미사용**                        |
+| `group`   |       0 | **스키마엔 있으나 실데이터 미사용**                        |
 
 모든 요소 공통 필드: `id`, `name?`, `rotation`, `appearances[]`, `tracks[]`.
 
@@ -132,11 +129,11 @@
 
 ### 3.3 이펙트 3종 (실사용 빈도)
 
-| type | 출현 수 | 필드 |
-| --- | ---: | --- |
-| `pulse` | 1,258 | `scale`(기본 1.12), `duration` |
-| `highlight` | 842 | `color`(기본 `#facc15`), `duration` |
-| `flow` | 162 | `color`, `particles`(1~10), `radius`, `duration` |
+| type        | 출현 수 | 필드                                             |
+| ----------- | ------: | ------------------------------------------------ |
+| `pulse`     |   1,258 | `scale`(기본 1.12), `duration`                   |
+| `highlight` |     842 | `color`(기본 `#facc15`), `duration`              |
+| `flow`      |     162 | `color`, `particles`(1~10), `radius`, `duration` |
 
 ### 3.4 런타임 (`schema/runtime.ts` — 순수 함수, 프레임워크 무관)
 
@@ -158,24 +155,16 @@
 | 스타일 | `src/styles/global.css` (약 100줄, `.anim-*` 21개 셀렉터) | `apps/web/app/globals.css` (약 500줄, `.anim-*` 80개+ 셀렉터) |
 | 검증 | `scripts/validate-animations.mjs` (prebuild) | `packages/schema/src/animation.ts` (passthrough 느슨한 봉투 검증) |
 
-**CSS가 숨은 결합점이다.** 엔진이 만드는 클래스명(`anim-engine`, `anim-stage-frame`,
-`anim-caption`, `anim-step-list`, `anim-modal-*`, `anim-wrapper-*`)에 대한 스타일이 각 앱의
-전역 CSS에 흩어져 있다. clotho는 이를 패키지 자산으로 함께 배포해야 한다.
+**CSS가 숨은 결합점이다.** 엔진이 만드는 클래스명(`anim-engine`, `anim-stage-frame`, `anim-caption`, `anim-step-list`, `anim-modal-*`, `anim-wrapper-*`)에 대한 스타일이 각 앱의 전역 CSS에 흩어져 있다. clotho는 이를 패키지 자산으로 함께 배포해야 한다.
 
 ---
 
 ## 5. clotho 설계에 미치는 함의
 
-1. **코어를 프레임워크 무관 순수 TS로 뽑는다.** `runtime.ts`, `clock.ts`, `zoom.ts`,
-   `stage-geometry.ts`, `playback.ts`, `theme-colors.ts`, `phase-styles.ts`, `keys.ts`는
-   이미 DOM/React 의존이 없다. 그대로 승격 가능하다.
-2. **React 어댑터를 서브패스로 분리한다.** 렌더러(`render-elements/*.tsx`)와 플레이어는
-   현재 React JSX다. 두 소비처 모두 React이므로 React를 1급 어댑터로 두되, 코어는
-   SVG를 문자열/데이터로 기술할 수 있게 열어 둔다(향후 vanilla/Vue 어댑터 여지).
+1. **코어를 프레임워크 무관 순수 TS로 뽑는다.** `runtime.ts`, `clock.ts`, `zoom.ts`, `stage-geometry.ts`, `playback.ts`, `theme-colors.ts`, `phase-styles.ts`, `keys.ts`는 이미 DOM/React 의존이 없다. 그대로 승격 가능하다.
+2. **React 어댑터를 서브패스로 분리한다.** 렌더러(`render-elements/*.tsx`)와 플레이어는 현재 React JSX다. 두 소비처 모두 React이므로 React를 1급 어댑터로 두되, 코어는 SVG를 문자열/데이터로 기술할 수 있게 열어 둔다(향후 vanilla/Vue 어댑터 여지).
 3. **oh-my-blog 엔진 + shinkeonkim 테스트**를 합친 것이 clotho v0의 목표 지점이다.
-4. **383개 JSON을 회귀 테스트 픽스처로 쓴다.** 스키마 파싱 100% 통과 + 스냅샷 계산 무크래시가
-   포팅 정확성의 객관적 판정 기준이 된다.
+4. **383개 JSON을 회귀 테스트 픽스처로 쓴다.** 스키마 파싱 100% 통과 + 스냅샷 계산 무크래시가 포팅 정확성의 객관적 판정 기준이 된다.
 5. **CSS를 패키지 자산으로 배포한다.** oh-my-blog의 500줄 버전이 상위집합이므로 이쪽을 기준으로 삼는다.
-6. **검증기를 패키지 API + CLI로 승격한다.** `validate-animations.mjs`의 의미 검증(중복 ID,
-   참조 무결성, 시간 범위)은 스키마만으로는 못 잡는 부분이며, 오픈소스 사용자에게 가치가 크다.
+6. **검증기를 패키지 API + CLI로 승격한다.** `validate-animations.mjs`의 의미 검증(중복 ID, 참조 무결성, 시간 범위)은 스키마만으로는 못 잡는 부분이며, 오픈소스 사용자에게 가치가 크다.
 7. **Studio(약 9,000 LOC)는 clotho-editor로 분리한다.** clotho 코어에 대한 의존만 남긴다.

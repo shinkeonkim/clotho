@@ -2,12 +2,9 @@
 
 JSON으로 정의하는 시각화 애니메이션 패키지.
 
-애니메이션을 명령형 코드가 아니라 **선언적 JSON 문서**로 기술한다. 시각 상태는 오직
-`(문서, 시각 t)`의 순수 함수이므로, 임의 시점 seek·정지 프레임 렌더·서버 사이드 출력·
-에디터 스크럽이 모두 같은 코드 경로로 처리되고 드리프트할 누적 상태가 없다.
+애니메이션을 명령형 코드가 아닌 **선언적 JSON 문서**로 작성한다. 화면 상태는 `(문서, 시각 t)`만으로 결정되므로 원하는 시점으로 이동하거나, 정지 화면을 만들거나, 서버에서 결과를 출력하거나, 에디터에서 재생 위치를 옮길 때 모두 같은 코드가 동작한다. 이전 상태를 누적하지 않기 때문에 시간이 지나면서 화면이 어긋나는 문제도 생기지 않는다.
 
-렌더 결과는 프레임워크 중립 **씬 그래프**로 만들어지고, 얇은 어댑터가 이를 React
-elements · Vue vnodes · 실 DOM · SVG 문자열로 옮긴다. 렌더 로직은 한 곳에만 있다.
+렌더링 결과는 특정 framework에 종속되지 않는 **scene graph**로 만든다. 각 adapter는 이 결과를 React element, Vue vnode, DOM, SVG 문자열로 옮기기만 하므로 실제 렌더링 규칙은 한 곳에서 관리된다.
 
 ## 애니메이션 갤러리
 
@@ -20,8 +17,8 @@ elements · Vue vnodes · 실 DOM · SVG 문자열로 옮긴다. 렌더 로직�
 | 반복 패턴과 효과 | 연결과 그룹 |
 | ![Iteration patterns](./docs/assets/gallery/iteration.gif) | ![Effects](./docs/assets/gallery/effects.gif) |
 | ![Anchors and arrowheads](./docs/assets/gallery/connectors.gif) | ![Nested groups](./docs/assets/gallery/groups.gif) |
-| 챕터 | |
-| ![Chapters and captions](./docs/assets/gallery/chapters.gif) | |
+| 챕터 |  |
+| ![Chapters and captions](./docs/assets/gallery/chapters.gif) |  |
 
 ```jsonc
 {
@@ -32,19 +29,27 @@ elements · Vue vnodes · 실 DOM · SVG 문자열로 옮긴다. 렌더 로직�
   "canvas": { "width": 800, "height": 460, "background": "transparent" },
   "elements": [
     {
-      "type": "circle", "id": "n-a", "cx": 150, "cy": 230, "r": 32,
-      "fill": "#fef3c7", "label": "A",
+      "type": "circle",
+      "id": "n-a",
+      "cx": 150,
+      "cy": 230,
+      "r": 32,
+      "fill": "#fef3c7",
+      "label": "A",
       "appearances": [{ "start": 0, "end": 12000 }],
       "tracks": [
-        { "property": "fill", "keyframes": [
-          { "time": 0, "value": "#fef3c7" },
-          { "time": 2000, "value": "#dcfce7" }
-        ]}
-      ]
-    }
+        {
+          "property": "fill",
+          "keyframes": [
+            { "time": 0, "value": "#fef3c7" },
+            { "time": 2000, "value": "#dcfce7" },
+          ],
+        },
+      ],
+    },
   ],
   "chapters": [{ "id": "c1", "time": 2000, "label": "Round 1" }],
-  "effects": [{ "type": "pulse", "id": "p1", "elementId": "n-a", "time": 2000 }]
+  "effects": [{ "type": "pulse", "id": "p1", "elementId": "n-a", "time": 2000 }],
 }
 ```
 
@@ -57,8 +62,7 @@ pnpm add @kokoa/clotho
 bun add @kokoa/clotho
 ```
 
-React·Vue는 optional peer이므로 쓰는 것만 설치하면 된다. 바닐라 JS와 SVG 출력은
-peer 의존이 없다.
+React와 Vue는 선택 사항이므로 사용하는 framework만 설치하면 된다. 바닐라 JavaScript와 SVG 출력에는 추가 peer dependency가 필요하지 않다.
 
 ## 사용
 
@@ -117,13 +121,11 @@ await writeDocumentGif(doc, 'knapsack.gif', {
   fps: 12,
   width: 800,
   background: '#ffffff',
-  layout: 'player', // 제목·컨트롤·caption·chapter rail까지 포함 (기본값)
+  layout: 'player', // 제목, 조작 버튼, 현재 단계 설명, 전체 단계 목록까지 포함한다. 기본값이다.
 });
 ```
 
-내부 SVG 영역만 필요하면 `layout: 'stage'`를 지정한다. 기본 렌더러는 시스템 폰트를
-불러 텍스트를 보존하며, CI처럼 결과를 고정할 때는 `fontFiles: ['/path/font.ttf']`를
-전달할 수 있다. CSS 색상 토큰은 선택한 `theme: 'light' | 'dark'`의 실제 색으로 해석된다.
+애니메이션 영역만 필요하면 `layout: 'stage'`를 지정한다. 기본 renderer는 운영체제의 글꼴을 불러와 문자를 빠짐없이 그린다. CI처럼 실행 환경이 달라도 같은 결과가 필요하다면 `fontFiles: ['/path/font.ttf']`로 사용할 글꼴을 직접 지정할 수 있다. CSS 색상 token은 `theme: 'light' | 'dark'`에서 선택한 테마의 실제 색상으로 변환한다.
 
 CLI에서도 같은 렌더 경로를 쓴다.
 
@@ -133,8 +135,7 @@ clotho gif animations/knapsack.json knapsack.gif --fps 12 --width 800
 
 ### 코드 기반 저작 헬퍼
 
-헬퍼는 별도 런타임 포맷을 만들지 않는다. 타입 검사를 돕고 반복 패턴을 펼친 뒤, 에디터와
-CLI가 그대로 읽을 수 있는 평범한 v1 JSON 데이터를 반환한다.
+작성 도우미는 별도의 실행 형식을 만들지 않는다. type을 검사하고 반복 표현을 실제 항목으로 펼친 뒤 에디터와 CLI가 그대로 읽을 수 있는 v1 JSON data를 반환한다.
 
 ```ts
 import { appear, defineAnimation, effects, repeatAppearances, stagger, track } from '@kokoa/clotho';
@@ -143,11 +144,22 @@ const doc = defineAnimation({
   clothoVersion: 1,
   id: 'queue',
   duration: 3000,
-  elements: [{
-    type: 'circle', id: 'item', cx: 40, cy: 80, r: 16,
-    appearances: repeatAppearances({ count: 3, duration: 600, gap: 200 }),
-    tracks: [track('cx', [{ time: 0, value: 40 }, { time: 3000, value: 600, ease: 'easeOut' }])],
-  }],
+  elements: [
+    {
+      type: 'circle',
+      id: 'item',
+      cx: 40,
+      cy: 80,
+      r: 16,
+      appearances: repeatAppearances({ count: 3, duration: 600, gap: 200 }),
+      tracks: [
+        track('cx', [
+          { time: 0, value: 40 },
+          { time: 3000, value: 600, ease: 'easeOut' },
+        ]),
+      ],
+    },
+  ],
   effects: stagger(['item'], 150, (elementId, time, index) =>
     effects.pulse({ id: `pulse-${index}`, elementId, time }),
   ),
@@ -157,7 +169,7 @@ const doc = defineAnimation({
 ## 진입점
 
 | 진입점 | 내용 | peer | gzip |
-| --- | --- | --- | ---: |
+| --- | --- | --- | --: |
 | `@kokoa/clotho` | 스키마·런타임·씬 그래프·재생 컨트롤러·검증·마이그레이션 | 없음 | 25KB |
 | `…/svg` | SVG 문자열 직렬화 | 없음 | 16KB |
 | `…/dom` | 바닐라 JS 어댑터 + 브라우저 스케줄러 | 없음 | 20KB |
@@ -168,8 +180,7 @@ const doc = defineAnimation({
 | `…/styles.css` | 스타일시트 | 없음 | 4KB |
 | `…/schema.json` | v1 JSON Schema (에디터 자동완성용) | — | — |
 
-렌더 어댑터는 이미 파싱된 문서를 받으므로 **zod를 포함하지 않는다.** 렌더만 하는
-소비처는 검증기 비용을 내지 않고, 이 성질은 `bun run check:size`로 강제된다.
+렌더 어댑터는 이미 파싱된 문서를 받으므로 **zod를 포함하지 않는다.** 렌더만 하는 소비처는 검증기 비용을 내지 않고, 이 성질은 `bun run check:size`로 강제된다.
 
 ## CLI
 
@@ -180,11 +191,7 @@ clotho migrate  animations/ --write    # legacy v3/v4 → v1 변환
 clotho gif animations/a.json a.gif --fps 12 --width 800
 ```
 
-검증기는 스키마가 잡지 못하는 것들을 본다: 중복 id, 참조 무결성, 시간 범위,
-`parentId` 순환, 미해결 에셋, 그리고 **스키마에 없는 속성**. 마지막 항목이 특히
-쓸모 있다 — 파서는 미지의 키를 조용히 버리므로, 작성자가 `line.label`(라벨은 `arrow`에만
-있다)이나 `arrow.arrowEnd`(필드명은 `headEnd`)를 써도 아무 일도 일어나지 않는다.
-이 패키지를 추출한 383개 실문서에는 그런 속성이 367개 있었다.
+검증기는 스키마가 잡지 못하는 것들을 본다: 중복 id, 참조 무결성, 시간 범위, `parentId` 순환, 미해결 에셋, 그리고 **스키마에 없는 속성**. 마지막 항목이 특히 쓸모 있다 — 파서는 미지의 키를 조용히 버리므로, 작성자가 `line.label`(라벨은 `arrow`에만 있다)이나 `arrow.arrowEnd`(필드명은 `headEnd`)를 써도 아무 일도 일어나지 않는다. 이 패키지를 추출한 383개 실문서에는 그런 속성이 367개 있었다.
 
 ## 핵심 API
 
@@ -202,7 +209,10 @@ const scene = buildScene(doc, 3000, { assetResolver, highlighter });
 // 재생 — 프레임워크 밖에 있다
 const player = createPlayer(doc, { scheduler: animationFrameScheduler });
 player.subscribe((state) => console.log(state.time, state.chapterIndex));
-player.play(); player.seek(5000); player.setSpeed(1.5); player.destroy();
+player.play();
+player.seek(5000);
+player.setSpeed(1.5);
+player.destroy();
 
 // 검증 / 마이그레이션
 const { ok, findings } = validateDocument(json);
@@ -215,22 +225,18 @@ const { document, notes } = migrateLegacyDocument(legacyJson);
 
 ```ts
 buildScene(doc, t, {
-  assetResolver: { resolve: (ref) => myCdn.urlFor(ref.key) },  // ref 에셋 해석
-  highlighter: myShikiHighlighter,                              // 코드 하이라이팅
+  assetResolver: { resolve: (ref) => myCdn.urlFor(ref.key) }, // ref 에셋 해석
+  highlighter: myShikiHighlighter, // 코드 하이라이팅
   measurer: { measure: (text, size) => canvasMeasure(text, size) }, // 실측 폰트 메트릭
   fontFamily: '"My Sans", sans-serif',
 });
 ```
 
-이미지는 문서에 base64로 담거나(`inline`), URL로 두거나(`external`), 호스트가 해석하는
-키로 둘 수 있다(`ref`). 에디터의 "이미지 첨부"는 `encodeImageAsset(bytes, mime)`으로
-만든다.
+이미지는 문서에 base64로 담거나(`inline`), URL로 두거나(`external`), 호스트가 해석하는 키로 둘 수 있다(`ref`). 에디터의 "이미지 첨부"는 `encodeImageAsset(bytes, mime)`으로 만든다.
 
 ### 테마
 
-스타일시트는 `--cloth-*` 토큰에 라이트·다크 기본값을 모두 담고 있어 설정 없이 동작한다.
-플레이어별로 `theme="light" | "dark" | "auto"`를 지정할 수 있고, DOM 어댑터도 같은
-`theme` 옵션을 받는다.
+스타일시트는 `--cloth-*` 토큰에 라이트·다크 기본값을 모두 담고 있어 설정 없이 동작한다. 플레이어별로 `theme="light" | "dark" | "auto"`를 지정할 수 있고, DOM 어댑터도 같은 `theme` 옵션을 받는다.
 
 ```tsx
 <AnimationPlayer doc={doc} theme="dark" />
@@ -258,13 +264,11 @@ buildScene(doc, t, {
 }
 ```
 
-테마는 기본적으로 `prefers-color-scheme`을 따르고, 어느 조상에든 `data-cloth-theme`을
-두면 그것이 이긴다.
+테마는 기본적으로 `prefers-color-scheme`을 따르고, 어느 조상에든 `data-cloth-theme`을 두면 그것이 이긴다.
 
 ### 챕터 목록 위치
 
-`showChapterList`가 켜져 있고 실제 챕터가 있을 때만 목록이 보인다. 위치는 문서에서
-좌·우·상·하로 지정하며 기본값은 기존 사이드바와 같은 `right`다.
+`showChapterList`가 켜져 있고 실제 챕터가 있을 때만 목록이 보인다. 위치는 문서에서 좌·우·상·하로 지정하며 기본값은 기존 사이드바와 같은 `right`다.
 
 ```json
 {
@@ -278,8 +282,7 @@ buildScene(doc, t, {
 
 ### i18n
 
-UI 문자열 기본값은 영어이며 부분 오버라이드가 가능하다. 한국어 문구는 `koreanStrings`로
-제공한다.
+UI 문자열 기본값은 영어이며 부분 오버라이드가 가능하다. 한국어 문구는 `koreanStrings`로 제공한다.
 
 ```tsx
 <AnimationPlayer doc={doc} strings={{ play: '재생', pause: '일시정지' }} />
@@ -287,12 +290,9 @@ UI 문자열 기본값은 영어이며 부분 오버라이드가 가능하다. �
 
 ## 문서 포맷
 
-애니메이션을 직접 쓰려면 [`docs/AUTHORING.md`](./docs/AUTHORING.md)부터 읽는다.
-필드별 정의는 [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md)에 있다.
+애니메이션을 직접 쓰려면 [`docs/AUTHORING.md`](./docs/AUTHORING.md)부터 읽는다. 필드별 정의는 [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md)에 있다.
 
-요소 10종 (`rect · circle · line · arrow · text · image · path · polygon · group · code`),
-등장 구간(`appearances`)과 속성 트랙(`tracks`)으로 이루어진 타임라인, 이펙트 3종
-(`highlight · pulse · flow`), 챕터.
+요소 10종 (`rect · circle · line · arrow · text · image · path · polygon · group · code`), 등장 구간(`appearances`)과 속성 트랙(`tracks`)으로 이루어진 타임라인, 이펙트 3종 (`highlight · pulse · flow`), 챕터.
 
 legacy v3/v4 문서는 런타임이 직접 받지 않는다. `clotho migrate`를 통과해야 한다.
 
@@ -302,8 +302,7 @@ legacy v3/v4 문서는 런타임이 직접 받지 않는다. `clotho migrate`를
 bun run gallery     # 기능별 문서 9개 — 요소 10종, 전이 8종, 이징 4종, 반복 패턴
 ```
 
-각 문서에 "무엇을 볼 것인가"가 붙어 있고, **frames** 버튼이 타임라인 전체를 한 번에
-펼친다. [`examples/README.md`](./examples/README.md) 참고.
+각 문서에 "무엇을 볼 것인가"가 붙어 있고, **frames** 버튼이 타임라인 전체를 한 번에 펼친다. [`examples/README.md`](./examples/README.md) 참고.
 
 ## 문서
 
@@ -343,8 +342,7 @@ bun run check:legacy-equivalence   # legacy 엔진과 렌더 동등성 (383개 �
 bun run check:svg-wellformed       # 1,915 프레임을 실제 XML 파서로 검증
 ```
 
-회귀 테스트는 실제 애니메이션 문서 383개를 픽스처로 쓴다. 저장소에 포함되지 않으므로
-없으면 자동으로 건너뛴다. 위치는 `CLOTHO_CORPUS_DIR`로 지정한다.
+회귀 테스트는 실제 애니메이션 문서 383개를 픽스처로 쓴다. 저장소에 포함되지 않으므로 없으면 자동으로 건너뛴다. 위치는 `CLOTHO_CORPUS_DIR`로 지정한다.
 
 ## 라이선스
 

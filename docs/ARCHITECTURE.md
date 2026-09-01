@@ -1,24 +1,17 @@
 # clotho 아키텍처
 
-조사 근거는 [`RESEARCH.md`](./RESEARCH.md). 문서 포맷 스펙은 [`SCHEMA-V1.md`](./SCHEMA-V1.md).
-이 문서는 그 위에서 내린 구조 결정을 기록한다.
+조사 근거는 [`RESEARCH.md`](./RESEARCH.md). 문서 포맷 스펙은 [`SCHEMA-V1.md`](./SCHEMA-V1.md). 이 문서는 그 위에서 내린 구조 결정을 기록한다.
 
 ---
 
 ## 1. 설계 원칙
 
-1. **코어는 순수하다.** 스키마·런타임·기하·시간 계산에 DOM/프레임워크/파일시스템 의존을 두지
-   않는다. 기존 `runtime.ts`가 이미 그렇고, 이 성질을 깨뜨리지 않는 것이 clotho의 핵심 제약이다.
-2. **렌더 결과는 데이터다.** 코어는 시각을 받아 **씬 그래프(순수 데이터)** 를 만든다.
-   프레임워크 어댑터는 그 데이터를 자기 표현으로 옮기기만 한다. 렌더 로직이 어댑터마다
-   복제되면 4개 어댑터가 4개의 서로 다른 버그를 갖게 된다.
-3. **재생 상태도 프레임워크 밖에 있다.** rAF 루프·play/pause/seek/speed는 프레임워크 무관
-   컨트롤러가 소유하고, 어댑터는 구독만 한다.
+1. **코어는 순수하다.** 스키마·런타임·기하·시간 계산에 DOM/프레임워크/파일시스템 의존을 두지 않는다. 기존 `runtime.ts`가 이미 그렇고, 이 성질을 깨뜨리지 않는 것이 clotho의 핵심 제약이다.
+2. **렌더 결과는 데이터다.** 코어는 시각을 받아 **씬 그래프(순수 데이터)** 를 만든다. 프레임워크 어댑터는 그 데이터를 자기 표현으로 옮기기만 한다. 렌더 로직이 어댑터마다 복제되면 4개 어댑터가 4개의 서로 다른 버그를 갖게 된다.
+3. **재생 상태도 프레임워크 밖에 있다.** rAF 루프·play/pause/seek/speed는 프레임워크 무관 컨트롤러가 소유하고, 어댑터는 구독만 한다.
 4. **JSON이 계약이다.** 데이터 포맷은 코드보다 오래 산다. 스키마 변경은 마이그레이터를 동반한다.
-5. **작성자 의도를 훼손하지 않는다.** 저장된 정의는 렌더 시점에만 매핑하고(테마 색 등)
-   변형해 저장하지 않는다. (기존 `theme-colors.ts` 원칙 계승)
-6. **호스트 자원은 훅으로 주입받는다.** 이미지 에셋, 코드 하이라이터, 폰트 메트릭, i18n 문자열은
-   패키지가 결정하지 않고 소비처가 주입한다.
+5. **작성자 의도를 훼손하지 않는다.** 저장된 정의는 렌더 시점에만 매핑하고(테마 색 등) 변형해 저장하지 않는다. (기존 `theme-colors.ts` 원칙 계승)
+6. **호스트 자원은 훅으로 주입받는다.** 이미지 에셋, 코드 하이라이터, 폰트 메트릭, i18n 문자열은 패키지가 결정하지 않고 소비처가 주입한다.
 
 ## 2. 계층 구조
 
@@ -46,34 +39,34 @@
 
 ## 3. 씬 그래프 (Q4의 핵심)
 
-기존 렌더러는 React JSX였다. 조사 결과 출력이 **순수 SVG 요소뿐**이고 `foreignObject`가
-없으므로(marker defs 한 곳만 HTML 문자열), 중간 표현으로 안전하게 걷어낼 수 있다.
+기존 렌더러는 React JSX였다. 조사 결과 출력이 **순수 SVG 요소뿐**이고 `foreignObject`가 없으므로(marker defs 한 곳만 HTML 문자열), 중간 표현으로 안전하게 걷어낼 수 있다.
 
 ```ts
 type Scene = {
   viewBox: { width: number; height: number };
-  background: string;      // 테마 해석 완료
+  background: string; // 테마 해석 완료
   showMat: boolean;
-  defs: SceneDef[];        // 화살촉 마커 등
+  defs: SceneDef[]; // 화살촉 마커 등
   nodes: SceneNode[];
 };
 
 type SceneNode =
-  | { kind: 'group';  attrs: Attrs; style?: NodeStyle; children: SceneNode[] }
-  | { kind: 'rect' | 'circle' | 'line' | 'path' | 'polygon' | 'image';
-      attrs: Attrs; style?: NodeStyle }
-  | { kind: 'text';   attrs: Attrs; style?: NodeStyle; spans: TextSpan[] };
+  | { kind: 'group'; attrs: Attrs; style?: NodeStyle; children: SceneNode[] }
+  | {
+      kind: 'rect' | 'circle' | 'line' | 'path' | 'polygon' | 'image';
+      attrs: Attrs;
+      style?: NodeStyle;
+    }
+  | { kind: 'text'; attrs: Attrs; style?: NodeStyle; spans: TextSpan[] };
 
-type NodeStyle = {                 // CSS transform 문자열이 아니라 구조화 데이터
+type NodeStyle = {
+  // CSS transform 문자열이 아니라 구조화 데이터
   opacity?: number;
-  transform?: Transform[];         // [{ translate }, { scale }, { rotate }]
+  transform?: Transform[]; // [{ translate }, { scale }, { rotate }]
 };
 ```
 
-**중요한 변경**: 기존 `phase-styles.ts`는 `transform: "translate(10px 20px) scale(0.4)"`처럼
-**CSS 문자열에 px 단위**를 붙여 반환한다. React `style` prop 전용 형태다. 씬 그래프에서는
-구조화 데이터로 바꿔, 어댑터가 CSS transform이든 SVG `transform` 속성이든 고를 수 있게 한다.
-(SVG 속성 transform은 px 단위를 받지 않으므로 문자열 그대로는 재사용 불가다.)
+**중요한 변경**: 기존 `phase-styles.ts`는 `transform: "translate(10px 20px) scale(0.4)"`처럼 **CSS 문자열에 px 단위**를 붙여 반환한다. React `style` prop 전용 형태다. 씬 그래프에서는 구조화 데이터로 바꿔, 어댑터가 CSS transform이든 SVG `transform` 속성이든 고를 수 있게 한다. (SVG 속성 transform은 px 단위를 받지 않으므로 문자열 그대로는 재사용 불가다.)
 
 각 어댑터가 하는 일은 `SceneNode` 트리를 자기 노드로 옮기는 30~80줄짜리 매퍼뿐이다.
 
@@ -86,31 +79,31 @@ type NodeStyle = {                 // CSS transform 문자열이 아니라 구�
 | `/dom` | `SceneNode` → 실 DOM 패치 | 프레임워크 없이. 최초 마운트 후 속성만 갱신(요소 재생성 회피) |
 | `/svg` | `SceneNode` → 문자열 | 정적 내보내기·SSR·썸네일. XML 이스케이프 필수(§6) |
 
-`/svg`는 부수 효과 없는 순수 함수이므로 **씬 그래프 정확성의 골든 테스트 수단**이기도 하다.
-프레임 문자열 스냅샷이 회귀 감시에 그대로 쓰인다.
+`/svg`는 부수 효과 없는 순수 함수이므로 **씬 그래프 정확성의 골든 테스트 수단**이기도 하다. 프레임 문자열 스냅샷이 회귀 감시에 그대로 쓰인다.
 
 ## 4. 재생 컨트롤러
 
-rAF 루프와 재생 상태가 현재 React 컴포넌트에 묶여 있다. 어댑터 4개가 각자 재구현하면
-버그도 4개가 된다. 프레임워크 밖으로 뺀다.
+rAF 루프와 재생 상태가 현재 React 컴포넌트에 묶여 있다. 어댑터 4개가 각자 재구현하면 버그도 4개가 된다. 프레임워크 밖으로 뺀다.
 
 ```ts
 const player = createPlayer(def, { autoplay, loop, speed, initialTime });
-player.play(); player.pause(); player.seek(t); player.setSpeed(1.5);
-player.subscribe((state) => { /* { time, playing, chapterIndex } */ });
+player.play();
+player.pause();
+player.seek(t);
+player.setSpeed(1.5);
+player.subscribe((state) => {
+  /* { time, playing, chapterIndex } */
+});
 player.destroy();
 ```
 
-내부는 기존 `advanceTime()`(순수)을 그대로 쓰고, rAF만 주입 가능한 스케줄러로 둔다
-(테스트에서 가짜 시계 주입, SSR에서 no-op).
+내부는 기존 `advanceTime()`(순수)을 그대로 쓰고, rAF만 주입 가능한 스케줄러로 둔다 (테스트에서 가짜 시계 주입, SSR에서 no-op).
 
-바인딩은 얇다 — React는 `useSyncExternalStore`, Vue는 `shallowRef` + `onScopeDispose`,
-vanilla는 직접 구독. 이 컨트롤러는 clotho-editor의 타임라인 스크럽에도 그대로 쓰인다.
+바인딩은 얇다 — React는 `useSyncExternalStore`, Vue는 `shallowRef` + `onScopeDispose`, vanilla는 직접 구독. 이 컨트롤러는 clotho-editor의 타임라인 스크럽에도 그대로 쓰인다.
 
 ## 5. 에셋 모델 (Q3)
 
-이미지는 문서에 URL을 박아 넣는 방식(`src: string`)이었다. 오픈소스 패키지로는 부족하다 —
-문서가 특정 호스트 경로에 묶이고, 자기완결적 공유가 안 된다.
+이미지는 문서에 URL을 박아 넣는 방식(`src: string`)이었다. 오픈소스 패키지로는 부족하다 — 문서가 특정 호스트 경로에 묶이고, 자기완결적 공유가 안 된다.
 
 문서는 `assets` 레지스트리를 갖고 요소는 `assetId`로 참조한다.
 
@@ -128,17 +121,16 @@ vanilla는 직접 구독. 이 컨트롤러는 clotho-editor의 타임라인 스�
 
 ```ts
 const resolver: AssetResolver = {
-  resolve(ref) {              // string | Promise<string> — data URI 또는 URL 반환
+  resolve(ref) {
+    // string | Promise<string> — data URI 또는 URL 반환
     return myCdn.urlFor(ref.key);
   },
 };
 ```
 
-`ref`가 해석되기 전에는 플레이스홀더를 렌더한다(레이아웃 흔들림 방지). 해석 실패는
-씬 빌드를 깨뜨리지 않고 에셋 단위로 격리한다.
+`ref`가 해석되기 전에는 플레이스홀더를 렌더한다(레이아웃 흔들림 방지). 해석 실패는 씬 빌드를 깨뜨리지 않고 에셋 단위로 격리한다.
 
-에디터가 "이미지 첨부" UI를 만들 수 있도록, 파일 → `inline` 에셋 변환 유틸(`encodeImageAsset`)을
-코어에 둔다. 업로드 경로를 쓰는 호스트는 `ref` + 훅을 쓰면 된다.
+에디터가 "이미지 첨부" UI를 만들 수 있도록, 파일 → `inline` 에셋 변환 유틸(`encodeImageAsset`)을 코어에 둔다. 업로드 경로를 쓰는 호스트는 `ref` + 훅을 쓰면 된다.
 
 ## 6. 텍스트와 인코딩 (Q6)
 
@@ -168,9 +160,7 @@ npm `clotho`는 선점되어 있어 **`@kokoa/clotho`** 로 배포한다. CLI �
 └── "./styles.css" → 스타일시트
 ```
 
-**단일 패키지 + 서브패스**를 택한 이유: 어댑터가 코어와 버전이 어긋나면 씬 그래프 계약이
-깨진다. 한 패키지로 묶으면 그 위험이 구조적으로 사라진다. 어댑터별 의존은 optional peer로
-두어 React 소비처가 Vue를 끌어오지 않게 한다.
+**단일 패키지 + 서브패스**를 택한 이유: 어댑터가 코어와 버전이 어긋나면 씬 그래프 계약이 깨진다. 한 패키지로 묶으면 그 위험이 구조적으로 사라진다. 어댑터별 의존은 optional peer로 두어 React 소비처가 Vue를 끌어오지 않게 한다.
 
 ## 8. 디렉터리 구조
 
@@ -200,22 +190,22 @@ tests/
 
 ## 9. 기존 구현 대비 변경 사항
 
-| 항목 | 기존 | clotho |
-| --- | --- | --- |
-| 렌더 계층 | React JSX 직접 | 씬 그래프 + 어댑터 4종 |
-| 재생 루프 | React 컴포넌트 내부 | 프레임워크 무관 컨트롤러 |
-| 페이즈 transform | CSS 문자열(px) | 구조화 데이터 |
-| 문서 버전 | `version: 3 \| 4` (둘이 동일) | `clothoVersion: 1` 신규 체계 |
-| `group` | 스키마만 존재, **렌더러 미구현** | 실제 중첩 구현 (§SCHEMA-V1) |
-| `image` | `src` 문자열 | 에셋 레지스트리 + 호스트 훅 |
-| 보간 키 판정 | 하드코딩 문자열 집합 | 속성 메타데이터 기반 |
-| 코드 하이라이팅 | JS 전용 하드코딩 토크나이저 | 하이라이터 주입 훅 (기본은 JS) |
-| 텍스트 폭 | `fontSize * 0.6` 고정 | EAW 기반 추정 + 메트릭 훅 |
-| zod import | `astro/zod` / `zod` | `zod` 단일화 |
-| 검증 | 빌드 스크립트 | 패키지 API + CLI |
-| 스타일 | 각 앱 전역 CSS | 패키지 자산 |
-| UI 문자열 | 한국어 하드코딩 | 기본 영어 + 주입 |
-| 테스트 | 두 저장소에 분산 | 합집합 |
+| 항목             | 기존                             | clotho                         |
+| ---------------- | -------------------------------- | ------------------------------ |
+| 렌더 계층        | React JSX 직접                   | 씬 그래프 + 어댑터 4종         |
+| 재생 루프        | React 컴포넌트 내부              | 프레임워크 무관 컨트롤러       |
+| 페이즈 transform | CSS 문자열(px)                   | 구조화 데이터                  |
+| 문서 버전        | `version: 3 \| 4` (둘이 동일)    | `clothoVersion: 1` 신규 체계   |
+| `group`          | 스키마만 존재, **렌더러 미구현** | 실제 중첩 구현 (§SCHEMA-V1)    |
+| `image`          | `src` 문자열                     | 에셋 레지스트리 + 호스트 훅    |
+| 보간 키 판정     | 하드코딩 문자열 집합             | 속성 메타데이터 기반           |
+| 코드 하이라이팅  | JS 전용 하드코딩 토크나이저      | 하이라이터 주입 훅 (기본은 JS) |
+| 텍스트 폭        | `fontSize * 0.6` 고정            | EAW 기반 추정 + 메트릭 훅      |
+| zod import       | `astro/zod` / `zod`              | `zod` 단일화                   |
+| 검증             | 빌드 스크립트                    | 패키지 API + CLI               |
+| 스타일           | 각 앱 전역 CSS                   | 패키지 자산                    |
+| UI 문자열        | 한국어 하드코딩                  | 기본 영어 + 주입               |
+| 테스트           | 두 저장소에 분산                 | 합집합                         |
 
 ## 10. 비목표 (v0.1 범위 밖)
 
