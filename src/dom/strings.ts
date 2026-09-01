@@ -20,6 +20,7 @@ export interface Strings {
   readonly resetZoom: string;
   readonly fullscreen: string;
   readonly exitFullscreen: string;
+  readonly timeline: string;
   readonly reducedMotionNote: string;
   readonly rotateHint: string;
   readonly chapterLabel: (index: number, total: number) => string;
@@ -46,6 +47,7 @@ export const defaultStrings: Strings = {
   resetZoom: 'Reset zoom',
   fullscreen: 'Full screen',
   exitFullscreen: 'Exit full screen',
+  timeline: 'Animation timeline',
   reducedMotionNote: 'Autoplay is paused because you asked for reduced motion.',
   rotateHint: 'Rotate your device for a wider view.',
   chapterLabel: (index, total) => `Chapter ${index} / ${total}`,
@@ -72,6 +74,7 @@ export const koreanStrings: Strings = {
   resetZoom: '원래 크기',
   fullscreen: '전체 화면',
   exitFullscreen: '전체 화면 종료',
+  timeline: '애니메이션 재생 위치',
   reducedMotionNote: '모션 줄이기 설정으로 자동 재생을 멈췄습니다.',
   rotateHint: '기기를 회전하면 더 넓게 볼 수 있습니다.',
   chapterLabel: (index, total) => `Chapter ${index} / ${total}`,
@@ -87,6 +90,7 @@ export const CLASS = {
   button: 'cloth-wrapper-btn',
   speed: 'cloth-wrapper-speed',
   speedValue: 'cloth-wrapper-speed-value',
+  timeline: 'cloth-wrapper-timeline',
   body: 'cloth-wrapper-body',
   step: 'cloth-wrapper-step',
   reduced: 'cloth-wrapper-reduced',

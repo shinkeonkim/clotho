@@ -69,6 +69,38 @@ export function useReducedMotion(): boolean {
   return reduced;
 }
 
+/** Resolve the host page's current color scheme before falling back to OS preference. */
+export function useHostTheme(): 'light' | 'dark' {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    const media = globalThis.matchMedia?.('(prefers-color-scheme: dark)');
+    const resolve = (): void => {
+      const scheme = globalThis.getComputedStyle?.(document.documentElement).colorScheme;
+      if (scheme?.split(/\s+/).includes('dark') && !scheme.split(/\s+/).includes('light')) {
+        setTheme('dark');
+      } else if (scheme?.split(/\s+/).includes('light')) {
+        setTheme('light');
+      } else {
+        setTheme(media?.matches ? 'dark' : 'light');
+      }
+    };
+    resolve();
+    const observer = new MutationObserver(resolve);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+    });
+    media?.addEventListener('change', resolve);
+    return () => {
+      observer.disconnect();
+      media?.removeEventListener('change', resolve);
+    };
+  }, []);
+
+  return theme;
+}
+
 /**
  * Whether `ref`'s element is on screen.
  *

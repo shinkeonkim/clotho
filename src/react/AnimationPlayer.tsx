@@ -14,13 +14,14 @@ import {
   useState,
   type ReactElement,
 } from 'react';
+import { createPortal } from 'react-dom';
 import type { AnimationDocument } from '../core/schema/document';
 import { buildScene } from '../core/scene/build';
 import type { SceneOptions } from '../core/scene/context';
 import { effectivePlayback } from '../core/timing/playback';
 import { CLASS, defaultStrings, type Strings } from '../dom/strings';
 import { SceneSvg } from './scene';
-import { useInView, usePlayer, useReducedMotion } from './hooks';
+import { useFullscreen, useHostTheme, useInView, usePlayer, useReducedMotion } from './hooks';
 
 export interface AnimationStageProps {
   readonly doc: AnimationDocument;
@@ -76,10 +77,15 @@ export function AnimationPlayer({
 }: AnimationPlayerProps): ReactElement {
   const strings: Strings = { ...defaultStrings, ...stringOverrides };
   const rootRef = useRef<HTMLDivElement>(null);
+  const fullscreenRef = useRef<HTMLDivElement>(null);
 
   const { player, state } = usePlayer(doc);
   const reducedMotion = useReducedMotion();
   const inView = useInView(rootRef);
+  const hostTheme = useHostTheme();
+  const resolvedTheme = theme === 'auto' ? hostTheme : theme;
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const { isFullscreen, toggle: toggleFullscreen } = useFullscreen(fullscreenRef);
 
   /**
    * What the viewer asked for, tracked separately from whether the clock is running.
@@ -105,13 +111,27 @@ export function AnimationPlayer({
     [player],
   );
 
+  useEffect(() => {
+    if (!viewerOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape' && !document.fullscreenElement) setViewerOpen(false);
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [viewerOpen]);
+
   if (reducedMotion) {
     return createElement(
       'div',
       {
         ref: rootRef,
         className: `${CLASS.wrapper}${className ? ` ${className}` : ''}`,
-        'data-cloth-theme': theme === 'auto' ? undefined : theme,
+        'data-cloth-theme': resolvedTheme,
       },
       createElement(
         'div',
@@ -128,7 +148,7 @@ export function AnimationPlayer({
     {
       ref: rootRef,
       className: `${CLASS.wrapper}${className ? ` ${className}` : ''}`,
-      'data-cloth-theme': theme === 'auto' ? undefined : theme,
+      'data-cloth-theme': resolvedTheme,
     },
     createElement(
       'div',
@@ -163,6 +183,17 @@ export function AnimationPlayer({
                 'aria-label': strings.restart,
               },
               strings.restartIcon,
+            ),
+            createElement(
+              'button',
+              {
+                type: 'button',
+                className: CLASS.button,
+                onClick: () => setViewerOpen(true),
+                title: strings.enlarge,
+                'aria-label': strings.enlarge,
+              },
+              strings.enlargeIcon,
             ),
             createElement(
               'label',
@@ -249,6 +280,103 @@ export function AnimationPlayer({
           : null,
       ),
     ),
+    hideControls
+      ? null
+      : createElement('input', {
+          className: CLASS.timeline,
+          type: 'range',
+          min: 0,
+          max: doc.duration,
+          step: 1,
+          value: state.time,
+          onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+            player.seek(Number(event.target.value)),
+          'aria-label': strings.timeline,
+        }),
+    viewerOpen && typeof document !== 'undefined'
+      ? createPortal(
+          createElement(
+            'div',
+            {
+              className: CLASS.modalBackdrop,
+              role: 'dialog',
+              'aria-modal': 'true',
+              'aria-label': doc.title,
+              'data-cloth-theme': resolvedTheme,
+              onMouseDown: (event: React.MouseEvent<HTMLDivElement>) => {
+                if (event.target === event.currentTarget) setViewerOpen(false);
+              },
+            },
+            createElement(
+              'div',
+              { ref: fullscreenRef, className: CLASS.modalContent },
+              createElement(
+                'button',
+                {
+                  type: 'button',
+                  className: CLASS.modalClose,
+                  onClick: () => setViewerOpen(false),
+                  title: strings.close,
+                  'aria-label': strings.close,
+                },
+                strings.closeIcon,
+              ),
+              createElement('h3', { className: CLASS.modalTitle }, doc.title),
+              createElement(
+                'div',
+                { className: CLASS.modalControls },
+                createElement(
+                  'button',
+                  {
+                    type: 'button',
+                    className: CLASS.button,
+                    onClick: toggleFullscreen,
+                    title: isFullscreen ? strings.exitFullscreen : strings.fullscreen,
+                    'aria-label': isFullscreen ? strings.exitFullscreen : strings.fullscreen,
+                  },
+                  strings.enlargeIcon,
+                ),
+              ),
+              createElement(
+                'div',
+                { className: CLASS.modalStage, 'data-zoom': 'fit' },
+                createElement(
+                  'div',
+                  { className: 'cloth-modal-fit' },
+                  createElement(
+                    'div',
+                    { className: CLASS.engine },
+                    createElement(
+                      'div',
+                      { className: CLASS.stage },
+                      createElement(
+                        'div',
+                        {
+                          className: CLASS.stageFrame,
+                          'data-mat': scene.showMat ? 'true' : 'false',
+                        },
+                        createElement(SceneSvg, { scene, className: CLASS.stageSvg }),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              createElement('input', {
+                className: CLASS.timeline,
+                type: 'range',
+                min: 0,
+                max: doc.duration,
+                step: 1,
+                value: state.time,
+                onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                  player.seek(Number(event.target.value)),
+                'aria-label': strings.timeline,
+              }),
+            ),
+          ),
+          document.body,
+        )
+      : null,
   );
 }
 
