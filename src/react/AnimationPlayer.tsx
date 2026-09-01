@@ -311,30 +311,77 @@ export function AnimationPlayer({
               'div',
               { ref: fullscreenRef, className: CLASS.modalContent },
               createElement(
-                'button',
-                {
-                  type: 'button',
-                  className: CLASS.modalClose,
-                  onClick: () => setViewerOpen(false),
-                  title: strings.close,
-                  'aria-label': strings.close,
-                },
-                strings.closeIcon,
-              ),
-              createElement('h3', { className: CLASS.modalTitle }, doc.title),
-              createElement(
                 'div',
-                { className: CLASS.modalControls },
+                { className: CLASS.modalHeader },
+                createElement('h3', { className: CLASS.modalTitle }, doc.title),
                 createElement(
-                  'button',
-                  {
-                    type: 'button',
-                    className: CLASS.button,
-                    onClick: toggleFullscreen,
-                    title: isFullscreen ? strings.exitFullscreen : strings.fullscreen,
-                    'aria-label': isFullscreen ? strings.exitFullscreen : strings.fullscreen,
-                  },
-                  strings.enlargeIcon,
+                  'div',
+                  { className: CLASS.modalControls },
+                  createElement(
+                    'button',
+                    {
+                      type: 'button',
+                      className: CLASS.button,
+                      onClick: () => setUserWantsPlayback((wanted) => !wanted),
+                      title: state.playing ? strings.pause : strings.play,
+                      'aria-label': state.playing ? strings.pause : strings.play,
+                    },
+                    state.playing ? strings.pauseIcon : strings.playIcon,
+                  ),
+                  createElement(
+                    'button',
+                    {
+                      type: 'button',
+                      className: CLASS.button,
+                      onClick: () => {
+                        player.restart();
+                        setUserWantsPlayback(true);
+                      },
+                      title: strings.restart,
+                      'aria-label': strings.restart,
+                    },
+                    strings.restartIcon,
+                  ),
+                  createElement(
+                    'label',
+                    { className: CLASS.speed, title: strings.speed },
+                    createElement('input', {
+                      type: 'range',
+                      min: 0.25,
+                      max: 3,
+                      step: 0.25,
+                      value: state.speed,
+                      onChange: onSpeedChange,
+                      'aria-label': strings.speed,
+                    }),
+                    createElement(
+                      'span',
+                      { className: CLASS.speedValue },
+                      `${state.speed.toFixed(2)}x`,
+                    ),
+                  ),
+                  createElement(
+                    'button',
+                    {
+                      type: 'button',
+                      className: CLASS.button,
+                      onClick: toggleFullscreen,
+                      title: isFullscreen ? strings.exitFullscreen : strings.fullscreen,
+                      'aria-label': isFullscreen ? strings.exitFullscreen : strings.fullscreen,
+                    },
+                    strings.enlargeIcon,
+                  ),
+                  createElement(
+                    'button',
+                    {
+                      type: 'button',
+                      className: CLASS.modalClose,
+                      onClick: () => setViewerOpen(false),
+                      title: strings.close,
+                      'aria-label': strings.close,
+                    },
+                    strings.closeIcon,
+                  ),
                 ),
               ),
               createElement(

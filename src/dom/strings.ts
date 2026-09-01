@@ -107,6 +107,7 @@ export const CLASS = {
   stepListItem: 'cloth-step-list-item',
   modalBackdrop: 'cloth-modal-backdrop',
   modalContent: 'cloth-modal-content',
+  modalHeader: 'cloth-modal-header',
   modalClose: 'cloth-modal-close',
   modalTitle: 'cloth-modal-title',
   modalControls: 'cloth-modal-controls',
