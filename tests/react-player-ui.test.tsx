@@ -45,4 +45,26 @@ describe('React player controls', () => {
     expect(html).toContain('계속할까요?');
     expect(html).toContain('Continue');
   });
+
+  it('exposes checkpoint choices as accessible toggle buttons', () => {
+    const interactive = animationDocumentSchema.parse({
+      clothoVersion: 1,
+      id: 'react-choice',
+      duration: 1000,
+      checkpoints: [
+        {
+          id: 'recovery',
+          time: 0,
+          prompt: '먼저 복구할 대상은?',
+          interaction: 'choice',
+          options: [{ value: 'queue', label: 'Queue' }],
+          required: true,
+        },
+      ],
+    });
+    const html = renderToStaticMarkup(<AnimationPlayer doc={interactive} />);
+    expect(html).toContain('aria-pressed="false"');
+    expect(html).toContain('data-selected="false"');
+    expect(html).toContain('disabled=""');
+  });
 });

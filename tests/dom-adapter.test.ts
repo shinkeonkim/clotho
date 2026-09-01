@@ -335,8 +335,13 @@ describe('interactive checkpoint UI', () => {
     const panel = container.querySelector('.cloth-checkpoint')!;
     expect(panel.getAttribute('hidden')).toBeNull();
     expect(panel.textContent).toContain('다음 값은?');
-    (panel.querySelector('[data-value="2"]') as unknown as HTMLButtonElement).click();
+    const correctChoice = panel.querySelector('[data-value="2"]') as unknown as HTMLButtonElement;
+    expect(correctChoice.getAttribute('aria-pressed')).toBe('false');
+    correctChoice.click();
     expect(panel.textContent).toContain('Correct');
+    expect(panel.querySelector('[data-value="2"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(panel.querySelector('[data-value="2"]')?.getAttribute('data-selected')).toBe('true');
+    expect(panel.querySelector('.cloth-checkpoint-result')?.getAttribute('role')).toBe('status');
     const buttons = panel.querySelectorAll('button');
     (buttons[buttons.length - 1] as unknown as HTMLButtonElement).click();
     scheduler.advance(200);

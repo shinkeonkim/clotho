@@ -346,6 +346,8 @@ export function AnimationPlayer({
                         {
                           type: 'button',
                           key: option.value,
+                          'aria-pressed': answer?.value === option.value,
+                          'data-selected': String(answer?.value === option.value),
                           onClick: () => interaction.answer(option.value),
                         },
                         option.label,
@@ -369,6 +371,7 @@ export function AnimationPlayer({
                     'p',
                     {
                       className: CLASS.checkpointResult,
+                      role: 'status',
                       'data-correct': String(answer.correct),
                     },
                     answer.correct ? strings.correctAnswer : strings.incorrectAnswer,
