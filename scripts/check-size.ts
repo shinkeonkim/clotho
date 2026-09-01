@@ -28,7 +28,7 @@ const DIST = join(REPO_ROOT, 'dist');
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 39_500,
+    gzipBudget: 40_500,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
@@ -45,7 +45,11 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   vue: { file: 'vue/index.js', gzipBudget: 24_000, note: 'vue is external; no zod' },
   node: { file: 'node/index.js', gzipBudget: 8_000, note: 'loader + schema (needs zod)' },
   gif: { file: 'gif/index.js', gzipBudget: 24_000, note: 'scene renderer + GIF encoder' },
-  cli: { file: 'cli/index.js', gzipBudget: 35_000, note: 'validate + migrate + GIF (needs zod)' },
+  cli: {
+    file: 'cli/index.js',
+    gzipBudget: 38_500,
+    note: 'validate + migrate + lint + GIF (needs zod)',
+  },
   plugins: {
     file: 'plugins/index.js',
     gzipBudget: 18_000,

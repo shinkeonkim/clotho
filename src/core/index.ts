@@ -29,3 +29,4 @@ export * from './data';
 export * from './story';
 export * from './responsive';
 export * from './performance';
+export * from './lint';

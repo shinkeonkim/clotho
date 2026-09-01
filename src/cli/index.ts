@@ -19,16 +19,19 @@ import { migrateLegacyDocument, needsMigration } from '../core/migrate/legacy';
 import { stripBom } from '../core/text/base64';
 import { animationDocumentSchema } from '../core/schema/document';
 import { writeDocumentGif } from '../node/gif';
+import { autofixDocument, lintDocument } from '../core/lint';
 
 const USAGE = `clotho — JSON-defined visualization animations
 
 Usage:
   clotho validate <path...> [options]   Check documents against the v1 schema and semantic rules
+  clotho lint <path...> [--fix]         Check readability, accessibility, and authoring quality
   clotho migrate  <path...> [options]   Convert legacy (version 3/4) documents to v1
   clotho gif <input.json> <output.gif>   Render a document as an animated GIF
 
 Options:
   --write     migrate only: rewrite files in place (default is a dry run)
+  --fix       lint only: apply safe fixes in place
   --json      machine-readable output
   --quiet     exit code only, no output
   --strict    validate only: treat warnings as failures
@@ -47,6 +50,7 @@ interface Args {
   readonly command: string | undefined;
   readonly paths: string[];
   readonly write: boolean;
+  readonly fix: boolean;
   readonly json: boolean;
   readonly quiet: boolean;
   readonly strict: boolean;
@@ -78,6 +82,7 @@ function parseArgs(argv: string[]): Args {
     command: positional[0],
     paths: positional.slice(1),
     write: flags.has('--write'),
+    fix: flags.has('--fix'),
     json: flags.has('--json'),
     quiet: flags.has('--quiet'),
     strict: flags.has('--strict'),
@@ -87,6 +92,55 @@ function parseArgs(argv: string[]): Args {
     once: flags.has('--once'),
     background: values.get('--background'),
   };
+}
+
+async function runLint(args: Args): Promise<number> {
+  const files = await collectFiles(args.paths);
+  let problemCount = 0;
+  let fixCount = 0;
+  const reports: { file: string; findings: readonly import('../core/lint').LintFinding[] }[] = [];
+  for (const file of files) {
+    const parsed = animationDocumentSchema.safeParse(readJson(await readFile(file, 'utf-8')));
+    if (!parsed.success)
+      throw new Error(`${file}: document must pass schema validation before linting`);
+    const result = args.fix ? autofixDocument(parsed.data) : null;
+    if (result) {
+      fixCount += result.fixes.length;
+      if (result.fixes.length > 0)
+        await writeFile(file, `${JSON.stringify(result.document, null, 2)}\n`, 'utf-8');
+    }
+    const findings = result?.remaining ?? lintDocument(parsed.data);
+    problemCount += findings.length;
+    reports.push({ file, findings });
+  }
+  if (args.json)
+    console.log(
+      JSON.stringify(
+        {
+          command: 'lint',
+          fix: args.fix,
+          fileCount: files.length,
+          fixCount,
+          problemCount,
+          files: reports
+            .map(({ file, findings }) => ({ file: relative(process.cwd(), file), findings }))
+            .filter(({ findings }) => findings.length > 0),
+        },
+        null,
+        2,
+      ),
+    );
+  else if (!args.quiet) {
+    for (const report of reports)
+      for (const issue of report.findings)
+        console.log(
+          `${issue.severity.toUpperCase()} ${relative(process.cwd(), report.file)}:${issue.path} [${issue.ruleId}] ${issue.message}`,
+        );
+    console.log(
+      `${problemCount === 0 ? 'OK' : 'FAILED'} — ${files.length} file(s), ${fixCount} fix(es), ${problemCount} problem(s)`,
+    );
+  }
+  return problemCount > 0 ? 1 : 0;
 }
 
 async function runGif(args: Args): Promise<number> {
@@ -297,7 +351,12 @@ async function main(): Promise<number> {
     return args.command === undefined && !args.help ? 2 : 0;
   }
 
-  if (args.command !== 'validate' && args.command !== 'migrate' && args.command !== 'gif') {
+  if (
+    args.command !== 'validate' &&
+    args.command !== 'migrate' &&
+    args.command !== 'gif' &&
+    args.command !== 'lint'
+  ) {
     console.error(`unknown command: ${args.command}\n`);
     console.error(USAGE);
     return 2;
@@ -312,6 +371,7 @@ async function main(): Promise<number> {
   try {
     if (args.command === 'validate') return await runValidate(args);
     if (args.command === 'migrate') return await runMigrate(args);
+    if (args.command === 'lint') return await runLint(args);
     return await runGif(args);
   } catch (cause) {
     console.error(`clotho: ${(cause as Error).message}`);
