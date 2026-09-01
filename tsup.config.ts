@@ -17,7 +17,7 @@ export default defineConfig({
   clean: true,
   treeshake: true,
   splitting: true,
-  // The stylesheet is copied verbatim to dist/clotho.css ("@shinkeonkim/clotho/styles.css").
+  // The stylesheet is copied verbatim to dist/clotho.css ("@kokoa/clotho/styles.css").
   publicDir: 'src/styles',
   external: ['react', 'react-dom', 'react/jsx-runtime', 'vue'],
 });

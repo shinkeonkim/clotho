@@ -1,8 +1,17 @@
 {
-  "name": "@shinkeonkim/clotho",
-  "version": "0.0.0",
+  "name": "@kokoa/clotho",
+  "version": "0.1.1",
   "description": "JSON-defined visualization animations — framework-agnostic scene graph with React, Vue, vanilla, and SVG-string adapters",
   "license": "MIT",
+  "author": "kokoa",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shinkeonkim/clotho.git"
+  },
+  "homepage": "https://github.com/shinkeonkim/clotho#readme",
+  "bugs": {
+    "url": "https://github.com/shinkeonkim/clotho/issues"
+  },
   "type": "module",
   "packageManager": "bun@1.3.14",
   "sideEffects": [
@@ -18,7 +27,7 @@
     "access": "public"
   },
   "bin": {
-    "clotho": "./dist/cli/index.js"
+    "clotho": "dist/cli/index.js"
   },
   "exports": {
     ".": {
@@ -91,6 +100,7 @@
     "check:legacy-equivalence": "bun scripts/verify-legacy-equivalence.ts",
     "check:svg-wellformed": "bun scripts/verify-svg-wellformed.ts",
     "audit:editor": "bun scripts/audit-editor-coverage.ts",
+    "release:check": "bun scripts/release-check.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

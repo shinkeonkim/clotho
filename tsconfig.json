@@ -27,13 +27,13 @@
       "@/*": ["src/*"],
       // Self-reference so examples can import the package by name and still be
       // typechecked. An example that does not compile is worse than no example.
-      "@shinkeonkim/clotho": ["src/core/index.ts"],
-      "@shinkeonkim/clotho/react": ["src/react/index.ts"],
-      "@shinkeonkim/clotho/vue": ["src/vue/index.ts"],
-      "@shinkeonkim/clotho/dom": ["src/dom/index.ts"],
-      "@shinkeonkim/clotho/svg": ["src/svg/index.ts"],
-      "@shinkeonkim/clotho/node": ["src/node/index.ts"],
-      "@shinkeonkim/clotho/styles.css": ["src/styles/clotho.css"]
+      "@kokoa/clotho": ["src/core/index.ts"],
+      "@kokoa/clotho/react": ["src/react/index.ts"],
+      "@kokoa/clotho/vue": ["src/vue/index.ts"],
+      "@kokoa/clotho/dom": ["src/dom/index.ts"],
+      "@kokoa/clotho/svg": ["src/svg/index.ts"],
+      "@kokoa/clotho/node": ["src/node/index.ts"],
+      "@kokoa/clotho/styles.css": ["src/styles/clotho.css"]
     }
   },
   "include": [

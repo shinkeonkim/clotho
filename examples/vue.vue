@@ -1,9 +1,9 @@
 <!-- Vue 3 integration. -->
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { parseDocument, type AnimationDocument } from '@shinkeonkim/clotho';
-import { AnimationPlayer } from '@shinkeonkim/clotho/vue';
-import '@shinkeonkim/clotho/styles.css';
+import { parseDocument, type AnimationDocument } from '@kokoa/clotho';
+import { AnimationPlayer } from '@kokoa/clotho/vue';
+import '@kokoa/clotho/styles.css';
 
 const props = defineProps<{ id: string }>();
 const doc = ref<AnimationDocument | null>(null);

@@ -1,4 +1,4 @@
-# @shinkeonkim/clotho
+# @kokoa/clotho
 
 JSON으로 정의하는 시각화 애니메이션 패키지.
 
@@ -37,7 +37,10 @@ elements · Vue vnodes · 실 DOM · SVG 문자열로 옮긴다. 렌더 로직�
 ## 설치
 
 ```bash
-bun add @shinkeonkim/clotho     # npm / pnpm / yarn 도 동일
+npm install @kokoa/clotho
+yarn add @kokoa/clotho
+pnpm add @kokoa/clotho
+bun add @kokoa/clotho
 ```
 
 React·Vue는 optional peer이므로 쓰는 것만 설치하면 된다. 바닐라 JS와 SVG 출력은
@@ -48,9 +51,9 @@ peer 의존이 없다.
 ### React
 
 ```tsx
-import { parseDocumentOrThrow } from '@shinkeonkim/clotho';
-import { AnimationPlayer } from '@shinkeonkim/clotho/react';
-import '@shinkeonkim/clotho/styles.css';
+import { parseDocumentOrThrow } from '@kokoa/clotho';
+import { AnimationPlayer } from '@kokoa/clotho/react';
+import '@kokoa/clotho/styles.css';
 
 const doc = parseDocumentOrThrow(await (await fetch('/animations/bellman-ford.json')).json());
 
@@ -61,8 +64,8 @@ const doc = parseDocumentOrThrow(await (await fetch('/animations/bellman-ford.js
 
 ```vue
 <script setup lang="ts">
-import { AnimationPlayer } from '@shinkeonkim/clotho/vue';
-import '@shinkeonkim/clotho/styles.css';
+import { AnimationPlayer } from '@kokoa/clotho/vue';
+import '@kokoa/clotho/styles.css';
 const props = defineProps<{ doc: AnimationDocument }>();
 </script>
 
@@ -72,9 +75,9 @@ const props = defineProps<{ doc: AnimationDocument }>();
 ### 바닐라 JS
 
 ```ts
-import { parseDocumentOrThrow } from '@shinkeonkim/clotho';
-import { mountPlayer } from '@shinkeonkim/clotho/dom';
-import '@shinkeonkim/clotho/styles.css';
+import { parseDocumentOrThrow } from '@kokoa/clotho';
+import { mountPlayer } from '@kokoa/clotho/dom';
+import '@kokoa/clotho/styles.css';
 
 const handle = mountPlayer(document.querySelector('#stage')!, doc);
 handle.player.seek(3000);
@@ -84,7 +87,7 @@ handle.destroy();
 ### 정적 SVG (SSR·썸네일·정적 내보내기)
 
 ```ts
-import { renderDocumentToSvg } from '@shinkeonkim/clotho/svg';
+import { renderDocumentToSvg } from '@kokoa/clotho/svg';
 
 const svg = renderDocumentToSvg(doc, 6000, { standalone: true });
 ```
@@ -95,7 +98,7 @@ DOM도 프레임워크도 필요 없다. 프레임 단위로 호출하면 그대
 
 | 진입점 | 내용 | peer | gzip |
 | --- | --- | --- | ---: |
-| `@shinkeonkim/clotho` | 스키마·런타임·씬 그래프·재생 컨트롤러·검증·마이그레이션 | 없음 | 25KB |
+| `@kokoa/clotho` | 스키마·런타임·씬 그래프·재생 컨트롤러·검증·마이그레이션 | 없음 | 25KB |
 | `…/svg` | SVG 문자열 직렬화 | 없음 | 16KB |
 | `…/dom` | 바닐라 JS 어댑터 + 브라우저 스케줄러 | 없음 | 20KB |
 | `…/react` | React 어댑터 + 컴포넌트·훅 | react, react-dom | 20KB |
@@ -214,6 +217,7 @@ bun run gallery     # 기능별 문서 9개 — 요소 10종, 전이 8종, 이�
 - [`docs/MIGRATION.md`](./docs/MIGRATION.md) — legacy 문서·코드 이전
 - [`docs/AUDIT-EDITOR.md`](./docs/AUDIT-EDITOR.md) — 에디터 기능 커버리지 감사
 - [`docs/PROPOSALS.md`](./docs/PROPOSALS.md) — 확장 기획안 14건
+- [`docs/RELEASING.md`](./docs/RELEASING.md) — 배포 전 검증·npm 업로드·설치 확인
 - [`TASKS.md`](./TASKS.md) — 작업 계획과 진행 상황
 
 에디터는 별도 패키지 `clotho-editor`로 분리된다.
@@ -231,6 +235,8 @@ bun run check:core-purity      # 코어에 프레임워크·DOM 의존 유입 �
 bun run check:styles           # 클래스·토큰·테마 경로 일치
 bun run check:size             # 진입점별 크기 예산 + 서브패스 격리
 bun run schema:check           # JSON Schema가 zod와 동기인지
+bun run release:check          # 패키지 메타데이터와 tarball 내용 검사
+bash scripts/verify-package-managers.sh # npm/yarn/bun 로컬 설치 검사
 ```
 
 `.private/`에 참조 저장소가 있을 때만 도는 검사:

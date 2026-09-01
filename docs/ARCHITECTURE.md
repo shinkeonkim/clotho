@@ -155,10 +155,10 @@ const resolver: AssetResolver = {
 
 ## 7. 패키지 경계
 
-npm `clotho`는 선점되어 있어 **`@shinkeonkim/clotho`** 로 배포한다. CLI 빈 이름은 `clotho` 유지.
+npm `clotho`는 선점되어 있어 **`@kokoa/clotho`** 로 배포한다. CLI 빈 이름은 `clotho` 유지.
 
 ```
-@shinkeonkim/clotho
+@kokoa/clotho
 ├── "."            → 코어 (의존: zod)
 ├── "./react"      → React 어댑터   (peer: react, react-dom)
 ├── "./vue"        → Vue 3 어댑터   (peer: vue)

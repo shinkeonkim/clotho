@@ -75,7 +75,7 @@ export const koreanStrings: Strings = {
   chapterLabel: (index, total) => `Chapter ${index} / ${total}`,
 };
 
-/** Class names the adapters emit. Style them via `@shinkeonkim/clotho/styles.css`. */
+/** Class names the adapters emit. Style them via `@kokoa/clotho/styles.css`. */
 export const CLASS = {
   wrapper: 'cloth-wrapper',
   header: 'cloth-wrapper-header',

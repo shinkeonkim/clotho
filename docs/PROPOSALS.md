@@ -325,7 +325,7 @@ bunx clotho export doc.json --format sprite --frames 60
 ```
 
 **패키지 밖에 두는 것이 맞다.** GIF/MP4 인코더는 무겁고 플랫폼을 탄다. 코어는
-**프레임을 주는 것까지**가 책임이고, `@shinkeonkim/clotho-export`가 받는다.
+**프레임을 주는 것까지**가 책임이고, `@kokoa/clotho-export`가 받는다.
 스프라이트 시트(SVG/PNG 격자)는 의존이 거의 없으니 CLI에 넣어도 된다.
 
 **호환성.** 형식 변경 없음. **비용.** 중.

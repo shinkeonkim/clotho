@@ -1,6 +1,6 @@
 // Node adapter: filesystem document loading.
 //
-// Separate entry point so a browser bundle importing "@shinkeonkim/clotho" never
+// Separate entry point so a browser bundle importing "@kokoa/clotho" never
 // pulls in node:fs.
 
 export * from './loader';

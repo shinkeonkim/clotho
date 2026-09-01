@@ -20,7 +20,7 @@
 
 ```bash
 bun install
-bun add "@shinkeonkim/clotho@file:../.."     # .private 안에서의 상대 경로
+bun add "@kokoa/clotho@file:../.."     # .private 안에서의 상대 경로
 ```
 
 `parseDocument` / `computeSnapshot` / `buildScene` / `renderDocumentToSvg` /
@@ -125,14 +125,14 @@ bun install
 ```
 
 1. **의존 추가** — `apps/web`, `apps/admin`, `packages/animation-studio`,
-   `apps/animation-api`의 `package.json`에 `@shinkeonkim/clotho` 추가.
+   `apps/animation-api`의 `package.json`에 `@kokoa/clotho` 추가.
 2. **`packages/animation-engine` 삭제.** 워크스페이스 목록에서도 제거.
 3. **import 경로 치환** (아래 심볼 대응표 참조).
 4. **`packages/schema/src/animation.ts` 대체.** passthrough 봉투 검증은
    `parseDocument`로 교체한다. 이쪽이 실제로 검증하므로 저장 시점에 잘못된 문서를
    막아준다.
 5. **`apps/web/app/globals.css`의 `.anim-*` 약 500줄 삭제** →
-   `import '@shinkeonkim/clotho/styles.css'`. 호스트 팔레트 매핑을 추가한다:
+   `import '@kokoa/clotho/styles.css'`. 호스트 팔레트 매핑을 추가한다:
    ```css
    :root {
      --cloth-fg: var(--color-fg);
@@ -206,15 +206,15 @@ bun install
 ```bash
 git -C .private/shinkeonkim.github.io switch -c feat/clotho
 bun install
-bun add "@shinkeonkim/clotho@file:../.."   # 배포 후에는 버전 지정으로
+bun add "@kokoa/clotho@file:../.."   # 배포 후에는 버전 지정으로
 ```
 
-1. `bun add @shinkeonkim/clotho`
+1. `bun add @kokoa/clotho`
 2. **`src/entities/animation/engine/` 삭제** (스키마·런타임·렌더러 전부 clotho에 있다).
 3. `AnimationPlayer.tsx` / `AnimationLoader.astro` / `hydrate-animations.ts`를
    clotho `/react`로 교체. UI 문자열은 `koreanStrings`를 넘겨 기존 한국어를 유지한다:
    ```tsx
-   import { AnimationPlayer, koreanStrings } from '@shinkeonkim/clotho/react';
+   import { AnimationPlayer, koreanStrings } from '@kokoa/clotho/react';
    <AnimationPlayer doc={doc} strings={koreanStrings} />
    ```
 4. **`astro/zod` → `zod` 전환 확인.** 기존 스키마가 `astro/zod`를 썼고 clotho는 `zod`를

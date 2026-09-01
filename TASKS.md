@@ -16,7 +16,7 @@ JSON 기반 시각화 애니메이션 패키지. 조사는 [`docs/RESEARCH.md`](
 | Q2 | **새 버저닝 체계 도입.** `clothoVersion: 1` 신규 포맷. 소비처도 새 시스템으로 전환 |
 | Q3 | **group·image 기능 실제 사용.** 이미지는 base64 인라인 + 호스트 훅 API 양쪽 지원. 에디터가 이미지 첨부 UI를 만들 수 있는 인터페이스 제공 |
 | Q4 | **React 외 바닐라JS·Vue.js도 지원.** → 씬 그래프 + 어댑터 구조 |
-| Q5 | npm `clotho` 선점됨 → **`@shinkeonkim/clotho`** 로 배포 |
+| Q5 | npm `clotho` 선점됨 → **`@kokoa/clotho`** 로 배포 |
 | Q6 | **인코딩(UTF-8) 전반 고려.** CJK 폭, XML 이스케이프, base64, BOM, 그래핌 |
 
 Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프레임워크 무관 씬 그래프**로
@@ -33,7 +33,7 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 - [x] **0.5** 383개 legacy JSON 코퍼스를 회귀 픽스처로 연결
 - [x] **0.6** v1 포맷 초안 작성 → `docs/SCHEMA-V1.md`
 - [x] **0.7** v1 포맷 확정 (`SCHEMA-V1.md` §5 — S1~S6 결정 완료)
-- [x] **0.8** 패키지명 `@shinkeonkim/clotho`로 전환 + 어댑터 서브패스 골격
+- [x] **0.8** 패키지명 `@kokoa/clotho`로 전환 + 어댑터 서브패스 골격
 - [x] **0.9** 코어 순수성 검사기 (`check:core-purity`)
 
 ## Phase 1 — 코어 스키마 및 런타임
@@ -151,7 +151,7 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
 
 ## Phase 5 — 스타일
 
-- [x] **5.1** CSS를 패키지 자산으로 추출 (`@shinkeonkim/clotho/styles.css`)
+- [x] **5.1** CSS를 패키지 자산으로 추출 (`@kokoa/clotho/styles.css`)
   - 출처: oh-my-blog `globals.css` 약 500줄. 클래스명 `anim-` → `cloth-` 전환
 - [x] **5.2** 테마 토큰화 — **원본은 블로그가 정의한 `--color-*`에 의존했다.**
   다른 프로젝트에 넣으면 전부 미설정으로 렌더된다. `--cloth-*` 자체 토큰에 라이트/다크
@@ -178,7 +178,7 @@ Q4가 구조를 가장 크게 바꿨다. 렌더 계층을 React JSX에서 **프�
   - `.ts`/`.tsx` 예제는 **타입체크 대상에 포함**했다 (패키지명 self-reference 경로 매핑).
     컴파일 안 되는 예제는 없는 것보다 나쁘다 — 일부러 깨뜨려 검증됨을 확인
 - [x] **6.6** CI 워크플로 (typecheck/lint/format/purity/test/build/size/styles/schema)
-- [ ] **6.7** `@shinkeonkim/clotho@0.1.0` npm 배포 — **사용자 확인 대기**
+- [ ] **6.7** `@kokoa/clotho@0.1.0` npm 배포 — **사용자 확인 대기**
   - 되돌릴 수 없고 외부로 나가는 작업이라 임의로 실행하지 않는다
 
 ## Phase 7 — 역적용 (소비처 마이그레이션)

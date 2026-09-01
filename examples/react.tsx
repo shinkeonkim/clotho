@@ -1,9 +1,9 @@
 // React integration.
 
 import { useEffect, useState } from 'react';
-import { parseDocument, type AnimationDocument } from '@shinkeonkim/clotho';
-import { AnimationPlayer, AnimationStage } from '@shinkeonkim/clotho/react';
-import '@shinkeonkim/clotho/styles.css';
+import { parseDocument, type AnimationDocument } from '@kokoa/clotho';
+import { AnimationPlayer, AnimationStage } from '@kokoa/clotho/react';
+import '@kokoa/clotho/styles.css';
 
 export function Animation({ id }: { id: string }) {
   const [doc, setDoc] = useState<AnimationDocument | null>(null);
