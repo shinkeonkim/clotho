@@ -6,6 +6,8 @@ JSON으로 정의하는 시각화 애니메이션 패키지.
 
 렌더링 결과는 특정 framework에 종속되지 않는 **scene graph**로 만든다. 각 adapter는 이 결과를 React element, Vue vnode, DOM, SVG 문자열로 옮기기만 하므로 실제 렌더링 규칙은 한 곳에서 관리된다.
 
+직접 설치하기 전에 [Clotho Editor](https://clotho-editor.shinkeonkim.com/)에서 갤러리 애니메이션을 열고 JSON 문서와 재생 결과를 바로 확인할 수 있다.
+
 ## 애니메이션 갤러리
 
 각 예시는 독립된 문서이며 아래 GIF도 라이브러리의 `writeDocumentGif`로 생성했다.

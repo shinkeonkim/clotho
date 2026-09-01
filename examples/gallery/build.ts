@@ -5,7 +5,8 @@
 // artifact to read. Someone reviewing a change wants to see whether the pictures moved,
 // and a directory of SVGs diffs where a running page does not.
 //
-// Usage: bun examples/gallery/build.ts [outDir]   (default: examples/gallery/out)
+// Usage: bun examples/gallery/build.ts [outDir] [--documents-only]
+//        (default: examples/gallery/out)
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,11 +14,13 @@ import { GALLERY } from './documents';
 import { parseDocumentOrThrow } from '../../src/core/index';
 import { renderDocumentToSvg } from '../../src/svg/index';
 
-const outDir = process.argv[2] ?? 'examples/gallery/out';
+const positional = process.argv.slice(2).filter((arg) => !arg.startsWith('--'));
+const outDir = positional[0] ?? 'examples/gallery/out';
+const documentsOnly = process.argv.includes('--documents-only');
 const FRAMES = 9;
 
 mkdirSync(join(outDir, 'documents'), { recursive: true });
-mkdirSync(join(outDir, 'frames'), { recursive: true });
+if (!documentsOnly) mkdirSync(join(outDir, 'frames'), { recursive: true });
 
 for (const entry of GALLERY) {
   const doc = parseDocumentOrThrow(entry.doc);
@@ -31,7 +34,7 @@ for (const entry of GALLERY) {
     'utf-8',
   );
 
-  for (let i = 0; i < FRAMES; i += 1) {
+  for (let i = 0; !documentsOnly && i < FRAMES; i += 1) {
     const time = Math.round((doc.duration * i) / (FRAMES - 1));
     // `standalone` because these are files opened on their own, with no stylesheet for
     // var(--cloth-fg) to resolve against.
@@ -42,7 +45,9 @@ for (const entry of GALLERY) {
       'utf-8',
     );
   }
-  console.log(`${entry.slug.padEnd(14)} 1 document · ${FRAMES} frames`);
+  console.log(`${entry.slug.padEnd(14)} 1 document${documentsOnly ? '' : ` · ${FRAMES} frames`}`);
 }
 
-console.log(`\n${GALLERY.length} documents → ${outDir}`);
+console.log(
+  `\n${GALLERY.length} documents${documentsOnly ? '' : ` · ${GALLERY.length * FRAMES} frames`} → ${outDir}`,
+);
