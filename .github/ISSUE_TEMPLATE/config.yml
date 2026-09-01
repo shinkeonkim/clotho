@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Editor issue
+    url: https://github.com/shinkeonkim/clotho-editor/issues/new/choose
+    about: 시각 편집기의 UI와 저작 interaction 문제는 editor 저장소에 등록해주세요.

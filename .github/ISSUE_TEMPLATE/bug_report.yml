@@ -1,0 +1,38 @@
+name: Bug report
+description: Clotho schema, runtime, renderer 또는 player 문제를 알려주세요.
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 문제 설명
+      description: 기대한 결과와 실제 결과를 함께 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 최소 재현
+      description: 가능한 경우 Clotho JSON과 실행 코드를 첨부해주세요.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: package 버전
+      placeholder: "@kokoa/clotho 0.1.7"
+    validations:
+      required: true
+  - type: dropdown
+    id: adapter
+    attributes:
+      label: 사용 adapter
+      options: [core, react, vue, dom, svg, node, gif, cli]
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 추가 정보
+      description: 실행 환경, 오류 로그와 화면 캡처를 첨부해주세요.
