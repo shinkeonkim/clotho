@@ -1,6 +1,6 @@
 {
   "name": "@kokoa/clotho",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "JSON-defined visualization animations — framework-agnostic scene graph with React, Vue, vanilla, and SVG-string adapters",
   "license": "MIT",
   "author": "kokoa",
