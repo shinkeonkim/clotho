@@ -10,6 +10,7 @@ export default defineConfig({
     'node/index': 'src/node/index.ts',
     'gif/index': 'src/gif/index.ts',
     'cli/index': 'src/cli/index.ts',
+    'plugins/index': 'src/plugins/index.ts',
   },
   format: ['esm'],
   target: 'es2022',

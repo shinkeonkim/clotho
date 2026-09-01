@@ -28,6 +28,7 @@
 │  assets      에셋 참조 해석 + 호스트 훅  ★신규                    │
 │  validate    스키마 + 의미 검증                                  │
 │  migrate     legacy v3/v4 → clotho v1                           │
+│  plugins     작성 pipeline 확장(parse/normalize/compile/validate) │
 └─────────────────────────────────────────────────────────────────┘
               │ Scene (순수 데이터)          │ PlayerHandle (구독)
      ┌────────┴────────┬────────────┬────────┴──────┐
@@ -213,3 +214,7 @@ tests/
 - Svelte/Solid/Angular 어댑터 (씬 그래프가 있으므로 추후 저비용)
 - 비디오/GIF 서버 사이드 익스포트 (`/svg` 프레임 직렬화가 토대는 제공)
 - 새 요소 타입 / 새 이펙트 타입 추가
+
+## 11. Compiler plugin 경계
+
+Plugin은 runtime과 renderer를 확장하지 않는다. 외부 입력을 순수 JSON으로 처리해 최종 `AnimationDocument`를 만들거나 추가 finding·artifact를 생성한다. 모든 adapter가 이해해야 하는 layout, accessibility와 timing 의미는 built-in으로 유지한다. 상세 계약과 안전 경계는 [`PLUGINS.md`](./PLUGINS.md)를 따른다.

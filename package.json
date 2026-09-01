@@ -59,6 +59,10 @@
       "types": "./dist/gif/index.d.ts",
       "default": "./dist/gif/index.js"
     },
+    "./plugins": {
+      "types": "./dist/plugins/index.d.ts",
+      "default": "./dist/plugins/index.js"
+    },
     "./styles.css": "./dist/clotho.css",
     "./schema.json": "./schema/clotho-1.schema.json",
     "./package.json": "./package.json"
@@ -85,6 +89,9 @@
       ],
       "gif": [
         "./dist/gif/index.d.ts"
+      ],
+      "plugins": [
+        "./dist/plugins/index.d.ts"
       ]
     }
   },

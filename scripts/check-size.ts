@@ -46,12 +46,18 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   node: { file: 'node/index.js', gzipBudget: 8_000, note: 'loader + schema (needs zod)' },
   gif: { file: 'gif/index.js', gzipBudget: 24_000, note: 'scene renderer + GIF encoder' },
   cli: { file: 'cli/index.js', gzipBudget: 35_000, note: 'validate + migrate + GIF (needs zod)' },
+  plugins: {
+    file: 'plugins/index.js',
+    gzipBudget: 18_000,
+    note: 'experimental authoring pipeline; isolated from the default core entry',
+  },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
 };
 
 /** Imports each entry must never contain, so subpath isolation is real. */
 const FORBIDDEN_IMPORTS: Record<string, RegExp[]> = {
   core: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
+  plugins: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   svg: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   dom: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   react: [/from\s*['"]vue['"]/, /from\s*['"]node:/],

@@ -10,6 +10,8 @@ JSON으로 정의하는 시각화 애니메이션 패키지.
 
 전체 사용법과 API, JSON Schema, 표현 요소별 예시는 [Clotho 문서](https://clotho-docs.shinkeonkim.com/)에서 확인할 수 있다.
 
+작성 형식의 import·compile·검증·추가 export는 별도 `@kokoa/clotho/plugins` entry의 experimental [compiler plugin API](./docs/PLUGINS.md)로 확장할 수 있다. runtime 의미와 모든 adapter가 공유해야 하는 근본 기능은 plugin으로 넘기지 않고 core에 내장한다.
+
 ## Text 국제화
 
 기존 `content`는 항상 기본 문구로 사용되므로 이전 문서도 그대로 동작한다. 문서의 `locales`를 생략하면 `ko`, `en`을 기본으로 제공하며, 특정 text 요소에서 다른 언어가 필요하면 `locales`와 `translations`를 직접 확장한다.
