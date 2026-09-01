@@ -25,3 +25,4 @@ export * from './i18n';
 export * from './layout';
 export * from './annotations';
 export * from './interactions/session';
+export * from './data';

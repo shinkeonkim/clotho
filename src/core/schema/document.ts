@@ -12,6 +12,7 @@ import { effectSchema } from './effects';
 import { assetMapSchema } from './assets';
 import { layoutSchema } from './layout';
 import { checkpointSchema } from './checkpoints';
+import { dataValueSchema } from './data';
 
 /** Current document format version emitted and accepted by this build. */
 export const FORMAT_VERSION = 1;
@@ -69,6 +70,7 @@ export const animationDocumentSchema = z.object({
   duration: z.number().int().min(0).default(5000),
   canvas: canvasSchema.default(CANVAS_DEFAULT),
   assets: assetMapSchema.default({}),
+  data: z.record(dataValueSchema).default({}),
   elements: z.array(elementSchema).default([]),
   /** Authoring-time placement rules. Compile them to element coordinates before rendering. */
   layouts: z.array(layoutSchema).default([]),

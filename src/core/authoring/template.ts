@@ -1,5 +1,6 @@
 import { animationDocumentSchema, type AnimationDocument } from '../schema/document';
 import { compileLayouts } from '../layout';
+import { compileDataBindings } from '../data';
 import type { z } from 'zod';
 
 type AnimationInput = z.input<typeof animationDocumentSchema>;
@@ -178,7 +179,9 @@ export function defineTemplate<P extends Record<string, unknown>>(
     throw new Error('template id must be a lowercase package-style identifier');
   const instantiate = (values: Partial<P> = {}): AnimationDocument => {
     const parameters = resolveTemplateParameters(definition.parameters, values) as P;
-    return compileLayouts(animationDocumentSchema.parse(definition.build(parameters))).document;
+    return compileLayouts(
+      compileDataBindings(animationDocumentSchema.parse(definition.build(parameters))).document,
+    ).document;
   };
   return Object.freeze({
     id: definition.id,

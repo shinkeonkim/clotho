@@ -8,6 +8,7 @@
 //   - `interpolate` on property tracks, replacing the hardcoded key sets (§2.2)
 
 import { z } from 'zod';
+import { dataBindingSchema } from './data';
 
 /**
  * Element / chapter / effect / asset identifier.
@@ -146,6 +147,8 @@ export const baseElementProps = {
   rotation: z.number().default(0),
   appearances: z.array(appearanceSchema).default([]),
   tracks: z.array(propertyTrackSchema).default([]),
+  /** Compile-time values resolved from the document data registry or a host snapshot. */
+  bindings: z.array(dataBindingSchema).default([]),
 };
 
 export type Anchor = z.infer<typeof anchorSchema>;

@@ -9,13 +9,15 @@ import type {
   TrackValue,
 } from '../schema/primitives';
 import { compileLayouts } from '../layout';
+import { compileDataBindings } from '../data';
 
 export type AnimationInput = z.input<typeof animationDocumentSchema>;
 export type EffectInput = z.input<typeof effectSchema>;
 
 /** Type-check, apply schema defaults, and return ordinary JSON-compatible data. */
 export function defineAnimation(input: AnimationInput) {
-  return compileLayouts(animationDocumentSchema.parse(input)).document;
+  const parsed = animationDocumentSchema.parse(input);
+  return compileLayouts(compileDataBindings(parsed).document).document;
 }
 
 export function appear(

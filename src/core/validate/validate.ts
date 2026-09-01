@@ -19,6 +19,7 @@ import { parseDocument } from '../schema';
 import type { AnimationDocument } from '../schema/document';
 import { buildElementTree } from '../runtime/tree';
 import { annotationTokens } from '../annotations';
+import { bindablePropertiesFor, resolveJsonPointer, formatBindingValue } from '../data';
 
 export type Severity = 'error' | 'warning';
 
@@ -87,9 +88,46 @@ export function validateDocument(value: unknown): ValidationResult {
   checkAssets(doc, findings);
   checkLocalization(doc, findings);
   checkAnnotations(doc, findings);
+  checkDataBindings(doc, findings);
   checkUnknownProperties(value, doc, findings);
 
   return summarize(findings, doc);
+}
+
+function checkDataBindings(doc: AnimationDocument, findings: Finding[]): void {
+  doc.elements.forEach((element, elementIndex) => {
+    const seen = new Set<string>();
+    const allowed = new Set(bindablePropertiesFor(element));
+    element.bindings.forEach((binding, bindingIndex) => {
+      const path = `elements.${elementIndex}.bindings.${bindingIndex}`;
+      if (!allowed.has(binding.property))
+        findings.push(
+          error(
+            'invalid-data-binding-property',
+            `${path}.property`,
+            `property "${binding.property}" cannot be bound on ${element.type}`,
+          ),
+        );
+      if (seen.has(binding.property))
+        findings.push(
+          error(
+            'duplicate-data-binding',
+            `${path}.property`,
+            `property "${binding.property}" is bound more than once`,
+          ),
+        );
+      seen.add(binding.property);
+      const value = formatBindingValue(resolveJsonPointer(doc.data, binding.pointer), binding);
+      if (value === undefined)
+        findings.push(
+          warning(
+            'unresolved-data-binding',
+            `${path}.pointer`,
+            `pointer "${binding.pointer}" does not resolve with the document sample data or fallback`,
+          ),
+        );
+    });
+  });
 }
 
 function checkAnnotations(doc: AnimationDocument, findings: Finding[]): void {

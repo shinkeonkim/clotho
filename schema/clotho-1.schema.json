@@ -149,6 +149,38 @@
           },
           "default": {}
         },
+        "data": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/ClothoDocument/properties/data/additionalProperties"
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/definitions/ClothoDocument/properties/data/additionalProperties"
+                }
+              }
+            ]
+          },
+          "default": {}
+        },
         "elements": {
           "type": "array",
           "items": {
@@ -296,6 +328,54 @@
                     },
                     "default": []
                   },
+                  "bindings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "property": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "pointer": {
+                          "type": "string",
+                          "pattern": "^(?:|\\/.*)$"
+                        },
+                        "formatter": {
+                          "type": "string",
+                          "enum": [
+                            "identity",
+                            "string",
+                            "number",
+                            "fixed",
+                            "percent",
+                            "uppercase",
+                            "lowercase",
+                            "color"
+                          ],
+                          "default": "identity"
+                        },
+                        "digits": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10
+                        },
+                        "fallback": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "property",
+                        "pointer"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "default": []
+                  },
                   "x": {
                     "type": "number"
                   },
@@ -383,6 +463,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "cx": {
                     "type": "number"
                   },
@@ -452,6 +535,9 @@
                   },
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
                   },
                   "fromId": {
                     "$ref": "#/definitions/ClothoDocument/properties/id"
@@ -551,6 +637,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "fromId": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/fromId"
                   },
@@ -643,6 +732,9 @@
                   },
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
                   },
                   "x": {
                     "type": "number"
@@ -747,6 +839,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "x": {
                     "type": "number"
                   },
@@ -815,6 +910,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "x": {
                     "type": "number",
                     "default": 0
@@ -881,6 +979,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "points": {
                     "type": "string"
                   },
@@ -936,6 +1037,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "x": {
                     "type": "number",
                     "default": 0
@@ -975,6 +1079,9 @@
                   },
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
                   },
                   "x": {
                     "type": "number"
