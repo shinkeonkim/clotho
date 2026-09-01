@@ -19,7 +19,7 @@ import { migrateLegacyDocument, needsMigration } from '../core/migrate/legacy';
 import { stripBom } from '../core/text/base64';
 import { animationDocumentSchema } from '../core/schema/document';
 import { writeDocumentGif } from '../node/gif';
-import { autofixDocument, lintDocument } from '../core/lint';
+import { autofixDocument, lintDocument, type LintFinding } from '../core/lint';
 
 const USAGE = `clotho — JSON-defined visualization animations
 
@@ -98,7 +98,7 @@ async function runLint(args: Args): Promise<number> {
   const files = await collectFiles(args.paths);
   let problemCount = 0;
   let fixCount = 0;
-  const reports: { file: string; findings: readonly import('../core/lint').LintFinding[] }[] = [];
+  const reports: { file: string; findings: readonly LintFinding[] }[] = [];
   for (const file of files) {
     const parsed = animationDocumentSchema.safeParse(readJson(await readFile(file, 'utf-8')));
     if (!parsed.success)
