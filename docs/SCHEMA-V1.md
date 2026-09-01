@@ -22,6 +22,7 @@
   "canvas": { "width": 800, "height": 460, "background": "transparent" },
   "assets": {/* §2.3 */},
   "elements": [/* §2.1, §2.2 */],
+  "layouts": [/* §2.8 */],
   "chapters": [{ "id": "c1", "time": 2000, "label": "Round 1", "subtitle": "" }],
   "effects": [{ "type": "pulse", "id": "p1", "elementId": "n-a", "time": 2000 }],
   "settings": {
@@ -137,6 +138,68 @@ legacy `code`는 `language` 필드를 받지만 렌더러는 JS 키워드 집합
 ```
 
 언어 목록은 고정 enum이 아니라 BCP 47 형식의 문자열 배열이다. 렌더러는 `SceneOptions.locale`의 정확한 번역, 기본 언어 번역(`en-US` → `en`), `content` 순서로 문구를 선택한다. 따라서 기존 문서는 변환 없이 같은 문구를 표시한다.
+
+### 2.8 Constraint Layout
+
+`layouts`는 요소의 배치 의도를 저장한다. `row`, `column`, `grid`로 기본 배치를 정하고 `rightOf`, `below`, `sameX`, `sameY`, `align`, `contain`, `minGap`으로 요소 사이의 관계를 추가할 수 있다.
+
+```jsonc
+"layouts": [{
+  "id": "steps",
+  "mode": "row",
+  "elementIds": ["parse", "check", "draw"],
+  "x": 80,
+  "y": 160,
+  "gap": 24,
+  "align": "center",
+  "constraints": [
+    { "type": "minGap", "firstId": "check", "secondId": "draw", "axis": "x", "gap": 40 }
+  ]
+}]
+```
+
+`defineAnimation`과 compiler pipeline은 layout을 계산한 뒤 각 요소의 절대 좌표를 문서에 고정한다. text는 host가 제공한 `TextMeasurer`를 우선 사용하고, 제공하지 않으면 core의 결정적인 폭 추정치를 사용한다. player와 adapter는 이미 계산된 좌표만 렌더링하므로 같은 입력에서 같은 장면을 만든다.
+
+### 2.9 연결형 주석
+
+`text.content`, 번역 문구, chapter의 `label`과 `subtitle`에서는 `{token}`으로 장면의 요소를 가리킬 수 있다. 같은 객체의 `references`에서 token을 하나 이상의 element id와 연결한다. 일반 문구는 그대로 유지되므로 기존 문서와 호환된다.
+
+```jsonc
+{
+  "type": "text",
+  "id": "description",
+  "x": 40,
+  "y": 300,
+  "content": "{queue}에서 {node}를 꺼냅니다.",
+  "translations": { "en": "Remove {node} from the {queue}." },
+  "references": {
+    "queue": "queue-box",
+    "node": ["node-a", "node-b"]
+  }
+}
+```
+
+player에서 연결된 문구를 가리키거나 keyboard focus하면 대상 요소가 강조되고, click하면 강조가 유지된다. `Escape`로 고정을 해제한다. 번역 문구는 기본 문구와 같은 token 집합을 사용해야 한다. 존재하지 않는 element id와 연결하면 validation 오류가 발생한다.
+
+### 2.10 Interactive Checkpoint
+
+`checkpoints`는 timeline의 특정 시각에서 재생을 멈추고 사용자의 응답을 받는다. `continue`, `choice`, `select-element`, `number-input` interaction을 지원한다. 응답과 판정 결과는 문서를 수정하지 않고 `createInteractionSession`이 관리한다.
+
+```jsonc
+"checkpoints": [{
+  "id": "predict-next",
+  "time": 1800,
+  "prompt": "다음에 방문할 node를 고르세요.",
+  "interaction": "choice",
+  "options": [
+    { "value": "b", "label": "B" },
+    { "value": "c", "label": "C" }
+  ],
+  "predicate": { "type": "equals", "value": "b" }
+}]
+```
+
+정답은 JSON에 넣을 수 있는 `equals`, `oneOf`, `range` predicate로 판정하거나 host의 `evaluate` callback으로 판정한다. `select-element.elementIds`는 선택 가능한 장면 요소를 제한한다. SVG와 GIF 같은 비대화형 출력에는 `initialAnswers`로 결정적인 session 상태를 제공할 수 있다.
 
 ## 3. 계승하는 부분 (변경 없음)
 

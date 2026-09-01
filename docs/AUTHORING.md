@@ -424,6 +424,25 @@ frame(t) = f(document, t)
 
 `settings.showCaption`을 켜면 현재 챕터가 무대 아래에 나온다. `settings.showChapterList`를 켜면 전체 단계 목록이 나오며, `chapterListPosition`을 `left | right | top | bottom` 중 하나로 지정할 수 있다. 챕터가 비어 있으면 두 표시 모두 렌더링되지 않는다.
 
+### 문구와 장면 요소 연결
+
+설명 속 `{token}`을 `references`의 element id와 연결하면, player에서 문구와 장면을 함께 강조할 수 있다. text와 chapter가 같은 형식을 사용하며 하나의 token을 여러 요소에 연결할 수도 있다.
+
+```json
+{
+  "id": "dequeue",
+  "time": 1200,
+  "label": "{queue}에서 꺼내기",
+  "subtitle": "{front}가 다음 처리 대상입니다.",
+  "references": {
+    "queue": "queue-box",
+    "front": ["node-a", "front-pointer"]
+  }
+}
+```
+
+기본 문구와 모든 번역에서 token 이름을 동일하게 유지한다. hover와 keyboard focus는 잠시 강조하고, click은 강조를 고정하며, `Escape`는 고정을 해제한다.
+
 ### 효과
 
 요소를 잠깐 강조한다. **요소의 타임라인을 건드리지 않는다** — 덧그리는 장식이다.
@@ -504,6 +523,79 @@ bunx clotho validate public/animations
 | 애니메이션이 멈춰 있다 | 화면 밖이거나 `prefers-reduced-motion`이 켜져 있다. 의도된 동작이다. |
 
 ---
+
+## 15. Template과 Parameter
+
+구조가 같고 입력 데이터만 다른 애니메이션은 `defineTemplate`으로 만든다. parameter schema는 string, number, boolean, enum, array, object와 범위 조건을 지원하며, 생성 결과는 항상 Clotho schema와 Constraint Layout compiler를 통과한다.
+
+```ts
+import { defineTemplate } from "@kokoa/clotho";
+
+const search = defineTemplate<{
+  values: number[];
+  target: number;
+  showIndex: boolean;
+}>({
+  id: "blog.search",
+  parameters: {
+    values: {
+      type: "array",
+      items: { type: "number", integer: true },
+      minItems: 1,
+    },
+    target: { type: "number", integer: true },
+    showIndex: { type: "boolean", default: true },
+  },
+  build: ({ values, target, showIndex }) => ({
+    clothoVersion: 1,
+    id: "search-result",
+    title: `${target} 찾기`,
+    elements: values.map((value, index) => ({
+      type: "rect",
+      id: `cell-${index}`,
+      x: index * 64,
+      y: 80,
+      width: 56,
+      height: 48,
+      label: showIndex ? `${index}: ${value}` : String(value),
+    })),
+  }),
+});
+
+const standalone = search.instantiate({ values: [3, 8, 13], target: 8 });
+const reference = search.reference({ values: [3, 8, 13], target: 8 });
+```
+
+`standalone`은 어느 player에서도 바로 여는 완전한 v1 문서다. `reference`는 `templateId`와 검증된 parameter만 담으므로, 같은 template registry를 가진 build 환경에서 `instantiateTemplateReference`로 펼친다. 신뢰할 수 없는 JSON에서 code를 실행하지 않으며 template 함수는 build 단계에만 등록한다.
+
+Editor host는 `createTemplateEditorPlugin(templates)`을 등록하면 schema에서 자동 생성된 입력 form, 실시간 preview 재생성, standalone JSON과 template 참조 내보내기를 제공할 수 있다.
+
+## 16. Animation Assertion과 Visual Regression
+
+`@kokoa/clotho/testing`은 scene의 의미를 빠르게 검사하는 assertion과 최종 pixel 비교를 분리해 제공한다.
+
+```ts
+import {
+  expectAnimation,
+  snapshotAnimationMatrix,
+  diffRgba,
+} from "@kokoa/clotho/testing";
+
+expectAnimation(document)
+  .at(1200)
+  .visible("queue")
+  .textIncludes("enqueue", "caption")
+  .connected("input", "queue")
+  .position("queue", { x: 240, y: 120 })
+  .insideCanvas("queue");
+
+const snapshots = snapshotAnimationMatrix(document, {
+  locales: ["ko", "en"],
+  themes: ["light", "dark"],
+});
+```
+
+sampling 시각은 시작과 끝, chapter, checkpoint, 모든 keyframe에서 자동으로 수집한다. SVG snapshot은 font rasterization 영향을 받지 않는 구조 비교에 사용하고, 고정된 실행 환경의 RGBA 결과는 `diffRgba`로 최종 pixel regression을 검사한다. 실패 정보는 `animationFailureReport`로 HTML artifact를 만들 수 있다. Editor에서는 `createVisualRegressionPlugin()`을 등록해 현재 문서를 같은 규칙으로 검사한다.
 
 ## 관련 문서
 

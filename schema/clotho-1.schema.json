@@ -149,6 +149,126 @@
           },
           "default": {}
         },
+        "data": {
+          "type": "object",
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/ClothoDocument/properties/data/additionalProperties"
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/definitions/ClothoDocument/properties/data/additionalProperties"
+                }
+              }
+            ]
+          },
+          "default": {}
+        },
+        "responsive": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/ClothoDocument/properties/id"
+              },
+              "minWidth": {
+                "type": "number",
+                "minimum": 0,
+                "default": 0
+              },
+              "maxWidth": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "canvas": {
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "additionalProperties": false
+              },
+              "chapterListPosition": {
+                "type": "string",
+                "enum": [
+                  "left",
+                  "right",
+                  "top",
+                  "bottom"
+                ]
+              },
+              "elementOverrides": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    },
+                    "cx": {
+                      "type": "number"
+                    },
+                    "cy": {
+                      "type": "number"
+                    },
+                    "width": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "height": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "r": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "fontSize": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "visible": {
+                      "type": "boolean"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "default": {}
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "additionalProperties": false
+          }
+        },
         "elements": {
           "type": "array",
           "items": {
@@ -296,6 +416,54 @@
                     },
                     "default": []
                   },
+                  "bindings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "property": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "pointer": {
+                          "type": "string",
+                          "pattern": "^(?:|\\/.*)$"
+                        },
+                        "formatter": {
+                          "type": "string",
+                          "enum": [
+                            "identity",
+                            "string",
+                            "number",
+                            "fixed",
+                            "percent",
+                            "uppercase",
+                            "lowercase",
+                            "color"
+                          ],
+                          "default": "identity"
+                        },
+                        "digits": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10
+                        },
+                        "fallback": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "property",
+                        "pointer"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "default": []
+                  },
                   "x": {
                     "type": "number"
                   },
@@ -383,6 +551,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "cx": {
                     "type": "number"
                   },
@@ -452,6 +623,9 @@
                   },
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
                   },
                   "fromId": {
                     "$ref": "#/definitions/ClothoDocument/properties/id"
@@ -551,6 +725,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "fromId": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/2/properties/fromId"
                   },
@@ -644,6 +821,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "x": {
                     "type": "number"
                   },
@@ -663,6 +843,27 @@
                     },
                     "propertyNames": {
                       "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+                    },
+                    "default": {}
+                  },
+                  "references": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/ClothoDocument/properties/id"
+                          },
+                          "minItems": 1
+                        }
+                      ]
+                    },
+                    "propertyNames": {
+                      "pattern": "^[a-z][a-z0-9_-]*$"
                     },
                     "default": {}
                   },
@@ -725,6 +926,9 @@
                   },
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
                   },
                   "x": {
                     "type": "number"
@@ -794,6 +998,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "x": {
                     "type": "number",
                     "default": 0
@@ -860,6 +1067,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "points": {
                     "type": "string"
                   },
@@ -915,6 +1125,9 @@
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
                   },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
                   "x": {
                     "type": "number",
                     "default": 0
@@ -954,6 +1167,9 @@
                   },
                   "tracks": {
                     "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
                   },
                   "x": {
                     "type": "number"
@@ -1022,6 +1238,274 @@
           },
           "default": []
         },
+        "layouts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/ClothoDocument/properties/id"
+              },
+              "elementIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/ClothoDocument/properties/id"
+                },
+                "minItems": 1
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "row",
+                  "column",
+                  "grid"
+                ]
+              },
+              "x": {
+                "type": "number",
+                "default": 0
+              },
+              "y": {
+                "type": "number",
+                "default": 0
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "gap": {
+                "type": "number",
+                "minimum": 0,
+                "default": 16
+              },
+              "rowGap": {
+                "type": "number",
+                "minimum": 0
+              },
+              "columnGap": {
+                "type": "number",
+                "minimum": 0
+              },
+              "columns": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "align": {
+                "type": "string",
+                "enum": [
+                  "start",
+                  "center",
+                  "end"
+                ],
+                "default": "start"
+              },
+              "constraints": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "rightOf"
+                        },
+                        "elementId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "targetId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "gap": {
+                          "type": "number",
+                          "minimum": 0,
+                          "default": 0
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "elementId",
+                        "targetId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "below"
+                        },
+                        "elementId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "targetId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "gap": {
+                          "$ref": "#/definitions/ClothoDocument/properties/layouts/items/properties/constraints/items/anyOf/0/properties/gap"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "elementId",
+                        "targetId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "sameX"
+                        },
+                        "elementId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "targetId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "elementId",
+                        "targetId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "sameY"
+                        },
+                        "elementId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "targetId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "elementId",
+                        "targetId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "align"
+                        },
+                        "elementIds": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/ClothoDocument/properties/id"
+                          },
+                          "minItems": 2
+                        },
+                        "axis": {
+                          "type": "string",
+                          "enum": [
+                            "x",
+                            "y"
+                          ]
+                        },
+                        "edge": {
+                          "$ref": "#/definitions/ClothoDocument/properties/layouts/items/properties/align",
+                          "default": "center"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "elementIds",
+                        "axis"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "contain"
+                        },
+                        "elementId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "containerId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "padding": {
+                          "type": "number",
+                          "minimum": 0,
+                          "default": 0
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "elementId",
+                        "containerId"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "minGap"
+                        },
+                        "firstId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "secondId": {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        "axis": {
+                          "type": "string",
+                          "enum": [
+                            "x",
+                            "y"
+                          ]
+                        },
+                        "gap": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "firstId",
+                        "secondId",
+                        "axis",
+                        "gap"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "default": []
+              }
+            },
+            "required": [
+              "id",
+              "elementIds",
+              "mode"
+            ],
+            "additionalProperties": false
+          },
+          "default": []
+        },
         "chapters": {
           "type": "array",
           "items": {
@@ -1041,6 +1525,9 @@
               "subtitle": {
                 "type": "string",
                 "default": ""
+              },
+              "references": {
+                "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/4/properties/references"
               }
             },
             "required": [
@@ -1048,6 +1535,235 @@
               "time"
             ],
             "additionalProperties": false
+          },
+          "default": []
+        },
+        "checkpoints": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "prompt": {
+                    "type": "string",
+                    "default": ""
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "interaction": {
+                    "type": "string",
+                    "const": "continue"
+                  }
+                },
+                "required": [
+                  "id",
+                  "time",
+                  "interaction"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/time"
+                  },
+                  "prompt": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/prompt"
+                  },
+                  "required": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/required"
+                  },
+                  "interaction": {
+                    "type": "string",
+                    "const": "choice"
+                  },
+                  "options": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "value": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "value",
+                        "label"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  },
+                  "predicate": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "equals"
+                          },
+                          "value": {
+                            "type": [
+                              "string",
+                              "number",
+                              "boolean"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "value"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "oneOf"
+                          },
+                          "values": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/1/properties/predicate/anyOf/0/properties/value"
+                            },
+                            "minItems": 1
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "values"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "range"
+                          },
+                          "min": {
+                            "type": "number"
+                          },
+                          "max": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "time",
+                  "interaction",
+                  "options"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/time"
+                  },
+                  "prompt": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/prompt"
+                  },
+                  "required": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/required"
+                  },
+                  "interaction": {
+                    "type": "string",
+                    "const": "select-element"
+                  },
+                  "elementIds": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/ClothoDocument/properties/id"
+                    },
+                    "minItems": 1
+                  },
+                  "predicate": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/1/properties/predicate"
+                  }
+                },
+                "required": [
+                  "id",
+                  "time",
+                  "interaction",
+                  "elementIds"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/time"
+                  },
+                  "prompt": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/prompt"
+                  },
+                  "required": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/0/properties/required"
+                  },
+                  "interaction": {
+                    "type": "string",
+                    "const": "number-input"
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "step": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "predicate": {
+                    "$ref": "#/definitions/ClothoDocument/properties/checkpoints/items/anyOf/1/properties/predicate"
+                  }
+                },
+                "required": [
+                  "id",
+                  "time",
+                  "interaction"
+                ],
+                "additionalProperties": false
+              }
+            ]
           },
           "default": []
         },

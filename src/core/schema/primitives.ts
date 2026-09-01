@@ -8,6 +8,7 @@
 //   - `interpolate` on property tracks, replacing the hardcoded key sets (§2.2)
 
 import { z } from 'zod';
+import { dataBindingSchema } from './data';
 
 /**
  * Element / chapter / effect / asset identifier.
@@ -33,6 +34,15 @@ export const localeTagSchema = z
   );
 
 export const DEFAULT_LOCALES = ['ko', 'en'] as const;
+
+/** Named `{token}` references used by text and chapter annotations. */
+export const annotationTokenSchema = z
+  .string()
+  .regex(/^[a-z][a-z0-9_-]*$/, 'annotation token must be a lowercase identifier');
+
+export const annotationReferencesSchema = z
+  .record(annotationTokenSchema, z.union([idSchema, z.array(idSchema).min(1)]))
+  .default({});
 
 export const localeListSchema = z
   .array(localeTagSchema)
@@ -137,6 +147,8 @@ export const baseElementProps = {
   rotation: z.number().default(0),
   appearances: z.array(appearanceSchema).default([]),
   tracks: z.array(propertyTrackSchema).default([]),
+  /** Compile-time values resolved from the document data registry or a host snapshot. */
+  bindings: z.array(dataBindingSchema).default([]),
 };
 
 export type Anchor = z.infer<typeof anchorSchema>;

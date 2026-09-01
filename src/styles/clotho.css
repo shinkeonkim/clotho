@@ -683,3 +683,57 @@
     }
   }
 }
+.cloth-wrapper [data-clotho-ref] {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.18em;
+}
+
+.cloth-wrapper .is-annotation-active {
+  font-weight: 700;
+}
+
+.cloth-wrapper .is-annotation-target {
+  filter: drop-shadow(0 0 5px var(--cloth-accent, #6366f1));
+  opacity: 1;
+}
+
+.cloth-checkpoint {
+  margin: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--cloth-border);
+  border-radius: 0.65rem;
+  background: var(--cloth-surface);
+  color: var(--cloth-fg);
+  box-shadow: 0 8px 24px rgb(15 23 42 / 10%);
+}
+
+.cloth-checkpoint-prompt {
+  margin: 0 0 0.7rem;
+  font-weight: 650;
+}
+
+.cloth-checkpoint-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.cloth-checkpoint-choices button,
+.cloth-checkpoint input {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--cloth-border);
+  border-radius: 0.4rem;
+  background: var(--cloth-surface-elevated);
+  color: var(--cloth-fg);
+}
+
+.cloth-checkpoint-result[data-correct='true'] {
+  color: #16a34a;
+}
+
+.cloth-checkpoint-result[data-correct='false'] {
+  color: #dc2626;
+}

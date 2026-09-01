@@ -6,10 +6,14 @@
 // identical schemas, so the split carried no information and is gone.
 
 import { z } from 'zod';
-import { DEFAULT_LOCALES, idSchema, localeListSchema } from './primitives';
+import { annotationReferencesSchema, DEFAULT_LOCALES, idSchema, localeListSchema } from './primitives';
 import { elementSchema } from './elements';
 import { effectSchema } from './effects';
 import { assetMapSchema } from './assets';
+import { layoutSchema } from './layout';
+import { checkpointSchema } from './checkpoints';
+import { dataValueSchema } from './data';
+import { responsiveVariantSchema } from './responsive';
 
 /** Current document format version emitted and accepted by this build. */
 export const FORMAT_VERSION = 1;
@@ -25,6 +29,7 @@ export const chapterSchema = z.object({
   time: z.number().int().min(0),
   label: z.string().default(''),
   subtitle: z.string().default(''),
+  references: annotationReferencesSchema,
 });
 
 /**
@@ -66,8 +71,13 @@ export const animationDocumentSchema = z.object({
   duration: z.number().int().min(0).default(5000),
   canvas: canvasSchema.default(CANVAS_DEFAULT),
   assets: assetMapSchema.default({}),
+  data: z.record(dataValueSchema).default({}),
+  responsive: z.array(responsiveVariantSchema).optional(),
   elements: z.array(elementSchema).default([]),
+  /** Authoring-time placement rules. Compile them to element coordinates before rendering. */
+  layouts: z.array(layoutSchema).default([]),
   chapters: z.array(chapterSchema).default([]),
+  checkpoints: z.array(checkpointSchema).default([]),
   effects: z.array(effectSchema).default([]),
   settings: settingsSchema.default(SETTINGS_DEFAULT),
   updatedAt: z.string().optional(),

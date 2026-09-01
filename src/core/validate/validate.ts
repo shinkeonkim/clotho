@@ -18,6 +18,8 @@
 import { parseDocument } from '../schema';
 import type { AnimationDocument } from '../schema/document';
 import { buildElementTree } from '../runtime/tree';
+import { annotationTokens } from '../annotations';
+import { bindablePropertiesFor, resolveJsonPointer, formatBindingValue } from '../data';
 
 export type Severity = 'error' | 'warning';
 
@@ -85,9 +87,108 @@ export function validateDocument(value: unknown): ValidationResult {
   checkTemporalBounds(doc, findings);
   checkAssets(doc, findings);
   checkLocalization(doc, findings);
+  checkAnnotations(doc, findings);
+  checkDataBindings(doc, findings);
   checkUnknownProperties(value, doc, findings);
 
   return summarize(findings, doc);
+}
+
+function checkDataBindings(doc: AnimationDocument, findings: Finding[]): void {
+  doc.elements.forEach((element, elementIndex) => {
+    const seen = new Set<string>();
+    const allowed = new Set(bindablePropertiesFor(element));
+    element.bindings.forEach((binding, bindingIndex) => {
+      const path = `elements.${elementIndex}.bindings.${bindingIndex}`;
+      if (!allowed.has(binding.property))
+        findings.push(
+          error(
+            'invalid-data-binding-property',
+            `${path}.property`,
+            `property "${binding.property}" cannot be bound on ${element.type}`,
+          ),
+        );
+      if (seen.has(binding.property))
+        findings.push(
+          error(
+            'duplicate-data-binding',
+            `${path}.property`,
+            `property "${binding.property}" is bound more than once`,
+          ),
+        );
+      seen.add(binding.property);
+      const value = formatBindingValue(resolveJsonPointer(doc.data, binding.pointer), binding);
+      if (value === undefined)
+        findings.push(
+          warning(
+            'unresolved-data-binding',
+            `${path}.pointer`,
+            `pointer "${binding.pointer}" does not resolve with the document sample data or fallback`,
+          ),
+        );
+    });
+  });
+}
+
+function checkAnnotations(doc: AnimationDocument, findings: Finding[]): void {
+  const elementIds = new Set(doc.elements.map(({ id }) => id));
+  const inspect = (
+    value: string,
+    translations: Readonly<Record<string, string>>,
+    references: Readonly<Record<string, string | readonly string[]>>,
+    path: string,
+  ): void => {
+    const baseTokens = new Set(annotationTokens(value));
+    for (const token of baseTokens) {
+      if (references[token] !== undefined) continue;
+      findings.push(
+        error('missing-annotation-reference', path, `token "{${token}}" has no reference`),
+      );
+    }
+    for (const [token, target] of Object.entries(references)) {
+      if (!baseTokens.has(token)) {
+        findings.push(
+          warning(
+            'unused-annotation-reference',
+            `${path}.references.${token}`,
+            `reference "${token}" is not used in the default text`,
+          ),
+        );
+      }
+      for (const targetId of typeof target === 'string' ? [target] : target) {
+        if (!elementIds.has(targetId))
+          findings.push(
+            error(
+              'unknown-reference',
+              `${path}.references.${token}`,
+              `annotation token "${token}" targets missing element "${targetId}"`,
+            ),
+          );
+      }
+    }
+    for (const [locale, translated] of Object.entries(translations)) {
+      const translatedTokens = new Set(annotationTokens(translated));
+      const same =
+        baseTokens.size === translatedTokens.size &&
+        [...baseTokens].every((token) => translatedTokens.has(token));
+      if (!same)
+        findings.push(
+          error(
+            'annotation-token-mismatch',
+            `${path}.translations.${locale}`,
+            `translation must keep the same annotation tokens as the default text`,
+          ),
+        );
+    }
+  };
+
+  doc.elements.forEach((element, index) => {
+    if (element.type === 'text')
+      inspect(element.content, element.translations, element.references, `elements.${index}`);
+  });
+  doc.chapters.forEach((chapter, index) => {
+    inspect(`${chapter.label} ${chapter.subtitle}`, {}, chapter.references, `chapters.${index}`);
+  });
 }
 
 function checkLocalization(doc: AnimationDocument, findings: Finding[]): void {
@@ -166,6 +267,18 @@ function checkUnknownProperties(raw: unknown, doc: AnimationDocument, findings: 
       findings,
     );
   });
+  const rawCheckpoints = Array.isArray(input.checkpoints) ? input.checkpoints : [];
+  rawCheckpoints.forEach((rawCheckpoint, index) => {
+    const parsed = doc.checkpoints[index];
+    if (!parsed || typeof rawCheckpoint !== 'object' || rawCheckpoint === null) return;
+    compareKeys(
+      rawCheckpoint as Record<string, unknown>,
+      parsed as unknown as Record<string, unknown>,
+      `checkpoints.${index}`,
+      findings,
+      parsed.interaction,
+    );
+  });
 }
 
 /** Legacy envelope keys that migration replaces; not worth warning about. */
@@ -220,6 +333,8 @@ function checkDuplicateIds(doc: AnimationDocument, findings: Finding[]): void {
     ['elements', doc.elements],
     ['chapters', doc.chapters],
     ['effects', doc.effects],
+    ['layouts', doc.layouts],
+    ['checkpoints', doc.checkpoints],
   ];
 
   for (const [name, items] of namespaces) {
@@ -278,6 +393,56 @@ function checkReferences(doc: AnimationDocument, findings: Finding[]): void {
         ),
       );
     }
+  });
+
+  doc.layouts.forEach((layout, layoutIndex) => {
+    const references: { path: string; id: string }[] = layout.elementIds.map((id, index) => ({
+      path: `layouts.${layoutIndex}.elementIds.${index}`,
+      id,
+    }));
+    layout.constraints.forEach((constraint, constraintIndex) => {
+      const base = `layouts.${layoutIndex}.constraints.${constraintIndex}`;
+      if ('elementId' in constraint)
+        references.push({ path: `${base}.elementId`, id: constraint.elementId });
+      if ('targetId' in constraint)
+        references.push({ path: `${base}.targetId`, id: constraint.targetId });
+      if ('containerId' in constraint)
+        references.push({ path: `${base}.containerId`, id: constraint.containerId });
+      if ('firstId' in constraint)
+        references.push({ path: `${base}.firstId`, id: constraint.firstId });
+      if ('secondId' in constraint)
+        references.push({ path: `${base}.secondId`, id: constraint.secondId });
+      if ('elementIds' in constraint) {
+        constraint.elementIds.forEach((id, index) =>
+          references.push({ path: `${base}.elementIds.${index}`, id }),
+        );
+      }
+    });
+    for (const reference of references) {
+      if (!elementIds.has(reference.id)) {
+        findings.push(
+          error(
+            'unknown-reference',
+            reference.path,
+            `layout "${layout.id}" references element "${reference.id}", which does not exist`,
+          ),
+        );
+      }
+    }
+  });
+
+  doc.checkpoints.forEach((checkpoint, checkpointIndex) => {
+    if (checkpoint.interaction !== 'select-element') return;
+    checkpoint.elementIds.forEach((id, index) => {
+      if (!elementIds.has(id))
+        findings.push(
+          error(
+            'unknown-reference',
+            `checkpoints.${checkpointIndex}.elementIds.${index}`,
+            `checkpoint "${checkpoint.id}" references element "${id}", which does not exist`,
+          ),
+        );
+    });
   });
 
   // Flow particles ride along a connector's path, so they have nothing to follow
@@ -375,6 +540,17 @@ function checkTemporalBounds(doc: AnimationDocument, findings: Finding[]): void 
         ),
       );
     }
+  });
+
+  doc.checkpoints.forEach((checkpoint, index) => {
+    if (outOfRange(checkpoint.time))
+      findings.push(
+        error(
+          'out-of-range',
+          `checkpoints.${index}.time`,
+          `checkpoint time ${checkpoint.time} is outside 0..${duration}`,
+        ),
+      );
   });
 
   doc.effects.forEach((effect, index) => {

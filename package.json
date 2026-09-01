@@ -1,6 +1,6 @@
 {
   "name": "@kokoa/clotho",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "description": "JSON-defined visualization animations — framework-agnostic scene graph with React, Vue, vanilla, and SVG-string adapters",
   "license": "MIT",
   "author": "kokoa",
@@ -59,6 +59,14 @@
       "types": "./dist/gif/index.d.ts",
       "default": "./dist/gif/index.js"
     },
+    "./plugins": {
+      "types": "./dist/plugins/index.d.ts",
+      "default": "./dist/plugins/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    },
     "./styles.css": "./dist/clotho.css",
     "./schema.json": "./schema/clotho-1.schema.json",
     "./package.json": "./package.json"
@@ -85,6 +93,12 @@
       ],
       "gif": [
         "./dist/gif/index.d.ts"
+      ],
+      "plugins": [
+        "./dist/plugins/index.d.ts"
+      ],
+      "testing": [
+        "./dist/testing/index.d.ts"
       ]
     }
   },
@@ -108,6 +122,8 @@
     "schema:check": "bun scripts/generate-json-schema.ts --check",
     "check:legacy-equivalence": "bun scripts/verify-legacy-equivalence.ts",
     "check:svg-wellformed": "bun scripts/verify-svg-wellformed.ts",
+    "visual:check": "bun scripts/check-visual-baseline.ts",
+    "visual:update": "bun scripts/check-visual-baseline.ts --update",
     "audit:editor": "bun scripts/audit-editor-coverage.ts",
     "release:check": "bun scripts/release-check.ts",
     "clean": "rm -rf dist"

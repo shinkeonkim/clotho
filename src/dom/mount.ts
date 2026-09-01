@@ -12,6 +12,8 @@ import { createPlayer, type Player, type PlayerOptions } from '../core/player/cr
 import { animationFrameScheduler } from './scheduler';
 import { patchScene } from './patch';
 import { CLASS, type Strings, defaultStrings } from './strings';
+import { appendAnnotationText, bindAnnotations } from './annotations';
+import { createInteractionSession } from '../core/interactions/session';
 
 export interface MountOptions extends SceneOptions {
   readonly player?: Omit<PlayerOptions, 'scheduler'> & { scheduler?: PlayerOptions['scheduler'] };
@@ -52,14 +54,23 @@ export function mountStage(
   frame.append(svg);
   container.append(frame);
 
+  let viewportWidth = container.clientWidth;
   const render = (): void => {
-    const scene = buildScene(doc, player.getState().time, options);
+    const scene = buildScene(doc, player.getState().time, { ...options, viewportWidth });
     frame.dataset.mat = scene.showMat ? 'true' : 'false';
     patchScene(svg, scene);
   };
 
   render();
   const unsubscribe = player.subscribe(render);
+  const resizeObserver =
+    typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(([entry]) => {
+          viewportWidth = entry?.contentRect.width ?? container.clientWidth;
+          render();
+        });
+  resizeObserver?.observe(container);
 
   return {
     player,
@@ -67,6 +78,7 @@ export function mountStage(
     render,
     destroy() {
       unsubscribe();
+      resizeObserver?.disconnect();
       player.destroy();
       frame.remove();
     },
@@ -113,6 +125,7 @@ export function mountPlayer(
   body.className = CLASS.body;
   root.append(body);
   container.append(root);
+  const unbindAnnotations = bindAnnotations(root);
 
   const engine = document.createElement('div');
   engine.className = `${CLASS.engine}${doc.settings.showChapterList && doc.chapters.length > 0 ? ` ${CLASS.engineWithList}` : ''}`;
@@ -125,6 +138,74 @@ export function mountPlayer(
 
   const stage = mountStage(engineStage, doc, options);
   const { player } = stage;
+  const interaction = createInteractionSession(doc, player);
+  const checkpointPanel = document.createElement('section');
+  checkpointPanel.className = CLASS.checkpoint;
+  checkpointPanel.hidden = true;
+  checkpointPanel.setAttribute('aria-live', 'polite');
+  body.append(checkpointPanel);
+
+  const renderCheckpoint = (): void => {
+    const { pending, answers } = interaction.getState();
+    checkpointPanel.replaceChildren();
+    checkpointPanel.hidden = !pending;
+    if (!pending) return;
+    const prompt = document.createElement('p');
+    prompt.className = CLASS.checkpointPrompt;
+    prompt.textContent = pending.prompt;
+    checkpointPanel.append(prompt);
+    const answer = answers[pending.id];
+    if (pending.interaction === 'choice') {
+      const choices = document.createElement('div');
+      choices.className = CLASS.checkpointChoices;
+      pending.options.forEach((option) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = option.label;
+        button.dataset.value = option.value;
+        button.addEventListener('click', () => interaction.answer(option.value));
+        choices.append(button);
+      });
+      checkpointPanel.append(choices);
+    } else if (pending.interaction === 'number-input') {
+      const input = document.createElement('input');
+      input.type = 'number';
+      if (pending.min !== undefined) input.min = String(pending.min);
+      if (pending.max !== undefined) input.max = String(pending.max);
+      if (pending.step !== undefined) input.step = String(pending.step);
+      input.addEventListener('change', () => interaction.answer(Number(input.value)));
+      checkpointPanel.append(input);
+    } else if (pending.interaction === 'select-element') {
+      const hint = document.createElement('p');
+      hint.textContent = strings.selectElement;
+      checkpointPanel.append(hint);
+    }
+    if (answer?.correct !== undefined) {
+      const result = document.createElement('p');
+      result.className = CLASS.checkpointResult;
+      result.dataset.correct = String(answer.correct);
+      result.textContent = answer.correct ? strings.correctAnswer : strings.incorrectAnswer;
+      checkpointPanel.append(result);
+    }
+    const continueButton = document.createElement('button');
+    continueButton.type = 'button';
+    continueButton.className = CLASS.button;
+    continueButton.textContent = strings.continueCheckpoint;
+    continueButton.disabled =
+      pending.required && pending.interaction !== 'continue' && answer === undefined;
+    continueButton.addEventListener('click', () => interaction.continue());
+    checkpointPanel.append(continueButton);
+  };
+  const unsubscribeInteraction = interaction.subscribe(renderCheckpoint);
+  renderCheckpoint();
+  const selectCheckpointElement = (event: Event): void => {
+    const pending = interaction.getState().pending;
+    if (pending?.interaction !== 'select-element' || !(event.target instanceof Element)) return;
+    const target = event.target.closest<HTMLElement>('[data-clotho-id]');
+    const id = target?.dataset.clothoId;
+    if (id && pending.elementIds.includes(id)) interaction.answer(id);
+  };
+  root.addEventListener('click', selectCheckpointElement);
 
   const playButton = document.createElement('button');
   playButton.type = 'button';
@@ -186,10 +267,13 @@ export function mountPlayer(
       const item = document.createElement('li');
       item.className = CLASS.stepListItem;
       item.innerHTML = `<span class="cloth-step-list-num">${index + 1}</span><div class="cloth-step-list-body"><span class="cloth-step-list-label"></span><span class="cloth-step-list-subtitle"></span></div>`;
-      item.querySelector<HTMLElement>('.cloth-step-list-label')!.textContent =
-        chapter.label || chapter.id;
+      appendAnnotationText(
+        item.querySelector<HTMLElement>('.cloth-step-list-label')!,
+        chapter.label || chapter.id,
+        chapter.references,
+      );
       const subtitle = item.querySelector<HTMLElement>('.cloth-step-list-subtitle')!;
-      subtitle.textContent = chapter.subtitle;
+      appendAnnotationText(subtitle, chapter.subtitle, chapter.references);
       subtitle.hidden = !chapter.subtitle;
       list.append(item);
       chapterItems.push(item);
@@ -220,9 +304,15 @@ export function mountPlayer(
     if (step) {
       const scene = buildScene(doc, state.time, options);
       const active = scene.chapter ?? { index: 0, chapter: scene.chapters[0]! };
-      step.textContent = `${strings.chapterLabel(active.index + 1, scene.chapters.length)}${
-        active.chapter.label ? `, ${active.chapter.label}` : ''
-      }`;
+      step.replaceChildren(
+        document.createTextNode(strings.chapterLabel(active.index + 1, scene.chapters.length)),
+      );
+      if (active.chapter.label) {
+        step.append(document.createTextNode(', '));
+        const label = document.createElement('span');
+        appendAnnotationText(label, active.chapter.label, active.chapter.references);
+        step.append(label);
+      }
     }
     const activeIndex = buildScene(doc, state.time, options).chapter?.index ?? 0;
     chapterItems.forEach((item, index) => {
@@ -266,6 +356,10 @@ export function mountPlayer(
     ...stage,
     root,
     destroy() {
+      root.removeEventListener('click', selectCheckpointElement);
+      unsubscribeInteraction();
+      interaction.destroy();
+      unbindAnnotations();
       unsubscribe();
       for (const observer of observers) observer.disconnect();
       mediaQuery?.removeEventListener('change', onMotionChange);

@@ -28,6 +28,7 @@ import { buildArrow, buildLine, collectUsedHeads } from './elements/connectors';
 import { buildImage, buildPath, buildPolygon, buildText } from './elements/text-image';
 import { buildCode } from './elements/code';
 import { buildFlowParticles } from './elements/particles';
+import { compileResponsiveStage } from '../responsive';
 
 /** Build the scene for one instant. */
 export function buildScene(
@@ -35,6 +36,7 @@ export function buildScene(
   time: number,
   options: SceneOptions = {},
 ): Scene {
+  if (options.viewportWidth !== undefined) doc = compileResponsiveStage(doc, options.viewportWidth);
   const snapshot = computeSnapshot(doc, time);
   const tree = buildElementTree(doc);
   const diagnostics: SceneDiagnostic[] = tree.issues.map((issue) => ({
@@ -151,6 +153,10 @@ function buildElementNode(
   }
 
   if (!result) return null;
+  result = {
+    ...result,
+    attrs: compactAttrs({ ...result.attrs, 'data-clotho-id': el.id }),
+  };
 
   const phase = phaseStyleFromState(el, state);
   if (isNoopPhaseStyle(phase)) return result;
