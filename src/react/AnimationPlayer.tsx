@@ -345,7 +345,10 @@ export function AnimationPlayer({
                   { className: 'cloth-modal-fit' },
                   createElement(
                     'div',
-                    { className: CLASS.engine },
+                    {
+                      className: `${CLASS.engine}${doc.settings.showChapterList && scene.chapters.length > 0 ? ` ${CLASS.engineWithList}` : ''}`,
+                      'data-chapter-list-position': doc.settings.chapterListPosition,
+                    },
                     createElement(
                       'div',
                       { className: CLASS.stage },
@@ -357,7 +360,62 @@ export function AnimationPlayer({
                         },
                         createElement(SceneSvg, { scene, className: CLASS.stageSvg }),
                       ),
+                      doc.settings.showCaption && scene.chapters.length > 0
+                        ? createElement(
+                            'div',
+                            { className: `${CLASS.caption} ${CLASS.step}`, 'aria-live': 'polite' },
+                            (() => {
+                              const active = scene.chapter ?? {
+                                index: 0,
+                                chapter: scene.chapters[0]!,
+                              };
+                              return `${strings.chapterLabel(active.index + 1, scene.chapters.length)}${active.chapter.label ? `, ${active.chapter.label}` : ''}`;
+                            })(),
+                          )
+                        : null,
                     ),
+                    doc.settings.showChapterList && scene.chapters.length > 0
+                      ? createElement(
+                          'aside',
+                          { className: CLASS.stepList, 'aria-label': strings.chapters },
+                          createElement(
+                            'ol',
+                            null,
+                            ...scene.chapters.map((chapter, index) =>
+                              createElement(
+                                'li',
+                                {
+                                  key: chapter.id,
+                                  className: `${CLASS.stepListItem}${scene.chapter?.index === index ? ' is-current' : ''}`,
+                                  'aria-current':
+                                    scene.chapter?.index === index ? 'step' : undefined,
+                                },
+                                createElement(
+                                  'span',
+                                  { className: 'cloth-step-list-num' },
+                                  index + 1,
+                                ),
+                                createElement(
+                                  'div',
+                                  { className: 'cloth-step-list-body' },
+                                  createElement(
+                                    'span',
+                                    { className: 'cloth-step-list-label' },
+                                    chapter.label || chapter.id,
+                                  ),
+                                  chapter.subtitle
+                                    ? createElement(
+                                        'span',
+                                        { className: 'cloth-step-list-subtitle' },
+                                        chapter.subtitle,
+                                      )
+                                    : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                      : null,
                   ),
                 ),
               ),
