@@ -18,6 +18,7 @@
 import { parseDocument } from '../schema';
 import type { AnimationDocument } from '../schema/document';
 import { buildElementTree } from '../runtime/tree';
+import { annotationTokens } from '../annotations';
 
 export type Severity = 'error' | 'warning';
 
@@ -85,9 +86,71 @@ export function validateDocument(value: unknown): ValidationResult {
   checkTemporalBounds(doc, findings);
   checkAssets(doc, findings);
   checkLocalization(doc, findings);
+  checkAnnotations(doc, findings);
   checkUnknownProperties(value, doc, findings);
 
   return summarize(findings, doc);
+}
+
+function checkAnnotations(doc: AnimationDocument, findings: Finding[]): void {
+  const elementIds = new Set(doc.elements.map(({ id }) => id));
+  const inspect = (
+    value: string,
+    translations: Readonly<Record<string, string>>,
+    references: Readonly<Record<string, string | readonly string[]>>,
+    path: string,
+  ): void => {
+    const baseTokens = new Set(annotationTokens(value));
+    for (const token of baseTokens) {
+      if (references[token] !== undefined) continue;
+      findings.push(
+        error('missing-annotation-reference', path, `token "{${token}}" has no reference`),
+      );
+    }
+    for (const [token, target] of Object.entries(references)) {
+      if (!baseTokens.has(token)) {
+        findings.push(
+          warning(
+            'unused-annotation-reference',
+            `${path}.references.${token}`,
+            `reference "${token}" is not used in the default text`,
+          ),
+        );
+      }
+      for (const targetId of typeof target === 'string' ? [target] : target) {
+        if (!elementIds.has(targetId))
+          findings.push(
+            error(
+              'unknown-reference',
+              `${path}.references.${token}`,
+              `annotation token "${token}" targets missing element "${targetId}"`,
+            ),
+          );
+      }
+    }
+    for (const [locale, translated] of Object.entries(translations)) {
+      const translatedTokens = new Set(annotationTokens(translated));
+      const same =
+        baseTokens.size === translatedTokens.size &&
+        [...baseTokens].every((token) => translatedTokens.has(token));
+      if (!same)
+        findings.push(
+          error(
+            'annotation-token-mismatch',
+            `${path}.translations.${locale}`,
+            `translation must keep the same annotation tokens as the default text`,
+          ),
+        );
+    }
+  };
+
+  doc.elements.forEach((element, index) => {
+    if (element.type === 'text')
+      inspect(element.content, element.translations, element.references, `elements.${index}`);
+  });
+  doc.chapters.forEach((chapter, index) => {
+    inspect(`${chapter.label} ${chapter.subtitle}`, {}, chapter.references, `chapters.${index}`);
+  });
 }
 
 function checkLocalization(doc: AnimationDocument, findings: Finding[]): void {

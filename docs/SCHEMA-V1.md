@@ -160,6 +160,27 @@ legacy `code`는 `language` 필드를 받지만 렌더러는 JS 키워드 집합
 
 `defineAnimation`과 compiler pipeline은 layout을 계산한 뒤 각 요소의 절대 좌표를 문서에 고정한다. text는 host가 제공한 `TextMeasurer`를 우선 사용하고, 제공하지 않으면 core의 결정적인 폭 추정치를 사용한다. player와 adapter는 이미 계산된 좌표만 렌더링하므로 같은 입력에서 같은 장면을 만든다.
 
+### 2.9 연결형 주석
+
+`text.content`, 번역 문구, chapter의 `label`과 `subtitle`에서는 `{token}`으로 장면의 요소를 가리킬 수 있다. 같은 객체의 `references`에서 token을 하나 이상의 element id와 연결한다. 일반 문구는 그대로 유지되므로 기존 문서와 호환된다.
+
+```jsonc
+{
+  "type": "text",
+  "id": "description",
+  "x": 40,
+  "y": 300,
+  "content": "{queue}에서 {node}를 꺼냅니다.",
+  "translations": { "en": "Remove {node} from the {queue}." },
+  "references": {
+    "queue": "queue-box",
+    "node": ["node-a", "node-b"]
+  }
+}
+```
+
+player에서 연결된 문구를 가리키거나 keyboard focus하면 대상 요소가 강조되고, click하면 강조가 유지된다. `Escape`로 고정을 해제한다. 번역 문구는 기본 문구와 같은 token 집합을 사용해야 한다. 존재하지 않는 element id와 연결하면 validation 오류가 발생한다.
+
 ## 3. 계승하는 부분 (변경 없음)
 
 - **요소 10종**: `rect · circle · line · arrow · text · image · path · polygon · group · code`

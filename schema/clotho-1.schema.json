@@ -666,6 +666,27 @@
                     },
                     "default": {}
                   },
+                  "references": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/definitions/ClothoDocument/properties/id"
+                        },
+                        {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/definitions/ClothoDocument/properties/id"
+                          },
+                          "minItems": 1
+                        }
+                      ]
+                    },
+                    "propertyNames": {
+                      "pattern": "^[a-z][a-z0-9_-]*$"
+                    },
+                    "default": {}
+                  },
                   "fontSize": {
                     "type": "number",
                     "exclusiveMinimum": 0,
@@ -1309,6 +1330,9 @@
               "subtitle": {
                 "type": "string",
                 "default": ""
+              },
+              "references": {
+                "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/4/properties/references"
               }
             },
             "required": [

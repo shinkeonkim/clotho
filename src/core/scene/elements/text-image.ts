@@ -15,6 +15,7 @@ import { compactAttrs, type SceneNode } from '../nodes';
 import type { ElementState, SceneContext } from '../context';
 import { report } from '../context';
 import { resolveLocalizedText } from '../../i18n';
+import { splitAnnotations } from '../../annotations';
 
 function num(state: ElementState, key: string, fallback = 0): number {
   const value = state[key];
@@ -33,6 +34,16 @@ export function buildText(ctx: SceneContext, el: TextElement, state: ElementStat
   const color = str(state, 'color');
   const weight = state.fontWeight;
 
+  const content = resolveLocalizedText(
+    str(state, 'content') ?? '',
+    el.translations,
+    ctx.options.locale,
+  );
+  const annotations = splitAnnotations(content, el.references);
+  const hasReferences = annotations.some(
+    (part) => part.kind === 'reference' && (part.targetIds?.length ?? 0) > 0,
+  );
+
   return {
     kind: 'text',
     key: el.id,
@@ -46,7 +57,24 @@ export function buildText(ctx: SceneContext, el: TextElement, state: ElementStat
       'text-anchor': str(state, 'textAnchor'),
       transform: rotation ? `rotate(${rotation} ${x} ${y})` : undefined,
     }),
-    content: resolveLocalizedText(str(state, 'content') ?? '', el.translations, ctx.options.locale),
+    ...(hasReferences
+      ? {
+          spans: annotations.map((part, index) => ({
+            key: `annotation-${index}`,
+            attrs:
+              part.kind === 'reference' && (part.targetIds?.length ?? 0) > 0
+                ? compactAttrs({
+                    'data-clotho-ref': part.targetIds?.join(' '),
+                    'data-clotho-token': part.token,
+                    tabindex: 0,
+                    role: 'link',
+                    'aria-label': `${part.value}: ${part.targetIds?.join(', ')}`,
+                  })
+                : {},
+            content: part.value,
+          })),
+        }
+      : { content }),
   };
 }
 

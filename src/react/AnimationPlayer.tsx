@@ -16,12 +16,44 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import type { AnimationDocument } from '../core/schema/document';
+import { splitAnnotations } from '../core/annotations';
 import { buildScene } from '../core/scene/build';
 import type { SceneOptions } from '../core/scene/context';
 import { effectivePlayback } from '../core/timing/playback';
 import { CLASS, defaultStrings, type Strings } from '../dom/strings';
+import { bindAnnotations } from '../dom/annotations';
 import { SceneSvg } from './scene';
 import { useFullscreen, useHostTheme, useInView, usePlayer, useReducedMotion } from './hooks';
+
+function annotationText(
+  value: string,
+  references: Readonly<Record<string, string | readonly string[]>>,
+): Array<string | ReactElement> {
+  return splitAnnotations(value, references).map((part, index) =>
+    part.kind === 'text' || part.targetIds?.length === 0
+      ? part.value
+      : createElement(
+          'span',
+          {
+            key: `${part.token}-${index}`,
+            'data-clotho-ref': part.targetIds?.join(' '),
+            'data-clotho-token': part.token,
+            tabIndex: 0,
+            role: 'link',
+            'aria-label': `${part.value}: ${part.targetIds?.join(', ')}`,
+          },
+          part.value,
+        ),
+  );
+}
+
+function chapterCaption(
+  chapterLabel: string,
+  label: string,
+  references: Readonly<Record<string, string | readonly string[]>>,
+): Array<string | ReactElement> {
+  return label ? [chapterLabel, ', ', ...annotationText(label, references)] : [chapterLabel];
+}
 
 export interface AnimationStageProps {
   readonly doc: AnimationDocument;
@@ -121,6 +153,10 @@ export function AnimationPlayer({
     (event: React.ChangeEvent<HTMLInputElement>) => player.setSpeed(Number(event.target.value)),
     [player],
   );
+  useEffect(() => {
+    const root = rootRef.current;
+    return root ? bindAnnotations(root) : undefined;
+  }, []);
 
   useEffect(() => {
     if (!viewerOpen) return;
@@ -224,9 +260,11 @@ export function AnimationPlayer({
                 { className: `${CLASS.caption} ${CLASS.step}`, 'aria-live': 'polite' },
                 (() => {
                   const active = scene.chapter ?? { index: 0, chapter: scene.chapters[0]! };
-                  return `${strings.chapterLabel(active.index + 1, scene.chapters.length)}${
-                    active.chapter.label ? `, ${active.chapter.label}` : ''
-                  }`;
+                  return chapterCaption(
+                    strings.chapterLabel(active.index + 1, scene.chapters.length),
+                    active.chapter.label,
+                    active.chapter.references,
+                  );
                 })(),
               )
             : null,
@@ -253,13 +291,13 @@ export function AnimationPlayer({
                       createElement(
                         'span',
                         { className: 'cloth-step-list-label' },
-                        chapter.label || chapter.id,
+                        ...annotationText(chapter.label || chapter.id, chapter.references),
                       ),
                       chapter.subtitle
                         ? createElement(
                             'span',
                             { className: 'cloth-step-list-subtitle' },
-                            chapter.subtitle,
+                            ...annotationText(chapter.subtitle, chapter.references),
                           )
                         : null,
                     ),
@@ -403,7 +441,11 @@ export function AnimationPlayer({
                                 index: 0,
                                 chapter: scene.chapters[0]!,
                               };
-                              return `${strings.chapterLabel(active.index + 1, scene.chapters.length)}${active.chapter.label ? `, ${active.chapter.label}` : ''}`;
+                              return chapterCaption(
+                                strings.chapterLabel(active.index + 1, scene.chapters.length),
+                                active.chapter.label,
+                                active.chapter.references,
+                              );
                             })(),
                           )
                         : null,
@@ -435,13 +477,16 @@ export function AnimationPlayer({
                                   createElement(
                                     'span',
                                     { className: 'cloth-step-list-label' },
-                                    chapter.label || chapter.id,
+                                    ...annotationText(
+                                      chapter.label || chapter.id,
+                                      chapter.references,
+                                    ),
                                   ),
                                   chapter.subtitle
                                     ? createElement(
                                         'span',
                                         { className: 'cloth-step-list-subtitle' },
-                                        chapter.subtitle,
+                                        ...annotationText(chapter.subtitle, chapter.references),
                                       )
                                     : null,
                                 ),

@@ -424,6 +424,25 @@ frame(t) = f(document, t)
 
 `settings.showCaption`을 켜면 현재 챕터가 무대 아래에 나온다. `settings.showChapterList`를 켜면 전체 단계 목록이 나오며, `chapterListPosition`을 `left | right | top | bottom` 중 하나로 지정할 수 있다. 챕터가 비어 있으면 두 표시 모두 렌더링되지 않는다.
 
+### 문구와 장면 요소 연결
+
+설명 속 `{token}`을 `references`의 element id와 연결하면, player에서 문구와 장면을 함께 강조할 수 있다. text와 chapter가 같은 형식을 사용하며 하나의 token을 여러 요소에 연결할 수도 있다.
+
+```json
+{
+  "id": "dequeue",
+  "time": 1200,
+  "label": "{queue}에서 꺼내기",
+  "subtitle": "{front}가 다음 처리 대상입니다.",
+  "references": {
+    "queue": "queue-box",
+    "front": ["node-a", "front-pointer"]
+  }
+}
+```
+
+기본 문구와 모든 번역에서 token 이름을 동일하게 유지한다. hover와 keyboard focus는 잠시 강조하고, click은 강조를 고정하며, `Escape`는 고정을 해제한다.
+
 ### 효과
 
 요소를 잠깐 강조한다. **요소의 타임라인을 건드리지 않는다** — 덧그리는 장식이다.

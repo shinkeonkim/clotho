@@ -6,7 +6,7 @@
 // identical schemas, so the split carried no information and is gone.
 
 import { z } from 'zod';
-import { DEFAULT_LOCALES, idSchema, localeListSchema } from './primitives';
+import { annotationReferencesSchema, DEFAULT_LOCALES, idSchema, localeListSchema } from './primitives';
 import { elementSchema } from './elements';
 import { effectSchema } from './effects';
 import { assetMapSchema } from './assets';
@@ -26,6 +26,7 @@ export const chapterSchema = z.object({
   time: z.number().int().min(0),
   label: z.string().default(''),
   subtitle: z.string().default(''),
+  references: annotationReferencesSchema,
 });
 
 /**

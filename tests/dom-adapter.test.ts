@@ -15,6 +15,7 @@ import { serializeSceneBody } from '../src/svg/serialize';
 import { patchScene } from '../src/dom/patch';
 import { mountPlayer, mountStage } from '../src/dom/mount';
 import { createManualScheduler } from '../src/core/player/scheduler';
+import { appendAnnotationText, bindAnnotations } from '../src/dom/annotations';
 
 const ALWAYS = [{ start: 0, end: 1000, entryDuration: 0, exitDuration: 0 }];
 
@@ -85,6 +86,7 @@ beforeEach(() => {
   g.window = window;
   g.document = window.document;
   g.Element = window.Element;
+  g.Node = window.Node;
   g.SVGElement = window.SVGElement;
   g.IntersectionObserver = undefined;
   g.matchMedia = undefined;
@@ -95,9 +97,49 @@ afterEach(() => {
   delete g.window;
   delete g.document;
   delete g.Element;
+  delete g.Node;
   delete g.SVGElement;
   delete g.IntersectionObserver;
   delete g.matchMedia;
+});
+
+describe('linked annotations', () => {
+  it('highlights targets by pointer, keyboard focus, and persistent click', () => {
+    const root = window.document.createElement('div');
+    const target = window.document.createElement('div');
+    target.dataset.clothoId = 'queue';
+    const caption = window.document.createElement('p');
+    appendAnnotationText(caption as unknown as HTMLElement, '{queue}에 삽입', { queue: 'queue' });
+    root.append(target, caption);
+    const reference = caption.querySelector('[data-clotho-ref]') as unknown as HTMLElement;
+    const unbind = bindAnnotations(root as unknown as HTMLElement);
+
+    reference.dispatchEvent(new window.Event('pointerover', { bubbles: true }) as unknown as Event);
+    expect(target.classList.contains('is-annotation-target')).toBe(true);
+    reference.dispatchEvent(new window.Event('pointerout', { bubbles: true }) as unknown as Event);
+    expect(target.classList.contains('is-annotation-target')).toBe(false);
+
+    reference.click();
+    reference.dispatchEvent(new window.Event('pointerout', { bubbles: true }) as unknown as Event);
+    expect(target.classList.contains('is-annotation-target')).toBe(true);
+    reference.dispatchEvent(
+      new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }) as unknown as Event,
+    );
+    expect(target.classList.contains('is-annotation-target')).toBe(false);
+
+    unbind();
+    expect(reference.classList.contains('is-annotation-active')).toBe(false);
+  });
+
+  it('renders chapter text as text nodes and accessible references', () => {
+    const caption = window.document.createElement('p');
+    appendAnnotationText(caption as unknown as HTMLElement, '<{node}> 확인', {
+      node: ['a', 'b'],
+    });
+    expect(caption.textContent).toBe('<node> 확인');
+    expect(caption.innerHTML).toContain('&lt;');
+    expect(caption.querySelector('[data-clotho-ref="a b"]')?.getAttribute('role')).toBe('link');
+  });
 });
 
 function svgElement(): SVGSVGElement {

@@ -151,6 +151,10 @@ function buildElementNode(
   }
 
   if (!result) return null;
+  result = {
+    ...result,
+    attrs: compactAttrs({ ...result.attrs, 'data-clotho-id': el.id }),
+  };
 
   const phase = phaseStyleFromState(el, state);
   if (isNoopPhaseStyle(phase)) return result;

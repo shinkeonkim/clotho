@@ -12,6 +12,7 @@ import { createPlayer, type Player, type PlayerOptions } from '../core/player/cr
 import { animationFrameScheduler } from './scheduler';
 import { patchScene } from './patch';
 import { CLASS, type Strings, defaultStrings } from './strings';
+import { appendAnnotationText, bindAnnotations } from './annotations';
 
 export interface MountOptions extends SceneOptions {
   readonly player?: Omit<PlayerOptions, 'scheduler'> & { scheduler?: PlayerOptions['scheduler'] };
@@ -113,6 +114,7 @@ export function mountPlayer(
   body.className = CLASS.body;
   root.append(body);
   container.append(root);
+  const unbindAnnotations = bindAnnotations(root);
 
   const engine = document.createElement('div');
   engine.className = `${CLASS.engine}${doc.settings.showChapterList && doc.chapters.length > 0 ? ` ${CLASS.engineWithList}` : ''}`;
@@ -186,10 +188,13 @@ export function mountPlayer(
       const item = document.createElement('li');
       item.className = CLASS.stepListItem;
       item.innerHTML = `<span class="cloth-step-list-num">${index + 1}</span><div class="cloth-step-list-body"><span class="cloth-step-list-label"></span><span class="cloth-step-list-subtitle"></span></div>`;
-      item.querySelector<HTMLElement>('.cloth-step-list-label')!.textContent =
-        chapter.label || chapter.id;
+      appendAnnotationText(
+        item.querySelector<HTMLElement>('.cloth-step-list-label')!,
+        chapter.label || chapter.id,
+        chapter.references,
+      );
       const subtitle = item.querySelector<HTMLElement>('.cloth-step-list-subtitle')!;
-      subtitle.textContent = chapter.subtitle;
+      appendAnnotationText(subtitle, chapter.subtitle, chapter.references);
       subtitle.hidden = !chapter.subtitle;
       list.append(item);
       chapterItems.push(item);
@@ -220,9 +225,15 @@ export function mountPlayer(
     if (step) {
       const scene = buildScene(doc, state.time, options);
       const active = scene.chapter ?? { index: 0, chapter: scene.chapters[0]! };
-      step.textContent = `${strings.chapterLabel(active.index + 1, scene.chapters.length)}${
-        active.chapter.label ? `, ${active.chapter.label}` : ''
-      }`;
+      step.replaceChildren(
+        document.createTextNode(strings.chapterLabel(active.index + 1, scene.chapters.length)),
+      );
+      if (active.chapter.label) {
+        step.append(document.createTextNode(', '));
+        const label = document.createElement('span');
+        appendAnnotationText(label, active.chapter.label, active.chapter.references);
+        step.append(label);
+      }
     }
     const activeIndex = buildScene(doc, state.time, options).chapter?.index ?? 0;
     chapterItems.forEach((item, index) => {
@@ -266,6 +277,7 @@ export function mountPlayer(
     ...stage,
     root,
     destroy() {
+      unbindAnnotations();
       unsubscribe();
       for (const observer of observers) observer.disconnect();
       mediaQuery?.removeEventListener('change', onMotionChange);

@@ -683,3 +683,18 @@
     }
   }
 }
+.cloth-wrapper [data-clotho-ref] {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.18em;
+}
+
+.cloth-wrapper .is-annotation-active {
+  font-weight: 700;
+}
+
+.cloth-wrapper .is-annotation-target {
+  filter: drop-shadow(0 0 5px var(--cloth-accent, #6366f1));
+  opacity: 1;
+}

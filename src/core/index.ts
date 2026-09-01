@@ -23,3 +23,4 @@ export * from './load';
 export * from './authoring';
 export * from './i18n';
 export * from './layout';
+export * from './annotations';
