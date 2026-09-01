@@ -117,8 +117,13 @@ await writeDocumentGif(doc, 'knapsack.gif', {
   fps: 12,
   width: 800,
   background: '#ffffff',
+  layout: 'player', // 제목·컨트롤·caption·chapter rail까지 포함 (기본값)
 });
 ```
+
+내부 SVG 영역만 필요하면 `layout: 'stage'`를 지정한다. 기본 렌더러는 시스템 폰트를
+불러 텍스트를 보존하며, CI처럼 결과를 고정할 때는 `fontFiles: ['/path/font.ttf']`를
+전달할 수 있다. CSS 색상 토큰은 선택한 `theme: 'light' | 'dark'`의 실제 색으로 해석된다.
 
 CLI에서도 같은 렌더 경로를 쓴다.
 

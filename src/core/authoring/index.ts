@@ -1,7 +1,13 @@
 import type { z } from 'zod';
 import { animationDocumentSchema } from '../schema/document';
 import type { effectSchema } from '../schema/effects';
-import type { Appearance, Ease, Interpolation, PropertyTrack, TrackValue } from '../schema/primitives';
+import type {
+  Appearance,
+  Ease,
+  Interpolation,
+  PropertyTrack,
+  TrackValue,
+} from '../schema/primitives';
 
 export type AnimationInput = z.input<typeof animationDocumentSchema>;
 export type EffectInput = z.input<typeof effectSchema>;

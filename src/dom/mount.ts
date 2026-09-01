@@ -168,7 +168,8 @@ export function mountPlayer(
   speedLabel.append(speedInput, speedValue);
   actions.append(speedLabel);
 
-  const step = doc.settings.showCaption && doc.chapters.length > 0 ? document.createElement('div') : null;
+  const step =
+    doc.settings.showCaption && doc.chapters.length > 0 ? document.createElement('div') : null;
   if (step) {
     step.className = `${CLASS.caption} ${CLASS.step}`;
     step.setAttribute('aria-live', 'polite');
@@ -185,7 +186,8 @@ export function mountPlayer(
       const item = document.createElement('li');
       item.className = CLASS.stepListItem;
       item.innerHTML = `<span class="cloth-step-list-num">${index + 1}</span><div class="cloth-step-list-body"><span class="cloth-step-list-label"></span><span class="cloth-step-list-subtitle"></span></div>`;
-      item.querySelector<HTMLElement>('.cloth-step-list-label')!.textContent = chapter.label || chapter.id;
+      item.querySelector<HTMLElement>('.cloth-step-list-label')!.textContent =
+        chapter.label || chapter.id;
       const subtitle = item.querySelector<HTMLElement>('.cloth-step-list-subtitle')!;
       subtitle.textContent = chapter.subtitle;
       subtitle.hidden = !chapter.subtitle;

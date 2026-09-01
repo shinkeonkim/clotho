@@ -16,6 +16,7 @@ All notable changes to this project are documented here. The format follows
 - `renderDocumentToGif`/`writeDocumentGif` Node API와 `clotho gif` CLI를 추가했다.
 - `defineAnimation`, `appear`, `track`, `repeatAppearances`, `stagger`, `effects.*` 타입 안전 저작 헬퍼를 추가했다.
 - 챕터 목록을 좌·우·상·하에 배치하는 `settings.chapterListPosition`을 추가했다.
+- npm OIDC trusted publishing용 GitHub Actions release workflow를 추가했다.
 
 ### Fixed
 
@@ -25,6 +26,8 @@ All notable changes to this project are documented here. The format follows
 - chapter 표시는 기존 형식인 `Chapter n / total, label`로 복원했다.
 - Bun gallery의 라이트·다크 색상 대비와 anchor 예제 배치를 개선했다.
 - anchor 예제의 시작점은 고정하고 움직이는 hub의 경계를 연결선이 추적하게 했다.
+- GIF가 stage만 추출하거나 폰트·CSS 색상을 누락하던 문제를 수정하고, 기본 출력에 전체
+  player UI와 chapter rail을 포함했다.
 
 ## [0.1.0] - 2026-09-01
 

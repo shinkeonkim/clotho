@@ -183,15 +183,16 @@ export const AnimationPlayer = defineComponent({
       const chapter =
         scene.value.chapter ??
         (scene.value.chapters.length > 0 ? { index: 0, chapter: scene.value.chapters[0]! } : null);
-      const caption = props.doc.settings.showCaption && chapter
-        ? h(
-            'div',
-            { class: `${CLASS.caption} ${CLASS.step}`, 'aria-live': 'polite' },
-            `${strings.value.chapterLabel(chapter.index + 1, scene.value.chapters.length)}${
-              chapter.chapter.label ? `, ${chapter.chapter.label}` : ''
-            }`,
-          )
-        : null;
+      const caption =
+        props.doc.settings.showCaption && chapter
+          ? h(
+              'div',
+              { class: `${CLASS.caption} ${CLASS.step}`, 'aria-live': 'polite' },
+              `${strings.value.chapterLabel(chapter.index + 1, scene.value.chapters.length)}${
+                chapter.chapter.label ? `, ${chapter.chapter.label}` : ''
+              }`,
+            )
+          : null;
 
       return h(
         'div',
@@ -237,7 +238,11 @@ export const AnimationPlayer = defineComponent({
                             [
                               h('span', { class: 'cloth-step-list-num' }, index + 1),
                               h('div', { class: 'cloth-step-list-body' }, [
-                                h('span', { class: 'cloth-step-list-label' }, item.label || item.id),
+                                h(
+                                  'span',
+                                  { class: 'cloth-step-list-label' },
+                                  item.label || item.id,
+                                ),
                                 item.subtitle
                                   ? h('span', { class: 'cloth-step-list-subtitle' }, item.subtitle)
                                   : null,

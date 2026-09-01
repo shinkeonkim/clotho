@@ -90,7 +90,8 @@ function parseArgs(argv: string[]): Args {
 }
 
 async function runGif(args: Args): Promise<number> {
-  if (args.paths.length !== 2) throw new Error('gif needs one input JSON file and one output GIF path');
+  if (args.paths.length !== 2)
+    throw new Error('gif needs one input JSON file and one output GIF path');
   const [input, output] = args.paths as [string, string];
   const value = readJson(await readFile(resolve(input), 'utf-8'));
   const doc = animationDocumentSchema.parse(value);

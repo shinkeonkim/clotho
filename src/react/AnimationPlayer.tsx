@@ -229,9 +229,17 @@ export function AnimationPlayer({
                     createElement(
                       'div',
                       { className: 'cloth-step-list-body' },
-                      createElement('span', { className: 'cloth-step-list-label' }, chapter.label || chapter.id),
+                      createElement(
+                        'span',
+                        { className: 'cloth-step-list-label' },
+                        chapter.label || chapter.id,
+                      ),
                       chapter.subtitle
-                        ? createElement('span', { className: 'cloth-step-list-subtitle' }, chapter.subtitle)
+                        ? createElement(
+                            'span',
+                            { className: 'cloth-step-list-subtitle' },
+                            chapter.subtitle,
+                          )
                         : null,
                     ),
                   ),
