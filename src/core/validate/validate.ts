@@ -84,9 +84,29 @@ export function validateDocument(value: unknown): ValidationResult {
   checkParentLinks(doc, findings);
   checkTemporalBounds(doc, findings);
   checkAssets(doc, findings);
+  checkLocalization(doc, findings);
   checkUnknownProperties(value, doc, findings);
 
   return summarize(findings, doc);
+}
+
+function checkLocalization(doc: AnimationDocument, findings: Finding[]): void {
+  doc.elements.forEach((element, index) => {
+    if (element.type !== 'text') return;
+    const configured = new Set(
+      (element.locales ?? doc.locales).map((locale) => locale.toLowerCase()),
+    );
+    for (const locale of Object.keys(element.translations)) {
+      if (configured.has(locale.toLowerCase())) continue;
+      findings.push(
+        warning(
+          'unlisted-translation-locale',
+          `elements.${index}.translations.${locale}`,
+          `translation locale "${locale}" is not listed in ${element.locales ? "this text element's locales" : 'document locales'}`,
+        ),
+      );
+    }
+  });
 }
 
 /**

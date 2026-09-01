@@ -24,6 +24,23 @@ export const idSchema = z
     'id must be lowercase letters, digits, "-" or "_", starting with a letter or digit',
   );
 
+/** BCP 47-style language tag used by document and element localization maps. */
+export const localeTagSchema = z
+  .string()
+  .regex(
+    /^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$/,
+    'locale must be a BCP 47 language tag such as "ko", "en", "ja", or "zh-CN"',
+  );
+
+export const DEFAULT_LOCALES = ['ko', 'en'] as const;
+
+export const localeListSchema = z
+  .array(localeTagSchema)
+  .min(1)
+  .refine((locales) => new Set(locales.map((locale) => locale.toLowerCase())).size === locales.length, {
+    message: 'locales must not contain duplicates',
+  });
+
 export const easeSchema = z.enum(['linear', 'easeIn', 'easeOut', 'easeInOut']).default('easeInOut');
 
 export const anchorSchema = z
@@ -132,3 +149,4 @@ export type Appearance = z.infer<typeof appearanceSchema>;
 export type TrackValue = z.infer<typeof trackValueSchema>;
 export type TrackKeyframe = z.infer<typeof trackKeyframeSchema>;
 export type PropertyTrack = z.infer<typeof propertyTrackSchema>;
+export type LocaleTag = z.infer<typeof localeTagSchema>;

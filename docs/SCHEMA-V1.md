@@ -2,7 +2,7 @@
 
 **상태: 확정 (2026-08-08).** 기존 legacy v3/v4를 대체하는 새 체계다. 근거는 [`RESEARCH.md`](./RESEARCH.md), 구조 결정은 [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-설계 태도: **이유 있는 것만 바꾼다.** legacy v4는 383개 실문서로 검증된 포맷이므로 잘 작동하는 부분(요소 10종, `appearances`/`tracks` 타임라인 모델, 이펙트 3종, ms 시간 단위)은 그대로 계승한다. 아래 §2의 6가지만 변경한다.
+설계 태도: **이유 있는 것만 바꾼다.** legacy v4는 383개 실문서로 검증된 포맷이므로 잘 작동하는 부분(요소 10종, `appearances`/`tracks` 타임라인 모델, 이펙트 3종, ms 시간 단위)은 그대로 계승한다. 변경 사항은 아래 §2에 기록한다.
 
 ---
 
@@ -18,6 +18,7 @@
   "category": "algorithm", // 자유 문자열 (legacy: 고정 enum 7종)
   "tags": ["graph", "shortest-path"],
   "duration": 12000, // ms
+  "locales": ["ko", "en"], // 생략 시 기본값. BCP 47 tag로 자유롭게 확장
   "canvas": { "width": 800, "height": 460, "background": "transparent" },
   "assets": {/* §2.3 */},
   "elements": [/* §2.1, §2.2 */],
@@ -113,6 +114,29 @@ legacy enum은 `network|cache|algorithm|architecture|flow|protocol|general` 7종
 ### 2.6 코드 요소: 하이라이터 주입
 
 legacy `code`는 `language` 필드를 받지만 렌더러는 JS 키워드 집합을 하드코딩한 토크나이저 하나뿐이었다. 문서 포맷은 그대로 두고 **렌더 옵션으로 하이라이터를 주입**받는다 (기본값은 기존 JS 토크나이저). 문서 스키마 변경은 없다.
+
+### 2.7 text 국제화
+
+기존 `text.content`는 기본 문구로 유지한다. 문서의 `locales`는 제공하는 언어 목록이며 생략하면 `ko`, `en`이다. 특정 text만 다른 언어가 필요하면 요소의 `locales`로 덮어쓰고 `translations`에 locale별 문구를 저장한다.
+
+```jsonc
+{
+  "type": "text",
+  "id": "greeting",
+  "x": 400,
+  "y": 240,
+  "content": "안녕하세요",
+  "locales": ["ko", "en", "ja", "zh-CN", "fr"],
+  "translations": {
+    "en": "Hello",
+    "ja": "こんにちは",
+    "zh-CN": "你好",
+    "fr": "Bonjour"
+  }
+}
+```
+
+언어 목록은 고정 enum이 아니라 BCP 47 형식의 문자열 배열이다. 렌더러는 `SceneOptions.locale`의 정확한 번역, 기본 언어 번역(`en-US` → `en`), `content` 순서로 문구를 선택한다. 따라서 기존 문서는 변환 없이 같은 문구를 표시한다.
 
 ## 3. 계승하는 부분 (변경 없음)
 

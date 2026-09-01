@@ -37,6 +37,18 @@
           },
           "default": []
         },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+          },
+          "minItems": 1,
+          "default": [
+            "ko",
+            "en"
+          ]
+        },
         "duration": {
           "type": "integer",
           "minimum": 0,
@@ -640,6 +652,19 @@
                   },
                   "content": {
                     "type": "string"
+                  },
+                  "locales": {
+                    "$ref": "#/definitions/ClothoDocument/properties/locales"
+                  },
+                  "translations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "propertyNames": {
+                      "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$"
+                    },
+                    "default": {}
                   },
                   "fontSize": {
                     "type": "number",

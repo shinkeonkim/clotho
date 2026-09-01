@@ -6,7 +6,7 @@
 // identical schemas, so the split carried no information and is gone.
 
 import { z } from 'zod';
-import { idSchema } from './primitives';
+import { DEFAULT_LOCALES, idSchema, localeListSchema } from './primitives';
 import { elementSchema } from './elements';
 import { effectSchema } from './effects';
 import { assetMapSchema } from './assets';
@@ -61,6 +61,8 @@ export const animationDocumentSchema = z.object({
    */
   category: z.string().default('general'),
   tags: z.array(z.string()).default([]),
+  /** Languages offered by default. Individual text elements may override this list. */
+  locales: localeListSchema.default([...DEFAULT_LOCALES]),
   duration: z.number().int().min(0).default(5000),
   canvas: canvasSchema.default(CANVAS_DEFAULT),
   assets: assetMapSchema.default({}),

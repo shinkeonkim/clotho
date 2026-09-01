@@ -21,3 +21,4 @@ export * from './migrate';
 export * from './validate';
 export * from './load';
 export * from './authoring';
+export * from './i18n';

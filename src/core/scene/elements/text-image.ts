@@ -14,6 +14,7 @@ import { resolveAsset } from '../../assets/resolver';
 import { compactAttrs, type SceneNode } from '../nodes';
 import type { ElementState, SceneContext } from '../context';
 import { report } from '../context';
+import { resolveLocalizedText } from '../../i18n';
 
 function num(state: ElementState, key: string, fallback = 0): number {
   const value = state[key];
@@ -45,7 +46,7 @@ export function buildText(ctx: SceneContext, el: TextElement, state: ElementStat
       'text-anchor': str(state, 'textAnchor'),
       transform: rotation ? `rotate(${rotation} ${x} ${y})` : undefined,
     }),
-    content: str(state, 'content') ?? '',
+    content: resolveLocalizedText(str(state, 'content') ?? '', el.translations, ctx.options.locale),
   };
 }
 

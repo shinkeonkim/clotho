@@ -8,6 +8,38 @@ JSON으로 정의하는 시각화 애니메이션 패키지.
 
 직접 설치하기 전에 [Clotho Editor](https://clotho-editor.shinkeonkim.com/)에서 갤러리 애니메이션을 열고 JSON 문서와 재생 결과를 바로 확인할 수 있다.
 
+전체 사용법과 API, JSON Schema, 표현 요소별 예시는 [Clotho 문서](https://clotho-docs.shinkeonkim.com/)에서 확인할 수 있다.
+
+## Text 국제화
+
+기존 `content`는 항상 기본 문구로 사용되므로 이전 문서도 그대로 동작한다. 문서의 `locales`를 생략하면 `ko`, `en`을 기본으로 제공하며, 특정 text 요소에서 다른 언어가 필요하면 `locales`와 `translations`를 직접 확장한다.
+
+```jsonc
+{
+  "locales": ["ko", "en", "ja", "zh-CN"],
+  "elements": [
+    {
+      "type": "text",
+      "id": "welcome",
+      "x": 400,
+      "y": 240,
+      "content": "환영합니다",
+      "translations": {
+        "en": "Welcome",
+        "ja": "ようこそ",
+        "zh-CN": "欢迎"
+      }
+    }
+  ]
+}
+```
+
+host는 현재 언어를 `SceneOptions.locale`로 전달한다. 등록한 번역이 없거나 locale을 전달하지 않으면 `content`로 돌아간다.
+
+```tsx
+<AnimationPlayer doc={doc} options={{ locale: currentLocale }} />
+```
+
 ## 애니메이션 갤러리
 
 각 예시는 독립된 문서이며 아래 GIF도 라이브러리의 `writeDocumentGif`로 생성했다.

@@ -16,6 +16,8 @@ import type { SceneDiagnostic } from './nodes';
 
 /** Options a host passes when building a scene. */
 export interface SceneOptions {
+  /** Locale used to resolve `text.translations`; `text.content` is the fallback. */
+  readonly locale?: string;
   /** Resolves `ref` assets. Without it, `ref` images draw a placeholder. */
   readonly assetResolver?: AssetResolver;
   /** Cache shared with `prefetchAssets`, so async resolution is available synchronously. */

@@ -9,7 +9,7 @@
 //   - `group`: `childIds` list → children point up via `parentId` (§2.1)
 
 import { z } from 'zod';
-import { anchorSchema, arrowHeadSchema, baseElementProps, idSchema } from './primitives';
+import { anchorSchema, arrowHeadSchema, baseElementProps, idSchema, localeListSchema, localeTagSchema } from './primitives';
 
 export const rectElementSchema = z.object({
   type: z.literal('rect'),
@@ -89,6 +89,10 @@ export const textElementSchema = z.object({
   x: z.number(),
   y: z.number(),
   content: z.string(),
+  /** Optional per-element override for the document's language list. */
+  locales: localeListSchema.optional(),
+  /** Localized alternatives. `content` remains the default and final fallback. */
+  translations: z.record(localeTagSchema, z.string()).default({}),
   fontSize: z.number().positive().default(16),
   fontWeight: z.union([z.string(), z.number()]).default(400),
   color: z.string().default('#18181b'),
