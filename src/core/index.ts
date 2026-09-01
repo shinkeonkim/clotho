@@ -22,3 +22,4 @@ export * from './validate';
 export * from './load';
 export * from './authoring';
 export * from './i18n';
+export * from './layout';

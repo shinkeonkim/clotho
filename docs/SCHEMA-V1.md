@@ -22,6 +22,7 @@
   "canvas": { "width": 800, "height": 460, "background": "transparent" },
   "assets": {/* §2.3 */},
   "elements": [/* §2.1, §2.2 */],
+  "layouts": [/* §2.8 */],
   "chapters": [{ "id": "c1", "time": 2000, "label": "Round 1", "subtitle": "" }],
   "effects": [{ "type": "pulse", "id": "p1", "elementId": "n-a", "time": 2000 }],
   "settings": {
@@ -137,6 +138,27 @@ legacy `code`는 `language` 필드를 받지만 렌더러는 JS 키워드 집합
 ```
 
 언어 목록은 고정 enum이 아니라 BCP 47 형식의 문자열 배열이다. 렌더러는 `SceneOptions.locale`의 정확한 번역, 기본 언어 번역(`en-US` → `en`), `content` 순서로 문구를 선택한다. 따라서 기존 문서는 변환 없이 같은 문구를 표시한다.
+
+### 2.8 Constraint Layout
+
+`layouts`는 요소의 배치 의도를 저장한다. `row`, `column`, `grid`로 기본 배치를 정하고 `rightOf`, `below`, `sameX`, `sameY`, `align`, `contain`, `minGap`으로 요소 사이의 관계를 추가할 수 있다.
+
+```jsonc
+"layouts": [{
+  "id": "steps",
+  "mode": "row",
+  "elementIds": ["parse", "check", "draw"],
+  "x": 80,
+  "y": 160,
+  "gap": 24,
+  "align": "center",
+  "constraints": [
+    { "type": "minGap", "firstId": "check", "secondId": "draw", "axis": "x", "gap": 40 }
+  ]
+}]
+```
+
+`defineAnimation`과 compiler pipeline은 layout을 계산한 뒤 각 요소의 절대 좌표를 문서에 고정한다. text는 host가 제공한 `TextMeasurer`를 우선 사용하고, 제공하지 않으면 core의 결정적인 폭 추정치를 사용한다. player와 adapter는 이미 계산된 좌표만 렌더링하므로 같은 입력에서 같은 장면을 만든다.
 
 ## 3. 계승하는 부분 (변경 없음)
 

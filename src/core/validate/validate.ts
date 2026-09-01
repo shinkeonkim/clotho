@@ -220,6 +220,7 @@ function checkDuplicateIds(doc: AnimationDocument, findings: Finding[]): void {
     ['elements', doc.elements],
     ['chapters', doc.chapters],
     ['effects', doc.effects],
+    ['layouts', doc.layouts],
   ];
 
   for (const [name, items] of namespaces) {
@@ -277,6 +278,42 @@ function checkReferences(doc: AnimationDocument, findings: Finding[]): void {
           `effect "${effect.id}" targets element "${effect.elementId}", which does not exist`,
         ),
       );
+    }
+  });
+
+  doc.layouts.forEach((layout, layoutIndex) => {
+    const references: { path: string; id: string }[] = layout.elementIds.map((id, index) => ({
+      path: `layouts.${layoutIndex}.elementIds.${index}`,
+      id,
+    }));
+    layout.constraints.forEach((constraint, constraintIndex) => {
+      const base = `layouts.${layoutIndex}.constraints.${constraintIndex}`;
+      if ('elementId' in constraint)
+        references.push({ path: `${base}.elementId`, id: constraint.elementId });
+      if ('targetId' in constraint)
+        references.push({ path: `${base}.targetId`, id: constraint.targetId });
+      if ('containerId' in constraint)
+        references.push({ path: `${base}.containerId`, id: constraint.containerId });
+      if ('firstId' in constraint)
+        references.push({ path: `${base}.firstId`, id: constraint.firstId });
+      if ('secondId' in constraint)
+        references.push({ path: `${base}.secondId`, id: constraint.secondId });
+      if ('elementIds' in constraint) {
+        constraint.elementIds.forEach((id, index) =>
+          references.push({ path: `${base}.elementIds.${index}`, id }),
+        );
+      }
+    });
+    for (const reference of references) {
+      if (!elementIds.has(reference.id)) {
+        findings.push(
+          error(
+            'unknown-reference',
+            reference.path,
+            `layout "${layout.id}" references element "${reference.id}", which does not exist`,
+          ),
+        );
+      }
     }
   });
 

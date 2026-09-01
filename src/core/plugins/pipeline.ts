@@ -1,5 +1,6 @@
 import { animationDocumentSchema } from '../schema';
 import { validateDocument } from '../validate/validate';
+import { compileLayouts } from '../layout';
 import { cloneJson, freezeJson, stableJson, toJsonValue } from './json';
 import type { PluginRegistry } from './registry';
 import {
@@ -88,10 +89,19 @@ function runOnce(input: unknown, plugins: readonly ClothoPlugin[], seed: string)
       );
     }
 
-    const findings = [...validateDocument(parsedDocument.data).findings];
+    const compiled = compileLayouts(parsedDocument.data);
+    const findings = [
+      ...validateDocument(compiled.document).findings,
+      ...compiled.findings.map((finding) => ({
+        severity: finding.severity,
+        code: `layout-${finding.code}`,
+        path: `layouts.${finding.layoutId}`,
+        message: finding.message,
+      })),
+    ];
     const readonlyDocument = freezeJson(
-      toJsonValue(parsedDocument.data),
-    ) as unknown as typeof parsedDocument.data;
+      toJsonValue(compiled.document),
+    ) as unknown as typeof compiled.document;
     for (const plugin of plugins) {
       if (!plugin.validate) continue;
       findings.push(
@@ -99,7 +109,7 @@ function runOnce(input: unknown, plugins: readonly ClothoPlugin[], seed: string)
       );
       trace.push({ pluginId: plugin.manifest.id, stage: 'validate' });
     }
-    const result = { ok: true, document: parsedDocument.data, findings, trace } as const;
+    const result = { ok: true, document: compiled.document, findings, trace } as const;
     return { result, signature: stableJson(result) };
   } catch (error) {
     const pluginError =

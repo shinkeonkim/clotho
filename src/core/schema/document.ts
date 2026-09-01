@@ -10,6 +10,7 @@ import { DEFAULT_LOCALES, idSchema, localeListSchema } from './primitives';
 import { elementSchema } from './elements';
 import { effectSchema } from './effects';
 import { assetMapSchema } from './assets';
+import { layoutSchema } from './layout';
 
 /** Current document format version emitted and accepted by this build. */
 export const FORMAT_VERSION = 1;
@@ -67,6 +68,8 @@ export const animationDocumentSchema = z.object({
   canvas: canvasSchema.default(CANVAS_DEFAULT),
   assets: assetMapSchema.default({}),
   elements: z.array(elementSchema).default([]),
+  /** Authoring-time placement rules. Compile them to element coordinates before rendering. */
+  layouts: z.array(layoutSchema).default([]),
   chapters: z.array(chapterSchema).default([]),
   effects: z.array(effectSchema).default([]),
   settings: settingsSchema.default(SETTINGS_DEFAULT),
