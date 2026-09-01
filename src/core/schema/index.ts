@@ -6,6 +6,7 @@ export * from './elements';
 export * from './layout';
 export * from './checkpoints';
 export * from './data';
+export * from './responsive';
 export * from './effects';
 export * from './document';
 

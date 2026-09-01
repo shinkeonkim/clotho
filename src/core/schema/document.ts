@@ -13,6 +13,7 @@ import { assetMapSchema } from './assets';
 import { layoutSchema } from './layout';
 import { checkpointSchema } from './checkpoints';
 import { dataValueSchema } from './data';
+import { responsiveVariantSchema } from './responsive';
 
 /** Current document format version emitted and accepted by this build. */
 export const FORMAT_VERSION = 1;
@@ -71,6 +72,7 @@ export const animationDocumentSchema = z.object({
   canvas: canvasSchema.default(CANVAS_DEFAULT),
   assets: assetMapSchema.default({}),
   data: z.record(dataValueSchema).default({}),
+  responsive: z.array(responsiveVariantSchema).optional(),
   elements: z.array(elementSchema).default([]),
   /** Authoring-time placement rules. Compile them to element coordinates before rendering. */
   layouts: z.array(layoutSchema).default([]),

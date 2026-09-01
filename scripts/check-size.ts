@@ -38,7 +38,7 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 25_000,
+    gzipBudget: 25_500,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
   react: { file: 'react/index.js', gzipBudget: 27_000, note: 'react is external; no zod' },

@@ -54,14 +54,23 @@ export function mountStage(
   frame.append(svg);
   container.append(frame);
 
+  let viewportWidth = container.clientWidth;
   const render = (): void => {
-    const scene = buildScene(doc, player.getState().time, options);
+    const scene = buildScene(doc, player.getState().time, { ...options, viewportWidth });
     frame.dataset.mat = scene.showMat ? 'true' : 'false';
     patchScene(svg, scene);
   };
 
   render();
   const unsubscribe = player.subscribe(render);
+  const resizeObserver =
+    typeof ResizeObserver === 'undefined'
+      ? null
+      : new ResizeObserver(([entry]) => {
+          viewportWidth = entry?.contentRect.width ?? container.clientWidth;
+          render();
+        });
+  resizeObserver?.observe(container);
 
   return {
     player,
@@ -69,6 +78,7 @@ export function mountStage(
     render,
     destroy() {
       unsubscribe();
+      resizeObserver?.disconnect();
       player.destroy();
       frame.remove();
     },

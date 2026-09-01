@@ -36,6 +36,8 @@ export interface SceneOptions {
    * For static export, where `var(--cloth-fg)` would not resolve to anything.
    */
   readonly rawColors?: boolean;
+  /** Container width used to select an authored responsive variant. */
+  readonly viewportWidth?: number;
 }
 
 /** Internal build context, assembled once per frame. */

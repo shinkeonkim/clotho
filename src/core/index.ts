@@ -27,3 +27,4 @@ export * from './annotations';
 export * from './interactions/session';
 export * from './data';
 export * from './story';
+export * from './responsive';
