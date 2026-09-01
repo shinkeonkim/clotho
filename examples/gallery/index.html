@@ -135,77 +135,9 @@
       <div id="sections"></div>
     </main>
 
-    <script type="module">
-      import { GALLERY } from './documents.ts';
-      import { parseDocument } from '../../src/core/index.ts';
-      import { mountPlayer } from '../../src/dom/index.ts';
-      import { renderDocumentToSvg } from '../../src/svg/index.ts';
-
-      const nav = document.querySelector('#nav');
-      const sections = document.querySelector('#sections');
-      const FRAMES = 9;
-
-      for (const entry of GALLERY) {
-        const link = document.createElement('a');
-        link.href = `#${entry.slug}`;
-        link.textContent = entry.title;
-        nav.append(link);
-
-        const section = document.createElement('section');
-        section.id = entry.slug;
-        section.innerHTML = `<h2>${entry.title}</h2><p class="note">${entry.note}</p>`;
-        sections.append(section);
-
-        // Parsing here rather than at module load so one bad document reports itself
-        // instead of blanking the page.
-        const result = parseDocument(entry.doc);
-        if (!result.ok) {
-          const box = document.createElement('div');
-          box.className = 'fail';
-          box.textContent = result.issues.map((i) => `${i.path}: ${i.message}`).join('\n');
-          section.append(box);
-          continue;
-        }
-        const doc = result.document;
-        const options = entry.assetResolver ? { assetResolver: entry.assetResolver } : {};
-
-        const stage = document.createElement('div');
-        section.append(stage);
-        mountPlayer(stage, doc, options);
-
-        const toolbar = document.createElement('div');
-        toolbar.className = 'toolbar';
-        const toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'toggle';
-        toggle.textContent = 'frames';
-        toolbar.append(
-          toggle,
-          document.createTextNode(`${doc.duration} ms · ${doc.elements.length} elements`),
-        );
-        section.append(toolbar);
-
-        const strip = document.createElement('div');
-        strip.className = 'filmstrip';
-        strip.hidden = true;
-        section.append(strip);
-
-        toggle.addEventListener('click', () => {
-          strip.hidden = !strip.hidden;
-          // Built on first reveal: nine SVG serializations per document is real work,
-          // and most visitors never open most strips.
-          if (!strip.hidden && strip.childElementCount === 0) {
-            for (let i = 0; i < FRAMES; i += 1) {
-              const time = Math.round((doc.duration * i) / (FRAMES - 1));
-              const figure = document.createElement('figure');
-              figure.className = 'frame';
-              figure.style.margin = '0';
-              figure.innerHTML = `${renderDocumentToSvg(doc, time, options)}<figcaption>${time} ms</figcaption>`;
-              strip.append(figure);
-            }
-          }
-        });
-      }
-    </script>
+    <!-- Keep the entry point external: Bun's HTML bundler discovers and transpiles
+         TypeScript module graphs from script src attributes. Inline imports are sent
+         to the browser unchanged and become HTML fallback/MIME errors. -->
+    <script type="module" src="./index.ts"></script>
   </body>
 </html>
