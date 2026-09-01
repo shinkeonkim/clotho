@@ -51,6 +51,11 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
     gzipBudget: 18_000,
     note: 'experimental authoring pipeline; isolated from the default core entry',
   },
+  testing: {
+    file: 'testing/index.js',
+    gzipBudget: 21_000,
+    note: 'scene assertions, SVG snapshots and pixel diff; no framework',
+  },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
 };
 
@@ -58,6 +63,7 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
 const FORBIDDEN_IMPORTS: Record<string, RegExp[]> = {
   core: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   plugins: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
+  testing: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   svg: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   dom: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   react: [/from\s*['"]vue['"]/, /from\s*['"]node:/],
@@ -71,7 +77,7 @@ const FORBIDDEN_IMPORTS: Record<string, RegExp[]> = {
  * bundling a validator. Keeping that true is worth about 9KB gzipped to anyone who
  * only renders — and it is the kind of thing one convenience import quietly undoes.
  */
-const ZOD_FREE = ['svg', 'dom', 'react', 'vue'] as const;
+const ZOD_FREE = ['svg', 'dom', 'react', 'vue', 'testing'] as const;
 const ZOD_MARKERS = [/ZodError/, /ZodType/, /invalid_union/];
 
 if (!existsSync(DIST)) {

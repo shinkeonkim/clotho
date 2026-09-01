@@ -63,6 +63,10 @@
       "types": "./dist/plugins/index.d.ts",
       "default": "./dist/plugins/index.js"
     },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    },
     "./styles.css": "./dist/clotho.css",
     "./schema.json": "./schema/clotho-1.schema.json",
     "./package.json": "./package.json"
@@ -92,6 +96,9 @@
       ],
       "plugins": [
         "./dist/plugins/index.d.ts"
+      ],
+      "testing": [
+        "./dist/testing/index.d.ts"
       ]
     }
   },

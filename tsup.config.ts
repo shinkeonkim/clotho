@@ -11,6 +11,7 @@ export default defineConfig({
     'gif/index': 'src/gif/index.ts',
     'cli/index': 'src/cli/index.ts',
     'plugins/index': 'src/plugins/index.ts',
+    'testing/index': 'src/testing/index.ts',
   },
   format: ['esm'],
   target: 'es2022',

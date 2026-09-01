@@ -570,6 +570,33 @@ const reference = search.reference({ values: [3, 8, 13], target: 8 });
 
 Editor host는 `createTemplateEditorPlugin(templates)`을 등록하면 schema에서 자동 생성된 입력 form, 실시간 preview 재생성, standalone JSON과 template 참조 내보내기를 제공할 수 있다.
 
+## 16. Animation Assertion과 Visual Regression
+
+`@kokoa/clotho/testing`은 scene의 의미를 빠르게 검사하는 assertion과 최종 pixel 비교를 분리해 제공한다.
+
+```ts
+import {
+  expectAnimation,
+  snapshotAnimationMatrix,
+  diffRgba,
+} from "@kokoa/clotho/testing";
+
+expectAnimation(document)
+  .at(1200)
+  .visible("queue")
+  .textIncludes("enqueue", "caption")
+  .connected("input", "queue")
+  .position("queue", { x: 240, y: 120 })
+  .insideCanvas("queue");
+
+const snapshots = snapshotAnimationMatrix(document, {
+  locales: ["ko", "en"],
+  themes: ["light", "dark"],
+});
+```
+
+sampling 시각은 시작과 끝, chapter, checkpoint, 모든 keyframe에서 자동으로 수집한다. SVG snapshot은 font rasterization 영향을 받지 않는 구조 비교에 사용하고, 고정된 실행 환경의 RGBA 결과는 `diffRgba`로 최종 pixel regression을 검사한다. 실패 정보는 `animationFailureReport`로 HTML artifact를 만들 수 있다. Editor에서는 `createVisualRegressionPlugin()`을 등록해 현재 문서를 같은 규칙으로 검사한다.
+
 ## 관련 문서
 
 - [`SCHEMA-V1.md`](./SCHEMA-V1.md) — 필드별 정의와 v1 변경점
