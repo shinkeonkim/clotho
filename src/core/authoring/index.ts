@@ -75,3 +75,5 @@ export const effects = {
     return { type: 'flow', ...input };
   },
 };
+
+export * from './template';

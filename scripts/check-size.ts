@@ -28,7 +28,7 @@ const DIST = join(REPO_ROOT, 'dist');
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 32_000,
+    gzipBudget: 33_000,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {

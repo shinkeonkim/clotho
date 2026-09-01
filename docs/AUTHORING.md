@@ -524,6 +524,52 @@ bunx clotho validate public/animations
 
 ---
 
+## 15. Template과 Parameter
+
+구조가 같고 입력 데이터만 다른 애니메이션은 `defineTemplate`으로 만든다. parameter schema는 string, number, boolean, enum, array, object와 범위 조건을 지원하며, 생성 결과는 항상 Clotho schema와 Constraint Layout compiler를 통과한다.
+
+```ts
+import { defineTemplate } from "@kokoa/clotho";
+
+const search = defineTemplate<{
+  values: number[];
+  target: number;
+  showIndex: boolean;
+}>({
+  id: "blog.search",
+  parameters: {
+    values: {
+      type: "array",
+      items: { type: "number", integer: true },
+      minItems: 1,
+    },
+    target: { type: "number", integer: true },
+    showIndex: { type: "boolean", default: true },
+  },
+  build: ({ values, target, showIndex }) => ({
+    clothoVersion: 1,
+    id: "search-result",
+    title: `${target} 찾기`,
+    elements: values.map((value, index) => ({
+      type: "rect",
+      id: `cell-${index}`,
+      x: index * 64,
+      y: 80,
+      width: 56,
+      height: 48,
+      label: showIndex ? `${index}: ${value}` : String(value),
+    })),
+  }),
+});
+
+const standalone = search.instantiate({ values: [3, 8, 13], target: 8 });
+const reference = search.reference({ values: [3, 8, 13], target: 8 });
+```
+
+`standalone`은 어느 player에서도 바로 여는 완전한 v1 문서다. `reference`는 `templateId`와 검증된 parameter만 담으므로, 같은 template registry를 가진 build 환경에서 `instantiateTemplateReference`로 펼친다. 신뢰할 수 없는 JSON에서 code를 실행하지 않으며 template 함수는 build 단계에만 등록한다.
+
+Editor host는 `createTemplateEditorPlugin(templates)`을 등록하면 schema에서 자동 생성된 입력 form, 실시간 preview 재생성, standalone JSON과 template 참조 내보내기를 제공할 수 있다.
+
 ## 관련 문서
 
 - [`SCHEMA-V1.md`](./SCHEMA-V1.md) — 필드별 정의와 v1 변경점
