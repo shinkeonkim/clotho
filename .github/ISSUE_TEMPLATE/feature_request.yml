@@ -1,6 +1,6 @@
 name: Feature request
 description: 새로운 schema, runtime 또는 adapter 기능을 제안해주세요.
-title: "[Feature] "
+title: '[Feature] '
 labels: [enhancement]
 body:
   - type: textarea

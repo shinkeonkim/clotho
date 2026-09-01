@@ -1,6 +1,6 @@
 name: Bug report
 description: Clotho schema, runtime, renderer 또는 player 문제를 알려주세요.
-title: "[Bug] "
+title: '[Bug] '
 labels: [bug]
 body:
   - type: textarea
@@ -21,7 +21,7 @@ body:
     id: version
     attributes:
       label: package 버전
-      placeholder: "@kokoa/clotho 0.1.7"
+      placeholder: '@kokoa/clotho 0.1.7'
     validations:
       required: true
   - type: dropdown
