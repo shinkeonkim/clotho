@@ -24,13 +24,13 @@ const raw = {
 
 describe('text localization', () => {
   it('keeps existing text content and supplies Korean and English as document defaults', () => {
-    const document = animationDocumentSchema.parse({
+    const animation = animationDocumentSchema.parse({
       clothoVersion: 1,
       id: 'existing',
       elements: [{ type: 'text', id: 'text', x: 0, y: 0, content: '그대로' }],
     });
-    expect(document.locales).toEqual(['ko', 'en']);
-    expect(document.elements[0]).toMatchObject({ content: '그대로', translations: {} });
+    expect(animation.locales).toEqual(['ko', 'en']);
+    expect(animation.elements[0]).toMatchObject({ content: '그대로', translations: {} });
   });
 
   it('resolves exact and base-language matches before falling back to content', () => {
@@ -39,14 +39,14 @@ describe('text localization', () => {
   });
 
   it('renders the selected locale and supports element-level locale extensions', () => {
-    const document = animationDocumentSchema.parse(raw);
-    expect(textElementLocales(document, document.elements[0]! as never)).toEqual([
+    const animation = animationDocumentSchema.parse(raw);
+    expect(textElementLocales(animation, animation.elements[0]! as never)).toEqual([
       'ko',
       'en',
       'ja',
       'zh-CN',
     ]);
-    const scene = buildScene(document, 0, { locale: 'zh-CN' });
+    const scene = buildScene(animation, 0, { locale: 'zh-CN' });
     expect(scene.nodes[0]).toMatchObject({ kind: 'text', content: '默认文本' });
   });
 
