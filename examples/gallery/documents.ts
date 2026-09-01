@@ -14,6 +14,7 @@ import type { z } from 'zod';
 import type { AssetResolver } from '../../src/core/assets/resolver';
 import type { animationDocumentSchema } from '../../src/core/schema/document';
 import type { Ease, EntryMode, ExitMode } from '../../src/core/schema/primitives';
+import { defineAnimation } from '../../src/core/authoring';
 
 export interface GalleryEntry {
   readonly slug: string;
@@ -1074,7 +1075,154 @@ const galleryResolver: AssetResolver = {
       : null,
 };
 
+// A cohesive authoring scenario rather than a feature sampler: live service data is
+// bound into a constraint-laid-out incident flow, the explanation links to the affected
+// elements, a checkpoint asks the reader to choose the next action, and the compact
+// variant keeps the same document readable in an article column.
+const INCIDENT_WALKTHROUGH: Doc = defineAnimation({
+  clothoVersion: 1,
+  id: 'incident-walkthrough',
+  title: 'Incident response walkthrough',
+  description: 'Observe, connect the evidence, and choose the recovery action.',
+  category: 'gallery',
+  duration: 6000,
+  canvas: { width: 720, height: 360, background: 'transparent' },
+  data: {
+    services: {
+      api: { state: 'DEGRADED', color: '#f97316' },
+      queue: { state: 'BACKLOG 42', color: '#dc2626' },
+      worker: { state: 'HEALTHY', color: '#16a34a' },
+    },
+  },
+  layouts: [
+    {
+      id: 'service-row',
+      mode: 'row',
+      elementIds: ['api-card', 'queue-card', 'worker-card'],
+      x: 60,
+      y: 118,
+      gap: 42,
+    },
+  ],
+  elements: [
+    {
+      type: 'text',
+      id: 'heading',
+      x: 360,
+      y: 48,
+      content: '{api} 지연이 {queue} 적체로 이어졌습니다.',
+      translations: { en: '{api} latency caused a {queue} backlog.' },
+      references: { api: 'api-card', queue: 'queue-card' },
+      fontSize: 22,
+      textAnchor: 'middle',
+      appearances: whole(6000),
+    },
+    ...[
+      ['api-card', 'API', '/services/api/state', '/services/api/color'],
+      ['queue-card', 'QUEUE', '/services/queue/state', '/services/queue/color'],
+      ['worker-card', 'WORKER', '/services/worker/state', '/services/worker/color'],
+    ].map(([id, label, state, color]) => ({
+      type: 'rect' as const,
+      id: id!,
+      x: 0,
+      y: 0,
+      width: 170,
+      height: 92,
+      fill: '#eef2ff',
+      stroke: ACCENT,
+      cornerRadius: 12,
+      label: label!,
+      subtitle: '',
+      appearances: whole(6000),
+      bindings: [
+        { property: 'subtitle', pointer: state!, formatter: 'string' as const },
+        { property: 'stroke', pointer: color!, formatter: 'color' as const },
+      ],
+    })),
+    {
+      type: 'arrow',
+      id: 'api-to-queue',
+      fromId: 'api-card',
+      toId: 'queue-card',
+      fromAnchor: 'right',
+      toAnchor: 'left',
+      stroke: WARM,
+      headEnd: 'arrow',
+      appearances: whole(6000),
+    },
+    {
+      type: 'arrow',
+      id: 'queue-to-worker',
+      fromId: 'queue-card',
+      toId: 'worker-card',
+      fromAnchor: 'right',
+      toAnchor: 'left',
+      stroke: '#dc2626',
+      headEnd: 'arrow',
+      appearances: whole(6000),
+    },
+    {
+      type: 'text',
+      id: 'action',
+      x: 360,
+      y: 285,
+      content: 'Checkpoint에서 복구 순서를 선택하세요.',
+      translations: { en: 'Choose the recovery order at the checkpoint.' },
+      fontSize: 17,
+      textAnchor: 'middle',
+      appearances: whole(6000),
+    },
+  ],
+  chapters: [
+    { id: 'observe', time: 0, label: '관찰', subtitle: '실시간 상태 확인' },
+    { id: 'decide', time: 2800, label: '판단', subtitle: '복구 순서 선택' },
+  ],
+  checkpoints: [
+    {
+      id: 'recovery-order',
+      time: 3000,
+      prompt: '어떤 구성 요소를 먼저 복구할까요?',
+      interaction: 'choice',
+      options: [
+        { value: 'queue', label: 'Queue 적체 해소' },
+        { value: 'api', label: 'API 재시작' },
+      ],
+      required: true,
+    },
+  ],
+  responsive: [
+    {
+      id: 'compact',
+      minWidth: 0,
+      maxWidth: 479,
+      canvas: { width: 375, height: 560 },
+      chapterListPosition: 'bottom',
+      elementOverrides: {
+        heading: { x: 188, fontSize: 18 },
+        'api-card': { x: 103, y: 100 },
+        'queue-card': { x: 103, y: 220 },
+        'worker-card': { x: 103, y: 340 },
+        action: { x: 188, y: 500, fontSize: 15 },
+      },
+    },
+    { id: 'regular', minWidth: 480, elementOverrides: {} },
+  ],
+  settings: {
+    loop: false,
+    autoplay: true,
+    showCaption: true,
+    showChapterList: true,
+    chapterListPosition: 'right',
+  },
+});
+
 export const GALLERY: readonly GalleryEntry[] = [
+  {
+    slug: 'incident-walkthrough',
+    title: 'Incident response walkthrough',
+    note: 'A practical flow combining live data bindings, constraint layout, linked evidence, chapters, a required checkpoint, translations, and a compact responsive stage.',
+    doc: INCIDENT_WALKTHROUGH,
+  },
   {
     slug: 'elements',
     title: 'Ten element types',

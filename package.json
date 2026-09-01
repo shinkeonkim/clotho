@@ -122,6 +122,8 @@
     "schema:check": "bun scripts/generate-json-schema.ts --check",
     "check:legacy-equivalence": "bun scripts/verify-legacy-equivalence.ts",
     "check:svg-wellformed": "bun scripts/verify-svg-wellformed.ts",
+    "visual:check": "bun scripts/check-visual-baseline.ts",
+    "visual:update": "bun scripts/check-visual-baseline.ts --update",
     "audit:editor": "bun scripts/audit-editor-coverage.ts",
     "release:check": "bun scripts/release-check.ts",
     "clean": "rm -rf dist"

@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import { animationDocumentSchema } from '../core/schema';
-import { animationSampleTimes, diffRgba, expectAnimation, snapshotAnimationMatrix } from './index';
+import {
+  animationSampleTimes,
+  contrastRatio,
+  diffRgba,
+  expectAnimation,
+  snapshotAnimationMatrix,
+} from './index';
 
 const doc = animationDocumentSchema.parse({
   clothoVersion: 1,
@@ -33,6 +39,11 @@ const doc = animationDocumentSchema.parse({
 });
 
 describe('animation assertions and visual regression', () => {
+  test('WCAG contrast ratio를 정적 visual QA에 제공한다', () => {
+    expect(contrastRatio('#000000', '#ffffff')).toBe(21);
+    expect(contrastRatio('#777777', '#ffffff')).toBeCloseTo(4.478, 2);
+    expect(contrastRatio('var(--cloth-fg)', '#ffffff')).toBeNull();
+  });
   test('scene semantics and bounds use element ids in failures', () => {
     expectAnimation(doc)
       .at(300)

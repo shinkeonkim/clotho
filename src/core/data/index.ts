@@ -16,6 +16,7 @@ export interface BindingCompileResult {
 const BINDABLE_PROPERTIES = new Set([
   'content',
   'label',
+  'subtitle',
   'color',
   'fill',
   'stroke',

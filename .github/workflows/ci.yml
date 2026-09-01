@@ -34,6 +34,16 @@ jobs:
       - name: Tests
         run: bun test
 
+      - name: Responsive visual baseline
+        run: bun run visual:check
+
+      - name: Upload visual regression report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-regression-report
+          path: artifacts/visual-regression.json
+
       - name: Build
         run: bun run build
 

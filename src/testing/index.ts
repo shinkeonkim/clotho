@@ -187,6 +187,30 @@ export function diffRgba(actual: Uint8Array, expected: Uint8Array, threshold = 0
   return { changed, ratio: changed / (actual.length / 4), diff };
 }
 
+/** WCAG contrast ratio for six-digit hex colors; null for unresolved CSS colors. */
+export function contrastRatio(foreground: string, background: string): number | null {
+  const fg = parseRgb(foreground);
+  const bg = parseRgb(background);
+  if (!fg || !bg) return null;
+  const luminance = ([red, green, blue]: readonly number[]) => {
+    const channel = (value: number) => {
+      const normalized = value / 255;
+      return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * channel(red!) + 0.7152 * channel(green!) + 0.0722 * channel(blue!);
+  };
+  const lighter = Math.max(luminance(fg), luminance(bg));
+  const darker = Math.min(luminance(fg), luminance(bg));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function parseRgb(value: string): readonly [number, number, number] | null {
+  const match = /^#([0-9a-f]{6})$/i.exec(value);
+  if (!match) return null;
+  const packed = Number.parseInt(match[1]!, 16);
+  return [(packed >> 16) & 255, (packed >> 8) & 255, packed & 255];
+}
+
 export function animationFailureReport(errors: readonly AnimationAssertionError[]): string {
   const rows = errors
     .map(
