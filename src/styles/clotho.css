@@ -700,8 +700,10 @@
 }
 
 .cloth-checkpoint {
+  display: grid;
+  gap: 0.75rem;
   margin: 0.75rem;
-  padding: 1rem;
+  padding: 1rem 1.1rem;
   border: 1px solid var(--cloth-border);
   border-radius: 0.65rem;
   background: var(--cloth-surface);
@@ -710,15 +712,17 @@
 }
 
 .cloth-checkpoint-prompt {
-  margin: 0 0 0.7rem;
+  margin: 0;
+  font-size: 1rem;
   font-weight: 650;
+  line-height: 1.45;
 }
 
 .cloth-checkpoint-choices {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 0.7rem;
+  margin: 0;
 }
 
 .cloth-checkpoint-choices button,
@@ -728,6 +732,65 @@
   border-radius: 0.4rem;
   background: var(--cloth-surface-elevated);
   color: var(--cloth-fg);
+  font: inherit;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+.cloth-checkpoint-choices button {
+  cursor: pointer;
+}
+
+.cloth-checkpoint-choices button:hover:not(:disabled) {
+  border-color: var(--cloth-accent);
+  background: color-mix(in srgb, var(--cloth-accent) 9%, var(--cloth-surface-elevated));
+  transform: translateY(-1px);
+}
+
+.cloth-checkpoint-choices button:focus-visible,
+.cloth-checkpoint input:focus-visible {
+  border-color: var(--cloth-accent);
+  outline: 3px solid color-mix(in srgb, var(--cloth-accent) 25%, transparent);
+  outline-offset: 2px;
+}
+
+.cloth-checkpoint-choices button[data-selected='true'] {
+  border-color: var(--cloth-accent);
+  background: var(--cloth-accent);
+  color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--cloth-accent) 24%, transparent);
+}
+
+.cloth-checkpoint button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.cloth-checkpoint > .cloth-wrapper-btn {
+  justify-self: start;
+  min-width: 7rem;
+  color: var(--cloth-accent);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.cloth-checkpoint > .cloth-wrapper-btn:not(:disabled) {
+  border-color: var(--cloth-accent);
+}
+
+.cloth-checkpoint > .cloth-wrapper-btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--cloth-accent) 25%, transparent);
+  outline-offset: 2px;
+}
+
+.cloth-checkpoint-result {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 650;
 }
 
 .cloth-checkpoint-result[data-correct='true'] {

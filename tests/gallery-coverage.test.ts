@@ -77,6 +77,10 @@ describe('the gallery is valid', () => {
     expect(new Set(parsed.map((e) => e.doc.id)).size).toBe(parsed.length);
   });
 
+  it('keeps the integrated incident walkthrough as the final example', () => {
+    expect(parsed.at(-1)?.slug).toBe('incident-walkthrough');
+  });
+
   it('every entry explains what to look for', () => {
     for (const entry of parsed) expect(entry.note.length).toBeGreaterThan(20);
   });

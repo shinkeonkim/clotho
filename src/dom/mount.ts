@@ -163,6 +163,9 @@ export function mountPlayer(
         button.type = 'button';
         button.textContent = option.label;
         button.dataset.value = option.value;
+        const selected = answer?.value === option.value;
+        button.dataset.selected = String(selected);
+        button.setAttribute('aria-pressed', String(selected));
         button.addEventListener('click', () => interaction.answer(option.value));
         choices.append(button);
       });
@@ -183,6 +186,7 @@ export function mountPlayer(
     if (answer?.correct !== undefined) {
       const result = document.createElement('p');
       result.className = CLASS.checkpointResult;
+      result.setAttribute('role', 'status');
       result.dataset.correct = String(answer.correct);
       result.textContent = answer.correct ? strings.correctAnswer : strings.incorrectAnswer;
       checkpointPanel.append(result);

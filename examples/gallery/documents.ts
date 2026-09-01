@@ -1218,12 +1218,6 @@ const INCIDENT_WALKTHROUGH: Doc = defineAnimation({
 
 export const GALLERY: readonly GalleryEntry[] = [
   {
-    slug: 'incident-walkthrough',
-    title: 'Incident response walkthrough',
-    note: 'A practical flow combining live data bindings, constraint layout, linked evidence, chapters, a required checkpoint, translations, and a compact responsive stage.',
-    doc: INCIDENT_WALKTHROUGH,
-  },
-  {
     slug: 'elements',
     title: 'Ten element types',
     assetResolver: galleryResolver,
@@ -1277,5 +1271,11 @@ export const GALLERY: readonly GalleryEntry[] = [
     title: 'Chapters and captions',
     note: 'Chapters name moments; the caption bar and chapter list are both switched on in `settings`.',
     doc: CHAPTERS,
+  },
+  {
+    slug: 'incident-walkthrough',
+    title: 'Incident response walkthrough',
+    note: 'A practical flow combining live data bindings, constraint layout, linked evidence, chapters, a required checkpoint, translations, and a compact responsive stage.',
+    doc: INCIDENT_WALKTHROUGH,
   },
 ];
