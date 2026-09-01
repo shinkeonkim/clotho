@@ -25,4 +25,24 @@ describe('React player controls', () => {
     const html = renderToStaticMarkup(<AnimationPlayer doc={doc} theme="light" />);
     expect(html).toContain('data-cloth-theme="light"');
   });
+
+  it('renders a checkpoint interaction at the current time', () => {
+    const interactive = animationDocumentSchema.parse({
+      clothoVersion: 1,
+      id: 'react-checkpoint',
+      duration: 1000,
+      checkpoints: [
+        {
+          id: 'ready',
+          time: 0,
+          prompt: '계속할까요?',
+          interaction: 'continue',
+        },
+      ],
+    });
+    const html = renderToStaticMarkup(<AnimationPlayer doc={interactive} />);
+    expect(html).toContain('class="cloth-checkpoint"');
+    expect(html).toContain('계속할까요?');
+    expect(html).toContain('Continue');
+  });
 });

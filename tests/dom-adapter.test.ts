@@ -301,6 +301,51 @@ describe('mountStage', () => {
   });
 });
 
+describe('interactive checkpoint UI', () => {
+  it('pauses, records a choice, and resumes from the DOM player', () => {
+    const interactive = animationDocumentSchema.parse({
+      clothoVersion: 1,
+      id: 'interactive',
+      duration: 500,
+      settings: { autoplay: false, loop: false },
+      checkpoints: [
+        {
+          id: 'choice',
+          time: 100,
+          prompt: '다음 값은?',
+          interaction: 'choice',
+          options: [
+            { value: '2', label: '2' },
+            { value: '3', label: '3' },
+          ],
+          predicate: { type: 'equals', value: '2' },
+        },
+      ],
+    });
+    const scheduler = createManualScheduler();
+    const container = window.document.createElement('div');
+    const handle = mountPlayer(container as unknown as HTMLElement, interactive, {
+      player: { scheduler },
+    });
+    (container.querySelector('.cloth-wrapper-btn') as unknown as HTMLButtonElement).click();
+    scheduler.advance(0);
+    scheduler.advance(64);
+    scheduler.advance(128);
+
+    const panel = container.querySelector('.cloth-checkpoint')!;
+    expect(panel.getAttribute('hidden')).toBeNull();
+    expect(panel.textContent).toContain('다음 값은?');
+    (panel.querySelector('[data-value="2"]') as unknown as HTMLButtonElement).click();
+    expect(panel.textContent).toContain('Correct');
+    const buttons = panel.querySelectorAll('button');
+    (buttons[buttons.length - 1] as unknown as HTMLButtonElement).click();
+    scheduler.advance(200);
+    scheduler.advance(250);
+    expect(handle.player.getState().time).toBeGreaterThan(100);
+    handle.destroy();
+  });
+});
+
 describe('mountPlayer', () => {
   it('renders controls with English labels by default', () => {
     const container = window.document.createElement('div');

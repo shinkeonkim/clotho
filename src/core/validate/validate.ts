@@ -229,6 +229,18 @@ function checkUnknownProperties(raw: unknown, doc: AnimationDocument, findings: 
       findings,
     );
   });
+  const rawCheckpoints = Array.isArray(input.checkpoints) ? input.checkpoints : [];
+  rawCheckpoints.forEach((rawCheckpoint, index) => {
+    const parsed = doc.checkpoints[index];
+    if (!parsed || typeof rawCheckpoint !== 'object' || rawCheckpoint === null) return;
+    compareKeys(
+      rawCheckpoint as Record<string, unknown>,
+      parsed as unknown as Record<string, unknown>,
+      `checkpoints.${index}`,
+      findings,
+      parsed.interaction,
+    );
+  });
 }
 
 /** Legacy envelope keys that migration replaces; not worth warning about. */
@@ -284,6 +296,7 @@ function checkDuplicateIds(doc: AnimationDocument, findings: Finding[]): void {
     ['chapters', doc.chapters],
     ['effects', doc.effects],
     ['layouts', doc.layouts],
+    ['checkpoints', doc.checkpoints],
   ];
 
   for (const [name, items] of namespaces) {
@@ -378,6 +391,20 @@ function checkReferences(doc: AnimationDocument, findings: Finding[]): void {
         );
       }
     }
+  });
+
+  doc.checkpoints.forEach((checkpoint, checkpointIndex) => {
+    if (checkpoint.interaction !== 'select-element') return;
+    checkpoint.elementIds.forEach((id, index) => {
+      if (!elementIds.has(id))
+        findings.push(
+          error(
+            'unknown-reference',
+            `checkpoints.${checkpointIndex}.elementIds.${index}`,
+            `checkpoint "${checkpoint.id}" references element "${id}", which does not exist`,
+          ),
+        );
+    });
   });
 
   // Flow particles ride along a connector's path, so they have nothing to follow
@@ -475,6 +502,17 @@ function checkTemporalBounds(doc: AnimationDocument, findings: Finding[]): void 
         ),
       );
     }
+  });
+
+  doc.checkpoints.forEach((checkpoint, index) => {
+    if (outOfRange(checkpoint.time))
+      findings.push(
+        error(
+          'out-of-range',
+          `checkpoints.${index}.time`,
+          `checkpoint time ${checkpoint.time} is outside 0..${duration}`,
+        ),
+      );
   });
 
   doc.effects.forEach((effect, index) => {

@@ -12,6 +12,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactElement,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -22,6 +23,7 @@ import type { SceneOptions } from '../core/scene/context';
 import { effectivePlayback } from '../core/timing/playback';
 import { CLASS, defaultStrings, type Strings } from '../dom/strings';
 import { bindAnnotations } from '../dom/annotations';
+import { createInteractionSession } from '../core/interactions/session';
 import { SceneSvg } from './scene';
 import { useFullscreen, useHostTheme, useInView, usePlayer, useReducedMotion } from './hooks';
 
@@ -112,6 +114,13 @@ export function AnimationPlayer({
   const fullscreenRef = useRef<HTMLDivElement>(null);
 
   const { player, state } = usePlayer(doc);
+  const interaction = useMemo(() => createInteractionSession(doc, player), [doc, player]);
+  useEffect(() => () => interaction.destroy(), [interaction]);
+  const interactionState = useSyncExternalStore(
+    useCallback((listener) => interaction.subscribe(listener), [interaction]),
+    interaction.getState,
+    interaction.getState,
+  );
   const reducedMotion = useReducedMotion();
   const inView = useInView(rootRef);
   const hostTheme = useHostTheme();
@@ -157,6 +166,18 @@ export function AnimationPlayer({
     const root = rootRef.current;
     return root ? bindAnnotations(root) : undefined;
   }, []);
+  useEffect(() => {
+    const root = rootRef.current;
+    const pending = interactionState.pending;
+    if (!root || pending?.interaction !== 'select-element') return;
+    const select = (event: Event): void => {
+      if (!(event.target instanceof Element)) return;
+      const id = event.target.closest<HTMLElement>('[data-clotho-id]')?.dataset.clothoId;
+      if (id && pending.elementIds.includes(id)) interaction.answer(id);
+    };
+    root.addEventListener('click', select);
+    return () => root.removeEventListener('click', select);
+  }, [interaction, interactionState.pending]);
 
   useEffect(() => {
     if (!viewerOpen) return;
@@ -307,6 +328,68 @@ export function AnimationPlayer({
             )
           : null,
       ),
+      interactionState.pending
+        ? (() => {
+            const checkpoint = interactionState.pending;
+            const answer = interactionState.answers[checkpoint.id];
+            return createElement(
+              'section',
+              { className: CLASS.checkpoint, 'aria-live': 'polite' },
+              createElement('p', { className: CLASS.checkpointPrompt }, checkpoint.prompt),
+              checkpoint.interaction === 'choice'
+                ? createElement(
+                    'div',
+                    { className: CLASS.checkpointChoices },
+                    ...checkpoint.options.map((option) =>
+                      createElement(
+                        'button',
+                        {
+                          type: 'button',
+                          key: option.value,
+                          onClick: () => interaction.answer(option.value),
+                        },
+                        option.label,
+                      ),
+                    ),
+                  )
+                : checkpoint.interaction === 'number-input'
+                  ? createElement('input', {
+                      type: 'number',
+                      min: checkpoint.min,
+                      max: checkpoint.max,
+                      step: checkpoint.step,
+                      onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
+                        interaction.answer(Number(event.target.value)),
+                    })
+                  : checkpoint.interaction === 'select-element'
+                    ? createElement('p', null, strings.selectElement)
+                    : null,
+              answer?.correct !== undefined
+                ? createElement(
+                    'p',
+                    {
+                      className: CLASS.checkpointResult,
+                      'data-correct': String(answer.correct),
+                    },
+                    answer.correct ? strings.correctAnswer : strings.incorrectAnswer,
+                  )
+                : null,
+              createElement(
+                'button',
+                {
+                  type: 'button',
+                  className: CLASS.button,
+                  disabled:
+                    checkpoint.required &&
+                    checkpoint.interaction !== 'continue' &&
+                    answer === undefined,
+                  onClick: () => interaction.continue(),
+                },
+                strings.continueCheckpoint,
+              ),
+            );
+          })()
+        : null,
     ),
     hideControls
       ? null

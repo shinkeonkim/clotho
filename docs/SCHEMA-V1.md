@@ -181,6 +181,26 @@ legacy `code`는 `language` 필드를 받지만 렌더러는 JS 키워드 집합
 
 player에서 연결된 문구를 가리키거나 keyboard focus하면 대상 요소가 강조되고, click하면 강조가 유지된다. `Escape`로 고정을 해제한다. 번역 문구는 기본 문구와 같은 token 집합을 사용해야 한다. 존재하지 않는 element id와 연결하면 validation 오류가 발생한다.
 
+### 2.10 Interactive Checkpoint
+
+`checkpoints`는 timeline의 특정 시각에서 재생을 멈추고 사용자의 응답을 받는다. `continue`, `choice`, `select-element`, `number-input` interaction을 지원한다. 응답과 판정 결과는 문서를 수정하지 않고 `createInteractionSession`이 관리한다.
+
+```jsonc
+"checkpoints": [{
+  "id": "predict-next",
+  "time": 1800,
+  "prompt": "다음에 방문할 node를 고르세요.",
+  "interaction": "choice",
+  "options": [
+    { "value": "b", "label": "B" },
+    { "value": "c", "label": "C" }
+  ],
+  "predicate": { "type": "equals", "value": "b" }
+}]
+```
+
+정답은 JSON에 넣을 수 있는 `equals`, `oneOf`, `range` predicate로 판정하거나 host의 `evaluate` callback으로 판정한다. `select-element.elementIds`는 선택 가능한 장면 요소를 제한한다. SVG와 GIF 같은 비대화형 출력에는 `initialAnswers`로 결정적인 session 상태를 제공할 수 있다.
+
 ## 3. 계승하는 부분 (변경 없음)
 
 - **요소 10종**: `rect · circle · line · arrow · text · image · path · polygon · group · code`

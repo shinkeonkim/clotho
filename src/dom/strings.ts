@@ -25,6 +25,10 @@ export interface Strings {
   readonly rotateHint: string;
   readonly chapterLabel: (index: number, total: number) => string;
   readonly chapters: string;
+  readonly continueCheckpoint: string;
+  readonly correctAnswer: string;
+  readonly incorrectAnswer: string;
+  readonly selectElement: string;
 
   // Glyphs are separate from labels so a host can swap in icon components without
   // touching the accessible names.
@@ -52,6 +56,10 @@ export const defaultStrings: Strings = {
   rotateHint: 'Rotate your device for a wider view.',
   chapterLabel: (index, total) => `Chapter ${index} / ${total}`,
   chapters: 'Chapters',
+  continueCheckpoint: 'Continue',
+  correctAnswer: 'Correct',
+  incorrectAnswer: 'Try again',
+  selectElement: 'Select an element in the scene.',
 
   playIcon: '▶',
   pauseIcon: '⏸',
@@ -79,6 +87,10 @@ export const koreanStrings: Strings = {
   rotateHint: '기기를 회전하면 더 넓게 볼 수 있습니다.',
   chapterLabel: (index, total) => `Chapter ${index} / ${total}`,
   chapters: '목차',
+  continueCheckpoint: '계속',
+  correctAnswer: '정답입니다.',
+  incorrectAnswer: '다시 시도하세요.',
+  selectElement: '장면에서 요소를 선택하세요.',
 };
 
 /** Class names the adapters emit. Style them via `@kokoa/clotho/styles.css`. */
@@ -105,6 +117,10 @@ export const CLASS = {
   captionSubtitle: 'cloth-caption-subtitle',
   stepList: 'cloth-step-list',
   stepListItem: 'cloth-step-list-item',
+  checkpoint: 'cloth-checkpoint',
+  checkpointPrompt: 'cloth-checkpoint-prompt',
+  checkpointChoices: 'cloth-checkpoint-choices',
+  checkpointResult: 'cloth-checkpoint-result',
   modalBackdrop: 'cloth-modal-backdrop',
   modalContent: 'cloth-modal-content',
   modalHeader: 'cloth-modal-header',
