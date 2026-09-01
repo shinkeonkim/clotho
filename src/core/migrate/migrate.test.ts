@@ -62,6 +62,7 @@ describe('envelope', () => {
       autoplay: false,
       showCaption: true,
       showChapterList: true,
+      chapterListPosition: 'right',
     });
     expect(doc.updatedAt).toBe('2026-01-01');
   });

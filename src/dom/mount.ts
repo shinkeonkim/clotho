@@ -17,6 +17,8 @@ export interface MountOptions extends SceneOptions {
   readonly player?: Omit<PlayerOptions, 'scheduler'> & { scheduler?: PlayerOptions['scheduler'] };
   /** UI text, for localization. Defaults to English. */
   readonly strings?: Partial<Strings>;
+  /** Force the built-in UI palette, or leave it to prefers-color-scheme. */
+  readonly theme?: 'auto' | 'light' | 'dark';
 }
 
 export interface StageHandle {
@@ -92,6 +94,7 @@ export function mountPlayer(
 
   const root = document.createElement('div');
   root.className = CLASS.wrapper;
+  if (options.theme && options.theme !== 'auto') root.dataset.clothTheme = options.theme;
 
   const header = document.createElement('div');
   header.className = CLASS.header;
@@ -111,7 +114,16 @@ export function mountPlayer(
   root.append(body);
   container.append(root);
 
-  const stage = mountStage(body, doc, options);
+  const engine = document.createElement('div');
+  engine.className = `${CLASS.engine}${doc.settings.showChapterList && doc.chapters.length > 0 ? ` ${CLASS.engineWithList}` : ''}`;
+  engine.dataset.chapterListPosition = doc.settings.chapterListPosition;
+  body.append(engine);
+
+  const engineStage = document.createElement('div');
+  engineStage.className = CLASS.stage;
+  engine.append(engineStage);
+
+  const stage = mountStage(engineStage, doc, options);
   const { player } = stage;
 
   const playButton = document.createElement('button');
@@ -156,10 +168,33 @@ export function mountPlayer(
   speedLabel.append(speedInput, speedValue);
   actions.append(speedLabel);
 
-  const caption = document.createElement('div');
-  caption.className = CLASS.caption;
-  if (!doc.settings.showCaption) caption.hidden = true;
-  body.append(caption);
+  const step = doc.settings.showCaption && doc.chapters.length > 0 ? document.createElement('div') : null;
+  if (step) {
+    step.className = `${CLASS.caption} ${CLASS.step}`;
+    step.setAttribute('aria-live', 'polite');
+    engineStage.append(step);
+  }
+
+  const chapterItems: HTMLLIElement[] = [];
+  if (doc.settings.showChapterList && doc.chapters.length > 0) {
+    const aside = document.createElement('aside');
+    aside.className = CLASS.stepList;
+    aside.setAttribute('aria-label', strings.chapters);
+    const list = document.createElement('ol');
+    for (const [index, chapter] of [...doc.chapters].sort((a, b) => a.time - b.time).entries()) {
+      const item = document.createElement('li');
+      item.className = CLASS.stepListItem;
+      item.innerHTML = `<span class="cloth-step-list-num">${index + 1}</span><div class="cloth-step-list-body"><span class="cloth-step-list-label"></span><span class="cloth-step-list-subtitle"></span></div>`;
+      item.querySelector<HTMLElement>('.cloth-step-list-label')!.textContent = chapter.label || chapter.id;
+      const subtitle = item.querySelector<HTMLElement>('.cloth-step-list-subtitle')!;
+      subtitle.textContent = chapter.subtitle;
+      subtitle.hidden = !chapter.subtitle;
+      list.append(item);
+      chapterItems.push(item);
+    }
+    aside.append(list);
+    engine.append(aside);
+  }
 
   let userWantsPlayback = player.getState().playing;
   let inView = true;
@@ -180,15 +215,19 @@ export function mountPlayer(
     playButton.setAttribute('aria-label', label);
     speedValue.textContent = `${state.speed.toFixed(2)}x`;
 
-    if (doc.settings.showCaption) {
+    if (step) {
       const scene = buildScene(doc, state.time, options);
-      const active = scene.chapter;
-      caption.textContent = active
-        ? `${active.index + 1} / ${scene.chapters.length}${
-            active.chapter.label ? ` · ${active.chapter.label}` : ''
-          }`
-        : '';
+      const active = scene.chapter ?? { index: 0, chapter: scene.chapters[0]! };
+      step.textContent = `${strings.chapterLabel(active.index + 1, scene.chapters.length)}${
+        active.chapter.label ? `, ${active.chapter.label}` : ''
+      }`;
     }
+    const activeIndex = buildScene(doc, state.time, options).chapter?.index ?? 0;
+    chapterItems.forEach((item, index) => {
+      item.classList.toggle('is-current', index === activeIndex);
+      if (index === activeIndex) item.setAttribute('aria-current', 'step');
+      else item.removeAttribute('aria-current');
+    });
   }
 
   syncControls();

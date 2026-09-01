@@ -86,8 +86,10 @@ describe('anchorPoint', () => {
     }
   });
 
-  it('falls back to the center for corners on a circle, which has none', () => {
-    expect(anchorPoint(circle, circleState, 'top-left')).toEqual({ x: 50, y: 60 });
+  it('resolves circle corners on the circumference', () => {
+    const point = anchorPoint(circle, circleState, 'top-left');
+    expect(point.x).toBeCloseTo(50 - 10 / Math.SQRT2);
+    expect(point.y).toBeCloseTo(60 - 10 / Math.SQRT2);
   });
 });
 
@@ -116,6 +118,48 @@ describe('resolveEndpoints', () => {
   it('resolves both ends from anchored elements', () => {
     const ends = resolveEndpoints(arrow, {}, ctx([box, circle], { b: boxState, c: circleState }));
     expect(ends).toEqual({ x1: 180, y1: 220, x2: 40, y2: 60 });
+  });
+
+  it('resolves auto anchors to the edges facing the other endpoint', () => {
+    const automatic = elementSchema.parse({
+      type: 'arrow',
+      id: 'auto-arrow',
+      fromId: 'b',
+      toId: 'c',
+      fromAnchor: 'auto',
+      toAnchor: 'auto',
+    }) as Extract<AnimationElement, { type: 'arrow' }>;
+    const ends = resolveEndpoints(
+      automatic,
+      {},
+      ctx([box, circle], { b: boxState, c: circleState }),
+    );
+    expect(ends?.x1).toBe(100);
+    expect(ends?.y1).toBe(200);
+    expect(ends?.x2).toBeCloseTo(50 + 10 / Math.SQRT2);
+    expect(ends?.y2).toBeCloseTo(60 + 10 / Math.SQRT2);
+  });
+
+  it('keeps auto anchor selection correct across group transforms', () => {
+    const automatic = elementSchema.parse({
+      type: 'arrow',
+      id: 'auto-arrow',
+      fromId: 'b',
+      toId: 'c',
+      fromAnchor: 'auto',
+      toAnchor: 'auto',
+    }) as Extract<AnimationElement, { type: 'arrow' }>;
+    const matrices = new Map<string, Matrix>([
+      ['auto-arrow', IDENTITY],
+      ['b', translation(-200, 0)],
+      ['c', translation(300, 0)],
+    ]);
+    const ends = resolveEndpoints(
+      automatic,
+      {},
+      ctx([box, circle], { b: boxState, c: circleState }, matrices),
+    );
+    expect(ends).toEqual({ x1: -20, y1: 200, x2: 340, y2: 60 });
   });
 
   it('uses explicit coordinates when no element is anchored', () => {

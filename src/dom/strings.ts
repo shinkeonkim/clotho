@@ -23,6 +23,7 @@ export interface Strings {
   readonly reducedMotionNote: string;
   readonly rotateHint: string;
   readonly chapterLabel: (index: number, total: number) => string;
+  readonly chapters: string;
 
   // Glyphs are separate from labels so a host can swap in icon components without
   // touching the accessible names.
@@ -48,6 +49,7 @@ export const defaultStrings: Strings = {
   reducedMotionNote: 'Autoplay is paused because you asked for reduced motion.',
   rotateHint: 'Rotate your device for a wider view.',
   chapterLabel: (index, total) => `Chapter ${index} / ${total}`,
+  chapters: 'Chapters',
 
   playIcon: '▶',
   pauseIcon: '⏸',
@@ -73,6 +75,7 @@ export const koreanStrings: Strings = {
   reducedMotionNote: '모션 줄이기 설정으로 자동 재생을 멈췄습니다.',
   rotateHint: '기기를 회전하면 더 넓게 볼 수 있습니다.',
   chapterLabel: (index, total) => `Chapter ${index} / ${total}`,
+  chapters: '목차',
 };
 
 /** Class names the adapters emit. Style them via `@kokoa/clotho/styles.css`. */

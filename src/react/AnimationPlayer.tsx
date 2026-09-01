@@ -27,6 +27,7 @@ export interface AnimationStageProps {
   readonly time: number;
   readonly options?: SceneOptions;
   readonly className?: string;
+  readonly theme?: 'auto' | 'light' | 'dark';
 }
 
 /**
@@ -39,11 +40,16 @@ export function AnimationStage({
   time,
   options,
   className,
+  theme = 'auto',
 }: AnimationStageProps): ReactElement {
   const scene = useMemo(() => buildScene(doc, time, options), [doc, time, options]);
   return createElement(
     'div',
-    { className: CLASS.stageFrame, 'data-mat': scene.showMat ? 'true' : 'false' },
+    {
+      className: CLASS.stageFrame,
+      'data-mat': scene.showMat ? 'true' : 'false',
+      'data-cloth-theme': theme === 'auto' ? undefined : theme,
+    },
     createElement(SceneSvg, { scene, className: className ?? CLASS.stageSvg }),
   );
 }
@@ -56,6 +62,8 @@ export interface AnimationPlayerProps {
   /** Hide the built-in controls when the host provides its own. */
   readonly hideControls?: boolean;
   readonly className?: string;
+  /** Force light/dark UI tokens, or follow prefers-color-scheme. */
+  readonly theme?: 'auto' | 'light' | 'dark';
 }
 
 export function AnimationPlayer({
@@ -64,6 +72,7 @@ export function AnimationPlayer({
   strings: stringOverrides,
   hideControls = false,
   className,
+  theme = 'auto',
 }: AnimationPlayerProps): ReactElement {
   const strings: Strings = { ...defaultStrings, ...stringOverrides };
   const rootRef = useRef<HTMLDivElement>(null);
@@ -99,7 +108,11 @@ export function AnimationPlayer({
   if (reducedMotion) {
     return createElement(
       'div',
-      { ref: rootRef, className: `${CLASS.wrapper}${className ? ` ${className}` : ''}` },
+      {
+        ref: rootRef,
+        className: `${CLASS.wrapper}${className ? ` ${className}` : ''}`,
+        'data-cloth-theme': theme === 'auto' ? undefined : theme,
+      },
       createElement(
         'div',
         { className: CLASS.reduced },
@@ -112,7 +125,11 @@ export function AnimationPlayer({
 
   return createElement(
     'div',
-    { ref: rootRef, className: `${CLASS.wrapper}${className ? ` ${className}` : ''}` },
+    {
+      ref: rootRef,
+      className: `${CLASS.wrapper}${className ? ` ${className}` : ''}`,
+      'data-cloth-theme': theme === 'auto' ? undefined : theme,
+    },
     createElement(
       'div',
       { className: CLASS.header },
@@ -168,27 +185,61 @@ export function AnimationPlayer({
       { className: CLASS.body },
       createElement(
         'div',
-        { className: CLASS.stageFrame, 'data-mat': scene.showMat ? 'true' : 'false' },
-        createElement(SceneSvg, { scene, className: CLASS.stageSvg }),
-      ),
-      doc.settings.showCaption && scene.chapter
-        ? createElement(
+        {
+          className: `${CLASS.engine}${doc.settings.showChapterList && scene.chapters.length > 0 ? ` ${CLASS.engineWithList}` : ''}`,
+          'data-chapter-list-position': doc.settings.chapterListPosition,
+        },
+        createElement(
+          'div',
+          { className: CLASS.stage },
+          createElement(
             'div',
-            { className: CLASS.caption },
-            createElement(
-              'span',
-              { className: CLASS.captionNum },
-              strings.chapterLabel(scene.chapter.index + 1, scene.chapters.length),
-            ),
-            scene.chapter.chapter.label
-              ? createElement(
-                  'span',
-                  { className: CLASS.captionLabel },
-                  scene.chapter.chapter.label,
-                )
-              : null,
-          )
-        : null,
+            { className: CLASS.stageFrame, 'data-mat': scene.showMat ? 'true' : 'false' },
+            createElement(SceneSvg, { scene, className: CLASS.stageSvg }),
+          ),
+          doc.settings.showCaption && scene.chapters.length > 0
+            ? createElement(
+                'div',
+                { className: `${CLASS.caption} ${CLASS.step}`, 'aria-live': 'polite' },
+                (() => {
+                  const active = scene.chapter ?? { index: 0, chapter: scene.chapters[0]! };
+                  return `${strings.chapterLabel(active.index + 1, scene.chapters.length)}${
+                    active.chapter.label ? `, ${active.chapter.label}` : ''
+                  }`;
+                })(),
+              )
+            : null,
+        ),
+        doc.settings.showChapterList && scene.chapters.length > 0
+          ? createElement(
+              'aside',
+              { className: CLASS.stepList, 'aria-label': strings.chapters },
+              createElement(
+                'ol',
+                null,
+                ...scene.chapters.map((chapter, index) =>
+                  createElement(
+                    'li',
+                    {
+                      key: chapter.id,
+                      className: `${CLASS.stepListItem}${scene.chapter?.index === index ? ' is-current' : ''}`,
+                      'aria-current': scene.chapter?.index === index ? 'step' : undefined,
+                    },
+                    createElement('span', { className: 'cloth-step-list-num' }, index + 1),
+                    createElement(
+                      'div',
+                      { className: 'cloth-step-list-body' },
+                      createElement('span', { className: 'cloth-step-list-label' }, chapter.label || chapter.id),
+                      chapter.subtitle
+                        ? createElement('span', { className: 'cloth-step-list-subtitle' }, chapter.subtitle)
+                        : null,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          : null,
+      ),
     ),
   );
 }

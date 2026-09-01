@@ -101,7 +101,7 @@ function blockBodyAfter(source: string, from: number): string | null {
  */
 const themeBlocks: string[] = [];
 for (const match of css.matchAll(
-  /:root(?::not\(\[data-cloth-theme=['"]light['"]\]\)|\[data-cloth-theme=['"]dark['"]\])/g,
+  /:root:not\(\[data-cloth-theme=['"]light['"]\]\)|\[data-cloth-theme=['"]dark['"]\]/g,
 )) {
   const body = blockBodyAfter(css, match.index);
   if (body !== null) themeBlocks.push(body);

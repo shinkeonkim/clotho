@@ -93,7 +93,20 @@
   }
 
   /* Same values again for an explicit choice, so the toggle wins in both directions. */
-  :root[data-cloth-theme='dark'] {
+  [data-cloth-theme='light'] {
+    --cloth-fg: #18181b;
+    --cloth-muted: #71717a;
+    --cloth-surface: #ffffff;
+    --cloth-surface-elevated: #fafafa;
+    --cloth-surface-subtle: #f4f4f5;
+    --cloth-border: #e4e4e7;
+    --cloth-accent: #6366f1;
+    --cloth-stage-mat: var(--cloth-surface-elevated);
+    --cloth-stage-mat-border: var(--cloth-border);
+    color-scheme: light;
+  }
+
+  [data-cloth-theme='dark'] {
     --cloth-fg: #fafafa;
     --cloth-muted: #a1a1aa;
     --cloth-surface: #18181b;
@@ -103,6 +116,7 @@
     --cloth-accent: #a5b4fc;
     --cloth-stage-mat: var(--cloth-surface-subtle);
     --cloth-viewer-backdrop: rgba(0, 0, 0, 0.9);
+    color-scheme: dark;
   }
 }
 
@@ -277,7 +291,15 @@
     gap: 0.6rem;
   }
   .cloth-engine-with-list {
-    flex-direction: column;
+    align-items: stretch;
+  }
+  .cloth-engine-with-list[data-chapter-list-position='left'],
+  .cloth-engine-with-list[data-chapter-list-position='right'] {
+    flex-direction: row;
+  }
+  .cloth-engine-with-list[data-chapter-list-position='top'] .cloth-step-list,
+  .cloth-engine-with-list[data-chapter-list-position='left'] .cloth-step-list {
+    order: -1;
   }
   .cloth-engine-stage {
     flex: 1;
@@ -296,6 +318,9 @@
     border-radius: 0 0.4rem 0.4rem 0;
     font-size: 0.9rem;
   }
+  .cloth-caption[hidden] {
+    display: none;
+  }
   .cloth-caption-num {
     font-family: var(--cloth-font-mono);
     font-size: 0.72rem;
@@ -311,9 +336,7 @@
     color: var(--cloth-muted);
     font-size: 0.82rem;
   }
-  /* Chapter rail: a compact full-width strip below the full-width stage at every
-     viewport (was a right sidebar that stole stage width). Chips never wrap, so
-     many chapters scroll horizontally and the rail stays a single bounded row. */
+  /* Chapter rail. Authors choose a side in settings.chapterListPosition. */
   .cloth-step-list {
     width: 100%;
     max-width: 100%;
@@ -334,6 +357,23 @@
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
+  }
+  .cloth-engine-with-list[data-chapter-list-position='left'] .cloth-step-list,
+  .cloth-engine-with-list[data-chapter-list-position='right'] .cloth-step-list {
+    flex: 0 0 min(15rem, 32%);
+    width: auto;
+  }
+  .cloth-engine-with-list[data-chapter-list-position='left'] .cloth-step-list ol,
+  .cloth-engine-with-list[data-chapter-list-position='right'] .cloth-step-list ol {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 32rem;
+  }
+  .cloth-engine-with-list[data-chapter-list-position='left'] .cloth-step-list-item,
+  .cloth-engine-with-list[data-chapter-list-position='right'] .cloth-step-list-item {
+    flex: 0 0 auto;
+    max-width: none;
   }
   .cloth-step-list-item {
     flex: 0 0 auto;

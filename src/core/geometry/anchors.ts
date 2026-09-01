@@ -88,15 +88,38 @@ export function anchorPoint(el: AnimationElement, state: State, anchor: Anchor |
       if (isCircle) return { x: num(state, 'cx') + num(state, 'r'), y: center.y };
       return center;
     case 'top-left':
-      return isBox ? { x: num(state, 'x'), y: num(state, 'y') } : center;
+      if (isBox) return { x: num(state, 'x'), y: num(state, 'y') };
+      if (isCircle) {
+        const offset = num(state, 'r') / Math.SQRT2;
+        return { x: center.x - offset, y: center.y - offset };
+      }
+      return center;
     case 'top-right':
-      return isBox ? { x: num(state, 'x') + num(state, 'width'), y: num(state, 'y') } : center;
+      if (isBox) return { x: num(state, 'x') + num(state, 'width'), y: num(state, 'y') };
+      if (isCircle) {
+        const offset = num(state, 'r') / Math.SQRT2;
+        return { x: center.x + offset, y: center.y - offset };
+      }
+      return center;
     case 'bottom-left':
-      return isBox ? { x: num(state, 'x'), y: num(state, 'y') + num(state, 'height') } : center;
+      if (isBox) return { x: num(state, 'x'), y: num(state, 'y') + num(state, 'height') };
+      if (isCircle) {
+        const offset = num(state, 'r') / Math.SQRT2;
+        return { x: center.x - offset, y: center.y + offset };
+      }
+      return center;
     case 'bottom-right':
-      return isBox
-        ? { x: num(state, 'x') + num(state, 'width'), y: num(state, 'y') + num(state, 'height') }
-        : center;
+      if (isBox) {
+        return {
+          x: num(state, 'x') + num(state, 'width'),
+          y: num(state, 'y') + num(state, 'height'),
+        };
+      }
+      if (isCircle) {
+        const offset = num(state, 'r') / Math.SQRT2;
+        return { x: center.x + offset, y: center.y + offset };
+      }
+      return center;
     default:
       return center;
   }
@@ -128,18 +151,70 @@ export function resolveEndpoints(
   state: State,
   ctx: EndpointContext,
 ): Endpoints | null {
-  const from = resolveEnd(
+  const fromCenter = resolveEnd(
     connector.fromId,
-    connector.fromAnchor,
+    connector.fromAnchor === 'auto' ? 'center' : connector.fromAnchor,
     state,
     'x1',
     'y1',
     connector.id,
     ctx,
   );
-  const to = resolveEnd(connector.toId, connector.toAnchor, state, 'x2', 'y2', connector.id, ctx);
+  const toCenter = resolveEnd(
+    connector.toId,
+    connector.toAnchor === 'auto' ? 'center' : connector.toAnchor,
+    state,
+    'x2',
+    'y2',
+    connector.id,
+    ctx,
+  );
+  if (!fromCenter || !toCenter) return null;
+
+  const from =
+    connector.fromAnchor === 'auto'
+      ? resolveAutoEnd(connector.fromId, fromCenter, toCenter, connector.id, ctx)
+      : fromCenter;
+  const to =
+    connector.toAnchor === 'auto'
+      ? resolveAutoEnd(connector.toId, toCenter, fromCenter, connector.id, ctx)
+      : toCenter;
   if (!from || !to) return null;
   return { x1: from.x, y1: from.y, x2: to.x, y2: to.y };
+}
+
+/** Pick the target edge nearest the other endpoint. `auto` is contextual, unlike center. */
+function resolveAutoEnd(
+  targetId: string | undefined,
+  center: Point,
+  toward: Point,
+  connectorId: string,
+  ctx: EndpointContext,
+): Point {
+  if (targetId === undefined) return center;
+  const targetState = ctx.snapshot.get(targetId);
+  const targetElement = ctx.elementById.get(targetId);
+  if (!targetState || !targetElement) return center;
+
+  const candidates = (
+    [
+      'top',
+      'top-right',
+      'right',
+      'bottom-right',
+      'bottom',
+      'bottom-left',
+      'left',
+      'top-left',
+    ] as const
+  ).map((anchor) =>
+    toConnectorSpace(anchorPoint(targetElement, targetState, anchor), targetId, connectorId, ctx),
+  );
+  return candidates.reduce((best, candidate) => {
+    const distance = (candidate.x - toward.x) ** 2 + (candidate.y - toward.y) ** 2;
+    const bestDistance = (best.x - toward.x) ** 2 + (best.y - toward.y) ** 2;
+    return distance < bestDistance ? candidate : best;
+  });
 }
 
 function resolveEnd(

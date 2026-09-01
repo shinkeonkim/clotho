@@ -36,6 +36,7 @@ export const settingsSchema = z.object({
   autoplay: z.boolean().default(true),
   showCaption: z.boolean().default(false),
   showChapterList: z.boolean().default(false),
+  chapterListPosition: z.enum(['left', 'right', 'top', 'bottom']).default('right'),
 });
 
 const CANVAS_DEFAULT = { width: 800, height: 500, background: 'transparent' } as const;
@@ -44,6 +45,7 @@ const SETTINGS_DEFAULT = {
   autoplay: true,
   showCaption: false,
   showChapterList: false,
+  chapterListPosition: 'right',
 } as const;
 
 export const animationDocumentSchema = z.object({

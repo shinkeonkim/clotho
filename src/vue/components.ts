@@ -29,13 +29,18 @@ export const AnimationStage = defineComponent({
     time: { type: Number, required: true },
     options: { type: Object as PropType<SceneOptions>, default: () => ({}) },
     className: { type: String, default: undefined },
+    theme: { type: String as PropType<'auto' | 'light' | 'dark'>, default: 'auto' },
   },
   setup(props) {
     const scene = computed(() => buildScene(props.doc, props.time, props.options));
     return () =>
       h(
         'div',
-        { class: CLASS.stageFrame, 'data-mat': scene.value.showMat ? 'true' : 'false' },
+        {
+          class: CLASS.stageFrame,
+          'data-mat': scene.value.showMat ? 'true' : 'false',
+          'data-cloth-theme': props.theme === 'auto' ? undefined : props.theme,
+        },
         renderSceneSvg(scene.value, props.className ?? CLASS.stageSvg),
       );
   },
@@ -49,6 +54,7 @@ export const AnimationPlayer = defineComponent({
     strings: { type: Object as PropType<Partial<Strings>>, default: () => ({}) },
     hideControls: { type: Boolean, default: false },
     className: { type: String, default: undefined },
+    theme: { type: String as PropType<'auto' | 'light' | 'dark'>, default: 'auto' },
   },
   setup(props) {
     const strings = computed<Strings>(() => ({ ...defaultStrings, ...props.strings }));
@@ -110,13 +116,21 @@ export const AnimationPlayer = defineComponent({
 
     return () => {
       if (reducedMotion.value) {
-        return h('div', { ref: root, class: wrapperClass.value }, [
-          h('div', { class: CLASS.reduced }, [
-            h('p', [h('strong', props.doc.title)]),
-            props.doc.description ? h('p', props.doc.description) : null,
-            h('p', { class: 'cloth-wrapper-reduced-note' }, strings.value.reducedMotionNote),
-          ]),
-        ]);
+        return h(
+          'div',
+          {
+            ref: root,
+            class: wrapperClass.value,
+            'data-cloth-theme': props.theme === 'auto' ? undefined : props.theme,
+          },
+          [
+            h('div', { class: CLASS.reduced }, [
+              h('p', [h('strong', props.doc.title)]),
+              props.doc.description ? h('p', props.doc.description) : null,
+              h('p', { class: 'cloth-wrapper-reduced-note' }, strings.value.reducedMotionNote),
+            ]),
+          ],
+        );
       }
 
       const controls: VNode[] = props.hideControls
@@ -166,37 +180,79 @@ export const AnimationPlayer = defineComponent({
             ]),
           ];
 
-      const caption =
-        props.doc.settings.showCaption && scene.value.chapter
-          ? h('div', { class: CLASS.caption }, [
-              h(
-                'span',
-                { class: CLASS.captionNum },
-                strings.value.chapterLabel(
-                  scene.value.chapter.index + 1,
-                  scene.value.chapters.length,
-                ),
-              ),
-              scene.value.chapter.chapter.label
-                ? h('span', { class: CLASS.captionLabel }, scene.value.chapter.chapter.label)
-                : null,
-            ])
-          : null;
-
-      return h('div', { ref: root, class: wrapperClass.value }, [
-        h('div', { class: CLASS.header }, [
-          h('div', { class: CLASS.title }, props.doc.title),
-          controls.length > 0 ? h('div', { class: CLASS.actions }, controls) : null,
-        ]),
-        h('div', { class: CLASS.body }, [
-          h(
+      const chapter =
+        scene.value.chapter ??
+        (scene.value.chapters.length > 0 ? { index: 0, chapter: scene.value.chapters[0]! } : null);
+      const caption = props.doc.settings.showCaption && chapter
+        ? h(
             'div',
-            { class: CLASS.stageFrame, 'data-mat': scene.value.showMat ? 'true' : 'false' },
-            renderSceneSvg(scene.value, CLASS.stageSvg),
-          ),
-          caption,
-        ]),
-      ]);
+            { class: `${CLASS.caption} ${CLASS.step}`, 'aria-live': 'polite' },
+            `${strings.value.chapterLabel(chapter.index + 1, scene.value.chapters.length)}${
+              chapter.chapter.label ? `, ${chapter.chapter.label}` : ''
+            }`,
+          )
+        : null;
+
+      return h(
+        'div',
+        {
+          ref: root,
+          class: wrapperClass.value,
+          'data-cloth-theme': props.theme === 'auto' ? undefined : props.theme,
+        },
+        [
+          h('div', { class: CLASS.header }, [
+            h('div', { class: CLASS.title }, props.doc.title),
+            controls.length > 0 ? h('div', { class: CLASS.actions }, controls) : null,
+          ]),
+          h('div', { class: CLASS.body }, [
+            h(
+              'div',
+              {
+                class: `${CLASS.engine}${props.doc.settings.showChapterList && scene.value.chapters.length > 0 ? ` ${CLASS.engineWithList}` : ''}`,
+                'data-chapter-list-position': props.doc.settings.chapterListPosition,
+              },
+              [
+                h('div', { class: CLASS.stage }, [
+                  h(
+                    'div',
+                    { class: CLASS.stageFrame, 'data-mat': scene.value.showMat ? 'true' : 'false' },
+                    renderSceneSvg(scene.value, CLASS.stageSvg),
+                  ),
+                  caption,
+                ]),
+                props.doc.settings.showChapterList && scene.value.chapters.length > 0
+                  ? h('aside', { class: CLASS.stepList, 'aria-label': strings.value.chapters }, [
+                      h(
+                        'ol',
+                        null,
+                        scene.value.chapters.map((item, index) =>
+                          h(
+                            'li',
+                            {
+                              key: item.id,
+                              class: `${CLASS.stepListItem}${chapter?.index === index ? ' is-current' : ''}`,
+                              'aria-current': chapter?.index === index ? 'step' : undefined,
+                            },
+                            [
+                              h('span', { class: 'cloth-step-list-num' }, index + 1),
+                              h('div', { class: 'cloth-step-list-body' }, [
+                                h('span', { class: 'cloth-step-list-label' }, item.label || item.id),
+                                item.subtitle
+                                  ? h('span', { class: 'cloth-step-list-subtitle' }, item.subtitle)
+                                  : null,
+                              ]),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ])
+                  : null,
+              ],
+            ),
+          ]),
+        ],
+      );
     };
   },
 });

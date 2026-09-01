@@ -1167,6 +1167,16 @@
             "showChapterList": {
               "type": "boolean",
               "default": false
+            },
+            "chapterListPosition": {
+              "type": "string",
+              "enum": [
+                "left",
+                "right",
+                "top",
+                "bottom"
+              ],
+              "default": "right"
             }
           },
           "additionalProperties": false,
@@ -1174,7 +1184,8 @@
             "loop": true,
             "autoplay": true,
             "showCaption": false,
-            "showChapterList": false
+            "showChapterList": false,
+            "chapterListPosition": "right"
           }
         },
         "updatedAt": {

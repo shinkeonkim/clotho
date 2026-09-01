@@ -281,6 +281,60 @@ describe('mountPlayer', () => {
     handle.destroy();
   });
 
+  it('does not render an empty chapter indicator when there are no chapters', () => {
+    const container = window.document.createElement('div');
+    const handle = mountPlayer(container as unknown as HTMLElement, doc);
+    expect(container.querySelector('.cloth-wrapper-step')).toBeNull();
+    handle.destroy();
+  });
+
+  it('keeps the legacy chapter indicator when chapters exist', () => {
+    const chaptered = animationDocumentSchema.parse({
+      ...doc,
+      chapters: [
+        { id: 'start', time: 0, label: 'Start' },
+        { id: 'finish', time: 500, label: 'Finish' },
+      ],
+      settings: { ...doc.settings, showCaption: true },
+    });
+    const container = window.document.createElement('div');
+    const handle = mountPlayer(container as unknown as HTMLElement, chaptered);
+    expect(container.querySelector('.cloth-wrapper-step')?.textContent).toBe(
+      'Chapter 1 / 2, Start',
+    );
+    handle.destroy();
+  });
+
+  it('renders a chapter list on the configured side', () => {
+    const configured = animationDocumentSchema.parse({
+      ...doc,
+      chapters: [
+        { id: 'start', time: 0, label: 'Start' },
+        { id: 'finish', time: 500, label: 'Finish' },
+      ],
+      settings: {
+        ...doc.settings,
+        showCaption: false,
+        showChapterList: true,
+        chapterListPosition: 'left' as const,
+      },
+    });
+    const container = window.document.createElement('div');
+    const handle = mountPlayer(container as unknown as HTMLElement, configured);
+    const engine = container.querySelector('.cloth-engine') as unknown as HTMLElement;
+    expect(engine.dataset.chapterListPosition).toBe('left');
+    expect(container.querySelectorAll('.cloth-step-list-item')).toHaveLength(2);
+    expect(container.querySelector('.cloth-caption')).toBeNull();
+    handle.destroy();
+  });
+
+  it('can force a scoped light or dark theme', () => {
+    const container = window.document.createElement('div');
+    const handle = mountPlayer(container as unknown as HTMLElement, doc, { theme: 'dark' });
+    expect(handle.root.dataset.clothTheme).toBe('dark');
+    handle.destroy();
+  });
+
   it('toggles playback from the button', () => {
     const container = window.document.createElement('div');
     const scheduler = createManualScheduler();
