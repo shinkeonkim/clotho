@@ -96,13 +96,24 @@ export function AnimationPlayer({
    * split.
    */
   const [userWantsPlayback, setUserWantsPlayback] = useState(doc.settings.autoplay);
+  const [motionOverride, setMotionOverride] = useState(false);
+  const togglePlayback = useCallback(() => {
+    setMotionOverride(true);
+    setUserWantsPlayback((wanted) => !wanted);
+  }, []);
+  const restartPlayback = useCallback(() => {
+    setMotionOverride(true);
+    player.restart();
+    setUserWantsPlayback(true);
+  }, [player]);
 
   // Applying the rule in an effect, not during render: play/pause mutate the player and
   // start a frame loop, which a render pass must not do.
   useEffect(() => {
-    if (effectivePlayback(userWantsPlayback, inView, reducedMotion)) player.play();
+    if (effectivePlayback(userWantsPlayback, inView, reducedMotion && !motionOverride))
+      player.play();
     else player.pause();
-  }, [player, userWantsPlayback, inView, reducedMotion]);
+  }, [player, userWantsPlayback, inView, reducedMotion, motionOverride]);
 
   const scene = useMemo(() => buildScene(doc, state.time, options), [doc, state.time, options]);
 
@@ -125,24 +136,6 @@ export function AnimationPlayer({
     };
   }, [viewerOpen]);
 
-  if (reducedMotion) {
-    return createElement(
-      'div',
-      {
-        ref: rootRef,
-        className: `${CLASS.wrapper}${className ? ` ${className}` : ''}`,
-        'data-cloth-theme': resolvedTheme,
-      },
-      createElement(
-        'div',
-        { className: CLASS.reduced },
-        createElement('p', null, createElement('strong', null, doc.title)),
-        doc.description ? createElement('p', null, doc.description) : null,
-        createElement('p', { className: 'cloth-wrapper-reduced-note' }, strings.reducedMotionNote),
-      ),
-    );
-  }
-
   return createElement(
     'div',
     {
@@ -164,7 +157,7 @@ export function AnimationPlayer({
               {
                 type: 'button',
                 className: CLASS.button,
-                onClick: () => setUserWantsPlayback((wanted) => !wanted),
+                onClick: togglePlayback,
                 title: state.playing ? strings.pause : strings.play,
                 'aria-label': state.playing ? strings.pause : strings.play,
               },
@@ -175,10 +168,7 @@ export function AnimationPlayer({
               {
                 type: 'button',
                 className: CLASS.button,
-                onClick: () => {
-                  player.restart();
-                  setUserWantsPlayback(true);
-                },
+                onClick: restartPlayback,
                 title: strings.restart,
                 'aria-label': strings.restart,
               },
@@ -322,7 +312,7 @@ export function AnimationPlayer({
                     {
                       type: 'button',
                       className: CLASS.button,
-                      onClick: () => setUserWantsPlayback((wanted) => !wanted),
+                      onClick: togglePlayback,
                       title: state.playing ? strings.pause : strings.play,
                       'aria-label': state.playing ? strings.pause : strings.play,
                     },
@@ -333,10 +323,7 @@ export function AnimationPlayer({
                     {
                       type: 'button',
                       className: CLASS.button,
-                      onClick: () => {
-                        player.restart();
-                        setUserWantsPlayback(true);
-                      },
+                      onClick: restartPlayback,
                       title: strings.restart,
                       'aria-label': strings.restart,
                     },
