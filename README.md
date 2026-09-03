@@ -1,60 +1,105 @@
-# @kokoa/clotho
+<div align="center">
 
-JSON으로 정의하는 시각화 애니메이션 패키지.
+<h1>@kokoa/clotho</h1>
 
-애니메이션을 명령형 코드가 아닌 **선언적 JSON 문서**로 작성한다. 화면 상태는 `(문서, 시각 t)`만으로 결정되므로 원하는 시점으로 이동하거나, 정지 화면을 만들거나, 서버에서 결과를 출력하거나, 에디터에서 재생 위치를 옮길 때 모두 같은 코드가 동작한다. 이전 상태를 누적하지 않기 때문에 시간이 지나면서 화면이 어긋나는 문제도 생기지 않는다.
+<p><strong>JSON으로 정의하는 시각화 애니메이션 패키지</strong><br/>
+명령형 코드 대신 선언적 JSON 문서로 쓰고, React · Vue · DOM · SVG 어디서든 같은 결과로 재생한다.</p>
 
-렌더링 결과는 특정 framework에 종속되지 않는 **scene graph**로 만든다. 각 adapter는 이 결과를 React element, Vue vnode, DOM, SVG 문자열로 옮기기만 하므로 실제 렌더링 규칙은 한 곳에서 관리된다.
+<p>
+  <a href="https://www.npmjs.com/package/@kokoa/clotho"><img alt="npm version" src="https://img.shields.io/npm/v/%40kokoa%2Fclotho?style=flat-square&logo=npm&color=CB3837&label=npm"></a>
+  <a href="https://www.npmjs.com/package/@kokoa/clotho"><img alt="npm downloads" src="https://img.shields.io/npm/d18m/%40kokoa%2Fclotho?style=flat-square&color=0284c7&label=downloads"></a>
+  <a href="https://github.com/shinkeonkim/clotho/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/shinkeonkim/clotho/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI"></a>
+  <a href="#-진입점"><img alt="core gzip size" src="https://img.shields.io/badge/core%20gzip-25KB-8b5cf6?style=flat-square"></a>
+  <a href="./LICENSE"><img alt="license" src="https://img.shields.io/npm/l/%40kokoa%2Fclotho?style=flat-square&color=22c55e"></a>
+</p>
 
-직접 설치하기 전에 [Clotho Editor](https://clotho-editor.shinkeonkim.com/)에서 갤러리 애니메이션을 열고 JSON 문서와 재생 결과를 바로 확인할 수 있다.
+<p>
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/React-adapter-61DAFB?style=flat-square&logo=react&logoColor=black">
+  <img alt="Vue" src="https://img.shields.io/badge/Vue_3-adapter-4FC08D?style=flat-square&logo=vuedotjs&logoColor=white">
+  <img alt="Vanilla JS" src="https://img.shields.io/badge/Vanilla_JS-adapter-F7DF1E?style=flat-square&logo=javascript&logoColor=black">
+  <img alt="SVG" src="https://img.shields.io/badge/SVG-string_output-FFB13B?style=flat-square&logo=svg&logoColor=black">
+  <img alt="Bun" src="https://img.shields.io/badge/Bun-1.3-000000?style=flat-square&logo=bun&logoColor=white">
+</p>
 
-전체 사용법과 API, JSON Schema, 표현 요소별 예시는 [Clotho 문서](https://clotho-docs.shinkeonkim.com/)에서 확인할 수 있다.
+<p>
+  <a href="https://clotho-editor.shinkeonkim.com/"><img alt="Editor" src="https://img.shields.io/badge/🎬_Live_Editor-열기-111827?style=for-the-badge"></a>
+  <a href="https://clotho-docs.shinkeonkim.com/"><img alt="Docs" src="https://img.shields.io/badge/📖_Documentation-읽기-2563eb?style=for-the-badge"></a>
+  <a href="./docs/AUTHORING.md"><img alt="Authoring" src="https://img.shields.io/badge/✍️_저작_가이드-시작하기-7c3aed?style=for-the-badge"></a>
+</p>
 
-작성 형식의 import·compile·검증·추가 export는 별도 `@kokoa/clotho/plugins` entry의 experimental [compiler plugin API](./docs/PLUGINS.md)로 확장할 수 있다. runtime 의미와 모든 adapter가 공유해야 하는 근본 기능은 plugin으로 넘기지 않고 core에 내장한다.
+<br/>
 
-## Text 국제화
+<img src="./docs/assets/gallery/elements.gif" alt="Clotho — 10가지 요소 타입이 하나의 타임라인 위에서 재생되는 모습" width="720">
 
-기존 `content`는 항상 기본 문구로 사용되므로 이전 문서도 그대로 동작한다. 문서의 `locales`를 생략하면 `ko`, `en`을 기본으로 제공하며, 특정 text 요소에서 다른 언어가 필요하면 `locales`와 `translations`를 직접 확장한다.
+<sub>위 GIF는 라이브러리의 <code>writeDocumentGif</code>가 JSON 문서 하나로부터 직접 생성했다.</sub>
 
-```jsonc
-{
-  "locales": ["ko", "en", "ja", "zh-CN"],
-  "elements": [
-    {
-      "type": "text",
-      "id": "welcome",
-      "x": 400,
-      "y": 240,
-      "content": "환영합니다",
-      "translations": {
-        "en": "Welcome",
-        "ja": "ようこそ",
-        "zh-CN": "欢迎"
-      }
-    }
-  ]
-}
-```
+</div>
 
-host는 현재 언어를 `SceneOptions.locale`로 전달한다. 등록한 번역이 없거나 locale을 전달하지 않으면 `content`로 돌아간다.
+---
 
-```tsx
-<AnimationPlayer doc={doc} options={{ locale: currentLocale }} />
-```
+## 🎞️ 애니메이션 갤러리
 
-## 애니메이션 갤러리
+각 예시는 독립된 JSON 문서 하나이며, 아래 GIF는 모두 `writeDocumentGif`로 렌더링했다.
 
-각 예시는 독립된 문서이며 아래 GIF도 라이브러리의 `writeDocumentGif`로 생성했다.
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <b>요소와 전이</b><br/>
+      <sub>등장 · 퇴장 모드 8종</sub><br/><br/>
+      <img src="./docs/assets/gallery/transitions.gif" alt="Entry and exit modes" width="400">
+    </td>
+    <td width="50%" align="center">
+      <b>이징</b><br/>
+      <sub>easing curve 4종 비교</sub><br/><br/>
+      <img src="./docs/assets/gallery/easing.gif" alt="Easing curves" width="400">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <b>보간</b><br/>
+      <sub>interpolation mode</sub><br/><br/>
+      <img src="./docs/assets/gallery/interpolation.gif" alt="Interpolation modes" width="400">
+    </td>
+    <td width="50%" align="center">
+      <b>반복 패턴</b><br/>
+      <sub><code>repeatAppearances</code> · <code>stagger</code></sub><br/><br/>
+      <img src="./docs/assets/gallery/iteration.gif" alt="Iteration patterns" width="400">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <b>이펙트</b><br/>
+      <sub><code>highlight</code> · <code>pulse</code> · <code>flow</code></sub><br/><br/>
+      <img src="./docs/assets/gallery/effects.gif" alt="Effects" width="400">
+    </td>
+    <td width="50%" align="center">
+      <b>연결</b><br/>
+      <sub>anchor와 arrowhead</sub><br/><br/>
+      <img src="./docs/assets/gallery/connectors.gif" alt="Anchors and arrowheads" width="400">
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <b>그룹</b><br/>
+      <sub>중첩 group과 변환 상속</sub><br/><br/>
+      <img src="./docs/assets/gallery/groups.gif" alt="Nested groups" width="400">
+    </td>
+    <td width="50%" align="center">
+      <b>챕터</b><br/>
+      <sub>캡션과 챕터 목록</sub><br/><br/>
+      <img src="./docs/assets/gallery/chapters.gif" alt="Chapters and captions" width="400">
+    </td>
+  </tr>
+</table>
 
-| 요소와 전이 | 이징과 보간 |
-| --- | --- |
-| ![Ten element types](./docs/assets/gallery/elements.gif) | ![Entry and exit modes](./docs/assets/gallery/transitions.gif) |
-| ![Easing curves](./docs/assets/gallery/easing.gif) | ![Interpolation modes](./docs/assets/gallery/interpolation.gif) |
-| 반복 패턴과 효과 | 연결과 그룹 |
-| ![Iteration patterns](./docs/assets/gallery/iteration.gif) | ![Effects](./docs/assets/gallery/effects.gif) |
-| ![Anchors and arrowheads](./docs/assets/gallery/connectors.gif) | ![Nested groups](./docs/assets/gallery/groups.gif) |
-| 챕터 |  |
-| ![Chapters and captions](./docs/assets/gallery/chapters.gif) |  |
+<div align="center">
+  <a href="https://clotho-editor.shinkeonkim.com/"><b>▶︎ 에디터에서 이 문서들을 직접 열어보기</b></a>
+</div>
+
+---
+
+## ✨ 이 문서가 하는 일
 
 ```jsonc
 {
@@ -89,7 +134,24 @@ host는 현재 언어를 `SceneOptions.locale`로 전달한다. 등록한 번역
 }
 ```
 
-## 설치
+---
+
+## 🧭 설계 원칙
+
+| | |
+| :-- | :-- |
+| 🕒 **`(문서, 시각 t)` → 화면** | 화면 상태는 두 값만으로 결정된다. 원하는 시점으로 이동하거나, 정지 화면을 만들거나, 서버에서 결과를 출력하거나, 에디터에서 재생 위치를 옮길 때 모두 같은 코드가 동작한다. |
+| 🧊 **누적 상태 없음** | 이전 상태를 누적하지 않으므로 시간이 지나면서 화면이 어긋나는 문제가 생기지 않는다. |
+| 🔌 **framework 비종속 scene graph** | 렌더링 결과는 중립적인 scene graph다. 각 adapter는 이 결과를 React element, Vue vnode, DOM, SVG 문자열로 옮기기만 하므로 실제 렌더링 규칙은 한 곳에서 관리된다. |
+| 🧩 **확장은 plugin으로** | 작성 형식의 import·compile·검증·추가 export는 별도 `@kokoa/clotho/plugins` entry의 experimental [compiler plugin API](./docs/PLUGINS.md)로 확장한다. runtime 의미와 모든 adapter가 공유해야 하는 근본 기능은 plugin으로 넘기지 않고 core에 내장한다. |
+
+> [!TIP]
+> 설치 전에 [Clotho Editor](https://clotho-editor.shinkeonkim.com/)에서 갤러리 애니메이션을 열고 JSON 문서와 재생 결과를 바로 확인할 수 있다.
+> 전체 사용법과 API, JSON Schema, 표현 요소별 예시는 [Clotho 문서](https://clotho-docs.shinkeonkim.com/)에 있다.
+
+---
+
+## 📦 설치
 
 ```bash
 npm install @kokoa/clotho
@@ -100,7 +162,9 @@ bun add @kokoa/clotho
 
 React와 Vue는 선택 사항이므로 사용하는 framework만 설치하면 된다. 바닐라 JavaScript와 SVG 출력에는 추가 peer dependency가 필요하지 않다.
 
-## 사용
+---
+
+## 🚀 사용
 
 ### React
 
@@ -202,7 +266,9 @@ const doc = defineAnimation({
 });
 ```
 
-## 진입점
+---
+
+## 🧱 진입점
 
 | 진입점 | 내용 | peer | gzip |
 | --- | --- | --- | --: |
@@ -216,9 +282,12 @@ const doc = defineAnimation({
 | `…/styles.css` | 스타일시트 | 없음 | 4KB |
 | `…/schema.json` | v1 JSON Schema (에디터 자동완성용) | — | — |
 
-렌더 어댑터는 이미 파싱된 문서를 받으므로 **zod를 포함하지 않는다.** 렌더만 하는 소비처는 검증기 비용을 내지 않고, 이 성질은 `bun run check:size`로 강제된다.
+> [!NOTE]
+> 렌더 어댑터는 이미 파싱된 문서를 받으므로 **zod를 포함하지 않는다.** 렌더만 하는 소비처는 검증기 비용을 내지 않고, 이 성질은 `bun run check:size`로 강제된다.
 
-## CLI
+---
+
+## 🛠️ CLI
 
 ```bash
 clotho validate animations/            # 스키마 + 의미 검증
@@ -229,7 +298,9 @@ clotho gif animations/a.json a.gif --fps 12 --width 800
 
 검증기는 스키마가 잡지 못하는 것들을 본다: 중복 id, 참조 무결성, 시간 범위, `parentId` 순환, 미해결 에셋, 그리고 **스키마에 없는 속성**. 마지막 항목이 특히 쓸모 있다 — 파서는 미지의 키를 조용히 버리므로, 작성자가 `line.label`(라벨은 `arrow`에만 있다)이나 `arrow.arrowEnd`(필드명은 `headEnd`)를 써도 아무 일도 일어나지 않는다. 이 패키지를 추출한 383개 실문서에는 그런 속성이 367개 있었다.
 
-## 핵심 API
+---
+
+## ⚙️ 핵심 API
 
 ```ts
 // 파싱 — 실패 시 예외 대신 이슈 목록을 반환값에 담는다
@@ -255,9 +326,10 @@ const { ok, findings } = validateDocument(json);
 const { document, notes } = migrateLegacyDocument(legacyJson);
 ```
 
-### 호스트 훅
+<details>
+<summary><b>호스트 훅</b> — 패키지가 결정하지 않고 소비처가 주입하는 것들</summary>
 
-패키지가 결정하지 않고 소비처가 주입하는 것들:
+<br/>
 
 ```ts
 buildScene(doc, t, {
@@ -270,7 +342,12 @@ buildScene(doc, t, {
 
 이미지는 문서에 base64로 담거나(`inline`), URL로 두거나(`external`), 호스트가 해석하는 키로 둘 수 있다(`ref`). 에디터의 "이미지 첨부"는 `encodeImageAsset(bytes, mime)`으로 만든다.
 
-### 테마
+</details>
+
+<details>
+<summary><b>테마</b> — 라이트·다크 토큰과 팔레트 오버라이드</summary>
+
+<br/>
 
 스타일시트는 `--cloth-*` 토큰에 라이트·다크 기본값을 모두 담고 있어 설정 없이 동작한다. 플레이어별로 `theme="light" | "dark" | "auto"`를 지정할 수 있고, DOM 어댑터도 같은 `theme` 옵션을 받는다.
 
@@ -302,7 +379,12 @@ buildScene(doc, t, {
 
 테마는 기본적으로 `prefers-color-scheme`을 따르고, 어느 조상에든 `data-cloth-theme`을 두면 그것이 이긴다.
 
-### 챕터 목록 위치
+</details>
+
+<details>
+<summary><b>챕터 목록 위치</b> — 좌·우·상·하 배치</summary>
+
+<br/>
 
 `showChapterList`가 켜져 있고 실제 챕터가 있을 때만 목록이 보인다. 위치는 문서에서 좌·우·상·하로 지정하며 기본값은 기존 사이드바와 같은 `right`다.
 
@@ -316,7 +398,54 @@ buildScene(doc, t, {
 }
 ```
 
-### i18n
+</details>
+
+---
+
+## 📄 문서 포맷
+
+애니메이션을 직접 쓰려면 [`docs/AUTHORING.md`](./docs/AUTHORING.md)부터 읽는다. 필드별 정의는 [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md)에 있다.
+
+요소 10종 (`rect · circle · line · arrow · text · image · path · polygon · group · code`), 등장 구간(`appearances`)과 속성 트랙(`tracks`)으로 이루어진 타임라인, 이펙트 3종 (`highlight · pulse · flow`), 챕터.
+
+> [!IMPORTANT]
+> legacy v3/v4 문서는 런타임이 직접 받지 않는다. `clotho migrate`를 통과해야 한다.
+
+---
+
+## 🌍 국제화
+
+### 문서 text 번역
+
+기존 `content`는 항상 기본 문구로 사용되므로 이전 문서도 그대로 동작한다. 문서의 `locales`를 생략하면 `ko`, `en`을 기본으로 제공하며, 특정 text 요소에서 다른 언어가 필요하면 `locales`와 `translations`를 직접 확장한다.
+
+```jsonc
+{
+  "locales": ["ko", "en", "ja", "zh-CN"],
+  "elements": [
+    {
+      "type": "text",
+      "id": "welcome",
+      "x": 400,
+      "y": 240,
+      "content": "환영합니다",
+      "translations": {
+        "en": "Welcome",
+        "ja": "ようこそ",
+        "zh-CN": "欢迎"
+      }
+    }
+  ]
+}
+```
+
+host는 현재 언어를 `SceneOptions.locale`로 전달한다. 등록한 번역이 없거나 locale을 전달하지 않으면 `content`로 돌아간다.
+
+```tsx
+<AnimationPlayer doc={doc} options={{ locale: currentLocale }} />
+```
+
+### 플레이어 UI 문자열
 
 UI 문자열 기본값은 영어이며 부분 오버라이드가 가능하다. 한국어 문구는 `koreanStrings`로 제공한다.
 
@@ -324,15 +453,9 @@ UI 문자열 기본값은 영어이며 부분 오버라이드가 가능하다. �
 <AnimationPlayer doc={doc} strings={{ play: '재생', pause: '일시정지' }} />
 ```
 
-## 문서 포맷
+---
 
-애니메이션을 직접 쓰려면 [`docs/AUTHORING.md`](./docs/AUTHORING.md)부터 읽는다. 필드별 정의는 [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md)에 있다.
-
-요소 10종 (`rect · circle · line · arrow · text · image · path · polygon · group · code`), 등장 구간(`appearances`)과 속성 트랙(`tracks`)으로 이루어진 타임라인, 이펙트 3종 (`highlight · pulse · flow`), 챕터.
-
-legacy v3/v4 문서는 런타임이 직접 받지 않는다. `clotho migrate`를 통과해야 한다.
-
-## 예제
+## 🧪 예제
 
 ```bash
 bun run gallery     # 기능별 문서 9개 — 요소 10종, 전이 8종, 이징 4종, 반복 패턴
@@ -340,21 +463,28 @@ bun run gallery     # 기능별 문서 9개 — 요소 10종, 전이 8종, 이�
 
 각 문서에 "무엇을 볼 것인가"가 붙어 있고, **frames** 버튼이 타임라인 전체를 한 번에 펼친다. [`examples/README.md`](./examples/README.md) 참고.
 
-## 문서
+---
 
-- [`docs/AUTHORING.md`](./docs/AUTHORING.md) — **애니메이션 저작 공식 문서**
-- [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md) — v1 문서 포맷 명세
-- [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) — 씬 그래프, 어댑터, 재생 컨트롤러
-- [`docs/RESEARCH.md`](./docs/RESEARCH.md) — 기존 두 구현체 실측 조사
-- [`docs/MIGRATION.md`](./docs/MIGRATION.md) — legacy 문서·코드 이전
-- [`docs/AUDIT-EDITOR.md`](./docs/AUDIT-EDITOR.md) — 에디터 기능 커버리지 감사
-- [`docs/PROPOSALS.md`](./docs/PROPOSALS.md) — 확장 기획안 14건
-- [`docs/RELEASING.md`](./docs/RELEASING.md) — 배포 전 검증·npm 업로드·설치 확인
-- [`TASKS.md`](./TASKS.md) — 작업 계획과 진행 상황
+## 📚 문서
+
+| 문서 | 내용 |
+| --- | --- |
+| [`docs/AUTHORING.md`](./docs/AUTHORING.md) | **애니메이션 저작 공식 문서** |
+| [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md) | v1 문서 포맷 명세 |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | 씬 그래프, 어댑터, 재생 컨트롤러 |
+| [`docs/PLUGINS.md`](./docs/PLUGINS.md) | experimental compiler plugin API |
+| [`docs/RESEARCH.md`](./docs/RESEARCH.md) | 기존 두 구현체 실측 조사 |
+| [`docs/MIGRATION.md`](./docs/MIGRATION.md) | legacy 문서·코드 이전 |
+| [`docs/AUDIT-EDITOR.md`](./docs/AUDIT-EDITOR.md) | 에디터 기능 커버리지 감사 |
+| [`docs/PROPOSALS.md`](./docs/PROPOSALS.md) | 확장 기획안 14건 |
+| [`docs/RELEASING.md`](./docs/RELEASING.md) | 배포 전 검증·npm 업로드·설치 확인 |
+| [`TASKS.md`](./TASKS.md) | 작업 계획과 진행 상황 |
 
 에디터는 별도 패키지 `clotho-editor`로 분리된다.
 
-## 개발
+---
+
+## 🧑‍💻 개발
 
 ```bash
 bun install
@@ -371,7 +501,10 @@ bun run release:check          # 패키지 메타데이터와 tarball 내용 검
 bash scripts/verify-package-managers.sh # npm/yarn/bun 로컬 설치 검사
 ```
 
-`.private/`에 참조 저장소가 있을 때만 도는 검사:
+<details>
+<summary><code>.private/</code>에 참조 저장소가 있을 때만 도는 검사</summary>
+
+<br/>
 
 ```bash
 bun run check:legacy-equivalence   # legacy 엔진과 렌더 동등성 (383개 × 27,690 프레임)
@@ -380,6 +513,16 @@ bun run check:svg-wellformed       # 1,915 프레임을 실제 XML 파서로 검
 
 회귀 테스트는 실제 애니메이션 문서 383개를 픽스처로 쓴다. 저장소에 포함되지 않으므로 없으면 자동으로 건너뛴다. 위치는 `CLOTHO_CORPUS_DIR`로 지정한다.
 
-## 라이선스
+</details>
 
-MIT
+기여 방법은 [`CONTRIBUTING.md`](./CONTRIBUTING.md), 변경 이력은 [`CHANGELOG.md`](./CHANGELOG.md)에 있다.
+
+---
+
+## 📜 라이선스
+
+[MIT](./LICENSE) © kokoa
+
+<div align="center">
+<sub>도움이 되었다면 ⭐️ 를 남겨주세요 · <a href="https://github.com/shinkeonkim/clotho/issues">이슈 남기기</a></sub>
+</div>
