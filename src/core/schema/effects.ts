@@ -88,19 +88,54 @@ export const spotlightEffectSchema = z.object({
   fadeIn: z.number().int().min(0).default(200),
 });
 
+/**
+ * Leave a visible track behind a moving element.
+ *
+ * Movement is often the information — a sorting cursor sweeping an array, a search
+ * visiting nodes, two pointers closing on each other — and a still frame loses all
+ * of it. Which means a GIF thumbnail, a screenshot, and a reader who scrolled past
+ * quickly see "something is somewhere" and nothing more.
+ */
+export const trailEffectSchema = z.object({
+  type: z.literal('trail'),
+  ...effectBase,
+  duration: z.number().int().min(0).default(3000),
+  /** How far back to look, in milliseconds. */
+  window: z.number().int().positive().default(1200),
+  /**
+   * How many past instants to evaluate.
+   *
+   * Capped because each one re-evaluates the element and its ancestors, and past
+   * roughly a dozen the extra points are shorter than a stroke width apart.
+   */
+  samples: z.number().int().min(2).max(32).default(12),
+  /**
+   * `auto` joins the samples with a line unless the element's position steps, in
+   * which case it draws them as dots — connecting the samples of a teleporting
+   * element would draw a path it never travelled.
+   */
+  mode: z.enum(['auto', 'path', 'dots']).default('auto'),
+  /** Older samples grow more transparent. */
+  fade: z.boolean().default(true),
+  color: z.string().default('#94a3b8'),
+  width: z.number().positive().default(2),
+});
+
 export const effectSchema = z.discriminatedUnion('type', [
   highlightEffectSchema,
   pulseEffectSchema,
   flowEffectSchema,
   spotlightEffectSchema,
+  trailEffectSchema,
 ]);
 
 export type HighlightEffect = z.infer<typeof highlightEffectSchema>;
 export type PulseEffect = z.infer<typeof pulseEffectSchema>;
 export type FlowEffect = z.infer<typeof flowEffectSchema>;
 export type SpotlightEffect = z.infer<typeof spotlightEffectSchema>;
+export type TrailEffect = z.infer<typeof trailEffectSchema>;
 /** Effects that decorate a single element, which is every effect but `spotlight`. */
-export type ElementEffect = HighlightEffect | PulseEffect | FlowEffect;
+export type ElementEffect = HighlightEffect | PulseEffect | FlowEffect | TrailEffect;
 export type AnimationEffect = z.infer<typeof effectSchema>;
 export type EffectType = AnimationEffect['type'];
 

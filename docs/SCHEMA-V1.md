@@ -267,12 +267,40 @@ scrim 색의 기본값은 `--cloth-scrim` 토큰이며 라이트·다크 모두 
 
 wash는 scrim의 역마스크다. 덮개가 검고 대상이 흰 마스크를 물린 사각형이라 비추는 영역에만 색이 칠해진다.
 
+### 2.13 Motion trail 효과
+
+`trail`은 움직이는 요소가 지나온 경로를 남긴다. 움직임 자체가 정보인 문서 — 배열을 훑는 커서, 노드를 방문하는 탐색, 서로를 향해 좁혀오는 포인터 — 에서 정지 프레임은 그 정보를 전부 잃는다. GIF 썸네일과 문서 캡처가 특히 그렇다.
+
+```jsonc
+"effects": [{
+  "type": "trail",
+  "id": "tr-1",
+  "elementId": "cursor",
+  "time": 0,
+  "duration": 6000,
+  "window": 1200,
+  "samples": 12,
+  "mode": "auto",
+  "fade": true,
+  "color": "#94a3b8",
+  "width": 2
+}]
+```
+
+- **누적하지 않는다.** 시각 `t`에서 `[t-window, t]`를 `samples`개로 나눠 **각 시점의 위치를 문서로부터 다시 계산한다.** `(문서, t) → 화면`이 유지되므로 뒤로 감아도, 정지 프레임을 뽑아도, 900번째 프레임부터 렌더해도 같은 트레일이 나온다. 버퍼에 쌓는 구현이라면 seek할 때마다 어긋난다.
+- `mode: "auto"`는 요소의 위치 트랙이 **이산 보간이면 `dots`**, 아니면 `path`를 고른다. 순간이동하는 요소의 샘플을 선으로 이으면 지나지 않은 경로를 그리게 된다.
+- 창은 요소(와 조상 group)가 무대에 오른 시각까지만 거슬러 간다. 등장 이전으로 이어지는 꼬리는 없던 사실을 지어내는 것이고, 그렇다고 그 샘플들을 버리기만 하면 갓 등장한 요소는 창이 다 지나갈 때까지 꼬리가 없다 — 그래서 버리는 대신 남은 구간에 샘플을 다시 배분한다.
+- 중심점이 없는 요소(group 등)를 대상으로 하면 `trail-target` diagnostic을 남긴다.
+- 트레일은 대상 요소 **아래**에 그려진다. 위에 그리면 추적하려던 대상을 가린다.
+
+비용은 과거 시점 재평가다. 전체 스냅샷을 `samples`번 계산하면 요소 40개 문서에서 프레임당 480회가 되므로, 요소와 그 조상 체인만 평가하는 `computeElementState` · `elementRootCenterAt`를 쓴다. `computeSnapshot`도 같은 요소 단위 평가를 호출하므로 둘이 어긋날 수 없다.
+
 ## 3. 계승하는 부분 (변경 없음)
 
 - **요소 10종**: `rect · circle · line · arrow · text · image · path · polygon · group · code`
 - **`appearances[]`**: `{ start, end, entryMode?, entryDuration, exitMode?, exitDuration }` entry/exit 8종 `instant · fade · slide-{left,right,up,down} · zoom · pop`
 - **`tracks[]`**: `{ property, keyframes: [{ time, value, ease? }] }`, ease 4종
-- **이펙트**: `highlight · pulse · flow` (v1에서 `spotlight` 추가 — §2.12)
+- **이펙트**: `highlight · pulse · flow` (v1에서 `spotlight` §2.12, `trail` §2.13 추가)
 - **`chapters[]`**, **`settings`**, ms 시간 단위, 앵커 연결(`fromId`/`toId`/`fromAnchor`/`toAnchor`)
 - 시각 상태는 오직 `(문서, t)`의 순수 함수
 
