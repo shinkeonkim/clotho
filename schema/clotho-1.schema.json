@@ -379,6 +379,30 @@
           },
           "additionalProperties": false
         },
+        "style": {
+          "type": "object",
+          "properties": {
+            "preset": {
+              "type": "string",
+              "enum": [
+                "clean",
+                "sketch",
+                "mono"
+              ],
+              "default": "clean"
+            },
+            "seed": {
+              "type": "string"
+            },
+            "roughness": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 8,
+              "default": 1.2
+            }
+          },
+          "additionalProperties": false
+        },
         "elements": {
           "type": "array",
           "items": {

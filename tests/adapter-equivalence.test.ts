@@ -376,3 +376,39 @@ describe('mask defs across adapters', () => {
     }
   });
 });
+
+/**
+ * A style transform may change a node's *kind* — a rect becomes a path — so it is
+ * exactly the sort of change that could quietly diverge between adapters. It cannot
+ * here, because it happens to the scene before any adapter sees it, and this proves
+ * that rather than assuming it.
+ */
+describe('render style across adapters', () => {
+  const styledDoc = animationDocumentSchema.parse({
+    clothoVersion: 1,
+    id: 'styled-doc',
+    duration: 1000,
+    canvas: { width: 300, height: 200, background: '#ffffff' },
+    style: { preset: 'sketch', roughness: 1.5 },
+    elements: [
+      { type: 'rect', id: 'r', x: 20, y: 20, width: 80, height: 40, appearances: ALWAYS },
+      { type: 'circle', id: 'c', cx: 200, cy: 100, r: 30, appearances: ALWAYS },
+      { type: 'polygon', id: 'p', points: '20,150 60,110 100,150', appearances: ALWAYS },
+    ],
+  });
+
+  it('produces the same markup through svg, react and vue', async () => {
+    const scene = buildScene(styledDoc, 500);
+    const expected = comparableTree(normalize(serializeScene(scene)));
+    expect(comparableTree(normalize(renderToStaticMarkup(SceneSvg({ scene }))))).toEqual(expected);
+    expect(comparableTree(normalize(await renderVue(scene)))).toEqual(expected);
+  });
+
+  it('really did replace the shapes with paths', () => {
+    const markup = serializeScene(buildScene(styledDoc, 500));
+    expect(markup).not.toContain('<rect');
+    expect(markup).not.toContain('<circle');
+    expect(markup).not.toContain('<polygon');
+    expect(markup).toContain('<path');
+  });
+});
