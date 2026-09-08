@@ -225,6 +225,21 @@ hydrateClothoEmbeds(); // 뷰포트에 들어오는 것부터 플레이어로 �
 
 프레임워크 컴포넌트가 아니라 **HTML**을 내보내므로 Astro·Next(MDX)·Docusaurus·Vitepress·순수 마크다운이 모두 같은 경로를 탄다.
 
+### 스크롤리텔링
+
+```ts
+import { mountScrollPlayer } from '@kokoa/clotho/dom';
+
+mountScrollPlayer(document.querySelector('#stage')!, doc, {
+  pin: true,            // 구간 동안 stage를 sticky로 고정
+  snapToChapters: true, // 챕터마다 같은 양의 스크롤을 배분
+});
+```
+
+시계를 스크롤로 갈아끼운다. `Player`가 이미 프레임워크 밖에 있고 `seek(t)`가 순수하기 때문에 되감기가 자유롭다 — 위로 스크롤하는 것은 더 작은 숫자이지 되돌리기가 아니다.
+
+`prefers-reduced-motion`에서는 스크롤 연동을 끄고 **챕터별 정지 프레임 목록**으로 강등한다. 스크롤 하이재킹은 전정기관 문제가 있는 독자에게 특히 나쁘고, 속도를 늦추는 것으로는 해결되지 않는다.
+
 ### 정적 SVG (SSR·썸네일·정적 내보내기)
 
 ```ts

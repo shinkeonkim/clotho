@@ -140,6 +140,19 @@
    * behaviour the stage gets — otherwise it renders at its intrinsic size and a
    * 720-unit canvas overflows a 640px article column.
    */
+  /*
+   * A scroll-driven stage, pinned while its range scrolls past.
+   *
+   * `top` leaves room above so a pinned stage does not sit flush against a browser
+   * chrome, and the height is capped: a sticky element taller than the viewport can
+   * never be fully seen, which is the one way to make this mode unusable.
+   */
+  .cloth-stage-frame[data-cloth-pinned='true'] {
+    position: sticky;
+    top: 2rem;
+    max-height: calc(100vh - 4rem);
+  }
+
   .cloth-embed {
     display: block;
     width: 100%;
