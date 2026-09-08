@@ -30,5 +30,6 @@ export * from './story';
 export * from './responsive';
 export * from './camera';
 export * from './chart';
+export * from './source';
 export * from './performance';
 export * from './lint';

@@ -430,6 +430,39 @@ x축 눈금 라벨은 겹치면 **솎아낸다**(`label-crowding` finding과 함
 - `mono`는 화살촉(marker)까지 회색조로 바꾸고 **그 marker에 새 id를 준다.** marker id는 문서 전역이고 색이 id에 박혀 있어서 지금까지는 같은 id면 내용도 같았는데, 프리셋이 그 전제를 깬다 — 회색 marker와 컬러 marker가 같은 id를 주장하면 `url(#…)`은 페이지에 먼저 로드된 쪽으로 해석된다. 한 페이지에 스타일이 다른 플레이어를 나란히 두면 둘 다 먼저 그려진 화살촉을 쓰게 된다.
 - 노드 수가 임계값(400)을 넘으면 `sketch`는 `clean`으로 강등된다. 그만큼 빽빽한 그림에서 손그림 선은 멋이 아니라 잡음이고, path 데이터도 두 배로 늘어난다.
 
+### 2.17 source-linked code
+
+`code.source`는 `content`가 **어디서 왔는지**를 기록한다. 실제 소스에서 복사해 넣는 순간 사본이 둘이 되고 거기서부터 갈라지는데, 함수 이름이 바뀌고 줄이 밀려도 애니메이션은 옛 코드를 계속 보여주며 그 사실을 알려주는 장치가 없었다.
+
+```jsonc
+{
+  "type": "code", "id": "snap", "x": 40, "y": 60, "width": 480, "height": 220,
+  "language": "typescript",
+  "content": "export function computeSnapshot(doc, time) {\n  …\n}",
+  "source": {
+    "file": "src/core/runtime/snapshot.ts",
+    "region": "compute",
+    "hash": "sha256:9f2c…"
+  }
+}
+```
+
+- **`content`는 항상 인라인으로 남고 런타임은 파일을 읽지 않는다.** 브라우저가 `src/core/...`를 읽을 수 없고, 파일시스템에 의존하는 문서는 SVG로 내보내거나 GIF로 굽거나 임베드할 수 없다. `source`는 출처 메타데이터이지 렌더 입력이 아니다.
+- 범위 지정은 둘 중 하나다. `region: "compute"`는 소스의 `// #region compute` … `// #endregion`을 찾으므로 **위에 줄이 추가돼도 살아남는다.** `lines: [40, 58]`은 간단하지만 줄이 밀리는 순간 조용히 틀린 곳을 가리킨다 — region이 권장 기본값인 이유다.
+- region 마커의 주석 기호는 `//` · `#` · `--` · `/*` · `<!--` · `;`를 모두 받는다. 어느 주석 문법을 쓰는지는 문서가 선언할 일이 아니다.
+- 추출한 텍스트는 **공통 들여쓰기를 걷어낸다.** 함수 안의 region은 주변 때문에 들여쓰기가 있고, 그대로 두면 코드 요소 폭의 3분의 1이 공백에 낭비된다.
+- 이름이 같은 region이 둘이면 앞의 것을 조용히 고르지 않고 **거부한다.** 모호한 선택을 말없이 하는 것이 이 기능이 막으려는 실패 그 자체다.
+
+```bash
+clotho sync animations/            # content와 hash를 갱신
+clotho sync animations/ --check    # 쓰지 않고, 낡았으면 종료 코드 1
+clotho validate animations/        # 낡은 문서를 stale-code 경고로 보고
+```
+
+`hash`는 줄바꿈 방식을 정규화한 뒤 계산하므로 Windows에서 sync한 문서가 Linux에서 낡은 것으로 보이지 않는다. 신선도 검사는 `validateDocument`가 아니라 node 계층에 있다 — core는 파일을 읽지 않으며, 문서는 최신이 아니어도 **유효하다.** 둘을 구분할 수 있는 것은 파일시스템을 가진 호출자뿐이다.
+
+CI에 `clotho validate --strict`가 있다면 **코드를 바꾸고 애니메이션을 안 고친 PR이 자동으로 실패한다.**
+
 ## 3. 계승하는 부분 (변경 없음)
 
 - **요소**: `rect · circle · line · arrow · text · image · path · polygon · group · code` (v1에서 `math` 추가 — §2.14)

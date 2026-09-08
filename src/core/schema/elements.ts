@@ -10,6 +10,7 @@
 
 import { z } from 'zod';
 import { anchorSchema, annotationReferencesSchema, arrowHeadSchema, baseElementProps, idSchema, localeListSchema, localeTagSchema } from './primitives';
+import { codeSourceSchema } from './source';
 
 export const rectElementSchema = z.object({
   type: z.literal('rect'),
@@ -175,6 +176,14 @@ export const codeElementSchema = z.object({
   padding: z.number().nonnegative().default(12),
   cornerRadius: z.number().nonnegative().default(8),
   title: z.string().optional(),
+  /**
+   * Where `content` came from (docs/SCHEMA-V1.md §2.17).
+   *
+   * Metadata only. The runtime never reads the file — `content` is authoritative at
+   * render time, which is what keeps a document exportable and embeddable. `clotho
+   * sync` refreshes it and `clotho validate` reports when it has fallen behind.
+   */
+  source: codeSourceSchema.optional(),
 });
 
 /**
