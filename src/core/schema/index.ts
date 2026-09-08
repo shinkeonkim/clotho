@@ -7,6 +7,7 @@ export * from './layout';
 export * from './checkpoints';
 export * from './data';
 export * from './responsive';
+export * from './camera';
 export * from './effects';
 export * from './document';
 

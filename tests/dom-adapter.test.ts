@@ -453,3 +453,75 @@ describe('mountPlayer', () => {
     expect(container.children).toHaveLength(0);
   });
 });
+
+/**
+ * The camera is the first thing whose *drawing* depends on the reduced-motion
+ * preference, not just whether the clock runs. mountStage therefore observes the
+ * media query itself, and this checks the observation actually reaches buildScene.
+ */
+describe('mountStage and reduced motion', () => {
+  const cameraDoc = animationDocumentSchema.parse({
+    clothoVersion: 1,
+    id: 'cam',
+    duration: 1000,
+    canvas: { width: 800, height: 500 },
+    camera: {
+      tracks: [
+        {
+          property: 'zoom',
+          keyframes: [
+            { time: 0, value: 1 },
+            { time: 1000, value: 4, ease: 'linear' },
+          ],
+        },
+      ],
+    },
+  });
+
+  function stubMatchMedia(matches: boolean): void {
+    const g = globalThis as unknown as Record<string, unknown>;
+    g.matchMedia = () => ({
+      matches,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
+  }
+
+  function viewBoxAt(time: number): string {
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    const handle = mountStage(container as unknown as HTMLElement, cameraDoc, {
+      player: { autoplay: false, scheduler: createManualScheduler() },
+    });
+    handle.player.seek(time);
+    const viewBox = container.querySelector('svg')!.getAttribute('viewBox')!;
+    handle.destroy();
+    return viewBox;
+  }
+
+  it('glides the camera when motion is welcome', () => {
+    stubMatchMedia(false);
+    // Halfway through a linear 1x → 4x zoom.
+    expect(viewBoxAt(500)).toBe(buildScene(cameraDoc, 500).viewBox);
+    expect(viewBoxAt(500)).not.toBe('0 0 800 500');
+  });
+
+  it('holds the previous camera value when the reader asked for reduced motion', () => {
+    stubMatchMedia(true);
+    expect(viewBoxAt(500)).toBe('0 0 800 500');
+    expect(viewBoxAt(1000)).toBe(buildScene(cameraDoc, 1000).viewBox);
+  });
+
+  it('lets an explicit option override what the media query says', () => {
+    stubMatchMedia(true);
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    const handle = mountStage(container as unknown as HTMLElement, cameraDoc, {
+      reducedMotion: false,
+      player: { autoplay: false, scheduler: createManualScheduler() },
+    });
+    handle.player.seek(500);
+    expect(container.querySelector('svg')!.getAttribute('viewBox')).not.toBe('0 0 800 500');
+    handle.destroy();
+  });
+});

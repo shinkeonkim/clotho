@@ -3,3 +3,4 @@
 export * from './matrix';
 export * from './stage';
 export * from './anchors';
+export * from './bounds';

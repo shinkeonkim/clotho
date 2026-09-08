@@ -55,11 +55,30 @@ export function mountStage(
   container.append(frame);
 
   let viewportWidth = container.clientWidth;
+  // Observed here rather than in mountPlayer because it changes what is *drawn*
+  // (the camera cuts instead of gliding), not just whether the clock runs. An
+  // explicit option wins, so a host that has already asked the reader can say so.
+  let reducedMotion = false;
   const render = (): void => {
-    const scene = buildScene(doc, player.getState().time, { ...options, viewportWidth });
+    const scene = buildScene(doc, player.getState().time, {
+      reducedMotion,
+      ...options,
+      viewportWidth,
+    });
     frame.dataset.mat = scene.showMat ? 'true' : 'false';
     patchScene(svg, scene);
   };
+
+  const motionQuery =
+    typeof globalThis.matchMedia === 'function'
+      ? globalThis.matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
+  const onMotionChange = (): void => {
+    reducedMotion = motionQuery?.matches === true;
+    render();
+  };
+  reducedMotion = motionQuery?.matches === true;
+  motionQuery?.addEventListener('change', onMotionChange);
 
   render();
   const unsubscribe = player.subscribe(render);
@@ -79,6 +98,7 @@ export function mountStage(
     destroy() {
       unsubscribe();
       resizeObserver?.disconnect();
+      motionQuery?.removeEventListener('change', onMotionChange);
       player.destroy();
       frame.remove();
     },

@@ -77,7 +77,11 @@ export function AnimationStage({
   className,
   theme = 'auto',
 }: AnimationStageProps): ReactElement {
-  const scene = useMemo(() => buildScene(doc, time, options), [doc, time, options]);
+  const reducedMotion = useReducedMotion();
+  const scene = useMemo(
+    () => buildScene(doc, time, { reducedMotion, ...options }),
+    [doc, time, options, reducedMotion],
+  );
   return createElement(
     'div',
     {
@@ -156,7 +160,16 @@ export function AnimationPlayer({
     else player.pause();
   }, [player, userWantsPlayback, inView, reducedMotion, motionOverride]);
 
-  const scene = useMemo(() => buildScene(doc, state.time, options), [doc, state.time, options]);
+  // The reader who presses play under reduced motion has opted in, so the camera
+  // follows the same override the clock does rather than staying cut.
+  const sceneOptions = useMemo(
+    () => ({ reducedMotion: reducedMotion && !motionOverride, ...options }),
+    [options, reducedMotion, motionOverride],
+  );
+  const scene = useMemo(
+    () => buildScene(doc, state.time, sceneOptions),
+    [doc, state.time, sceneOptions],
+  );
 
   const onSpeedChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => player.setSpeed(Number(event.target.value)),

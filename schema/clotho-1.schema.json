@@ -269,6 +269,116 @@
             "additionalProperties": false
           }
         },
+        "camera": {
+          "type": "object",
+          "properties": {
+            "tracks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "property": {
+                    "type": "string",
+                    "enum": [
+                      "zoom",
+                      "x",
+                      "y"
+                    ]
+                  },
+                  "keyframes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "time": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "value": {
+                          "type": "number"
+                        },
+                        "ease": {
+                          "type": "string",
+                          "enum": [
+                            "linear",
+                            "easeIn",
+                            "easeOut",
+                            "easeInOut"
+                          ],
+                          "default": "easeInOut"
+                        }
+                      },
+                      "required": [
+                        "time",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "property",
+                  "keyframes"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "focus": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "time": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 600
+                  },
+                  "elementIds": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/ClothoDocument/properties/id"
+                    },
+                    "minItems": 1
+                  },
+                  "padding": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 24
+                  },
+                  "maxZoom": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 4
+                  },
+                  "ease": {
+                    "$ref": "#/definitions/ClothoDocument/properties/camera/properties/tracks/items/properties/keyframes/items/properties/ease"
+                  }
+                },
+                "required": [
+                  "time",
+                  "elementIds"
+                ],
+                "additionalProperties": false
+              },
+              "default": []
+            },
+            "strokeScaling": {
+              "type": "string",
+              "enum": [
+                "scale",
+                "fixed"
+              ],
+              "default": "scale"
+            }
+          },
+          "additionalProperties": false
+        },
         "elements": {
           "type": "array",
           "items": {
@@ -389,14 +499,7 @@
                                 ]
                               },
                               "ease": {
-                                "type": "string",
-                                "enum": [
-                                  "linear",
-                                  "easeIn",
-                                  "easeOut",
-                                  "easeInOut"
-                                ],
-                                "default": "easeInOut"
+                                "$ref": "#/definitions/ClothoDocument/properties/camera/properties/tracks/items/properties/keyframes/items/properties/ease"
                               }
                             },
                             "required": [

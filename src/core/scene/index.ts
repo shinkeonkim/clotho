@@ -5,4 +5,5 @@ export * from './context';
 export * from './markers';
 export * from './highlight';
 export * from './effect-visuals';
+export * from './stroke-scaling';
 export * from './build';

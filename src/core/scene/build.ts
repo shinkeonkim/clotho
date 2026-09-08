@@ -6,7 +6,7 @@
 
 import type { AnimationDocument } from '../schema/document';
 import type { AnimationElement } from '../schema/elements';
-import { aspectRatioStyle, viewBox } from '../geometry/stage';
+import { aspectRatioStyle, viewBox, viewBoxFromRect } from '../geometry/stage';
 import { resolveStageBackground } from '../theme/colors';
 import { isNoopPhaseStyle, phaseStyleFromState } from '../theme/phase-styles';
 import { toSvgTransform } from '../geometry/matrix';
@@ -29,6 +29,8 @@ import { buildImage, buildPath, buildPolygon, buildText } from './elements/text-
 import { buildCode } from './elements/code';
 import { buildFlowParticles } from './elements/particles';
 import { compileResponsiveStage } from '../responsive';
+import { computeCamera } from '../camera';
+import { scaleStrokeWidths } from './stroke-scaling';
 
 /** Build the scene for one instant. */
 export function buildScene(
@@ -60,20 +62,51 @@ export function buildScene(
     monospaceFamily: options.monospaceFamily ?? DEFAULT_MONOSPACE_FAMILY,
   };
 
-  const nodes = buildNodes(ctx, tree.roots);
+  let nodes = buildNodes(ctx, tree.roots);
   nodes.push(...buildFlowParticles(ctx));
+
+  // The camera is resolved after the nodes because it reuses the snapshot, tree
+  // and matrices already assembled above; recomputing them per frame would make a
+  // pan cost three times what it should.
+  const camera = computeCamera(doc, time, {
+    reducedMotion: options.reducedMotion,
+    measurer: options.measurer,
+    fontFamily: ctx.fontFamily,
+    frame: {
+      snapshot: ctx.snapshot,
+      tree: ctx.tree,
+      elementById: ctx.elementById,
+      matrices: ctx.matrices,
+      visibility: ctx.visibility,
+      options: { measurer: options.measurer, fontFamily: ctx.fontFamily },
+    },
+  });
+
+  if (camera) {
+    for (const issue of camera.issues) {
+      diagnostics.push({
+        code: 'camera-focus',
+        elementId: issue.elementIds[0] ?? '',
+        message: issue.message,
+      });
+    }
+    if (doc.camera?.strokeScaling === 'fixed' && camera.zoom !== 1) {
+      nodes = scaleStrokeWidths(nodes, 1 / camera.zoom);
+    }
+  }
 
   const stage = resolveStageBackground(doc.canvas.background);
 
   return {
     canvas: doc.canvas,
-    viewBox: viewBox(doc.canvas),
+    viewBox: camera ? viewBoxFromRect(camera) : viewBox(doc.canvas),
     aspectRatio: aspectRatioStyle(doc.canvas),
     background: stage.svgBackground,
     showMat: stage.showMat,
     title: doc.title,
     defs: collectMarkerDefs(collectUsedHeads(ctx)),
     nodes,
+    camera,
     chapter: currentChapter(doc, time),
     chapters: sortedChapters(doc),
     time,
