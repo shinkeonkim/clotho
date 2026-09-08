@@ -106,6 +106,29 @@ clotho diff a.json b.json --all         # 접어둔 사소한 차이까지
 
 시각 회귀 테스트와는 다른 질문에 답한다. 그쪽은 "깨졌는가"를 자동으로 판정하고, 이쪽은 "무엇이 바뀌었는가"를 사람에게 설명한다.
 
+## 2.7 왜 이렇게 보이는지 — `clotho explain`
+
+저작 중 실제로 나오는 질문은 늘 같은 형태다. **이 요소가 왜 안 보이지**, 이 색이 왜 저 값이지, 내가 넣은 키프레임이 왜 아무 효과가 없지.
+
+```bash
+clotho explain animations/knapsack.json --at 3200
+clotho explain animations/knapsack.json --at 3200 --element cursor
+clotho explain animations/knapsack.json --at 3200 --json
+```
+
+```
+dot (circle) — on screen at 1000ms
+  cx = 190  [track] 20 → 360, 50% through, easeInOut, number
+  fill = "#facc15"  [effect] base → effect (h)
+
+inside (rect) — not on screen at 1000ms
+  · its ancestor group "g" is off stage, and a group takes its subtree with it
+```
+
+가시성 사유를 먼저 보여준다. 요소가 그냥 없으면 대여섯 가지 원인 중 무엇인지 알 길이 없고, 원인마다 고치는 방법이 다르기 때문이다. 사유는 **하나만 찾고 멈추지 않는다** — 등장 구간 밖이면서 동시에 숨겨진 그룹 안에 있을 수 있고, 한쪽만 고치면 여전히 안 보인다.
+
+같은 근거를 에디터의 인스펙터 패널과 테스트 실패 메시지가 쓴다. 계산 규칙(ease·보간·전이·그룹 행렬·효과)은 core에만 있으므로 다른 곳에서 다시 구현하면 반드시 어긋난다.
+
 ## 3. 요소
 
 요소는 `elements` 배열에 **평평하게** 들어간다. 중첩은 배열 구조가 아니라 `parentId`로 표현한다(§8).
