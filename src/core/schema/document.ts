@@ -16,6 +16,7 @@ import { dataValueSchema } from './data';
 import { responsiveVariantSchema } from './responsive';
 import { cameraSchema } from './camera';
 import { chartSchema } from './chart';
+import { styleSchema } from './style';
 
 /** Current document format version emitted and accepted by this build. */
 export const FORMAT_VERSION = 1;
@@ -80,6 +81,11 @@ export const animationDocumentSchema = z.object({
    * every document did before the camera existed.
    */
   camera: cameraSchema.optional(),
+  /**
+   * How the scene is drawn. Absent means `clean`, which is the renderer as it was
+   * before presets existed.
+   */
+  style: styleSchema.optional(),
   elements: z.array(elementSchema).default([]),
   /** Authoring-time placement rules. Compile them to element coordinates before rendering. */
   layouts: z.array(layoutSchema).default([]),
