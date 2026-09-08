@@ -153,6 +153,49 @@
     max-height: calc(100vh - 4rem);
   }
 
+  /*
+   * Presenter mode.
+   *
+   * The notes overlay sits on the presenting screen because the two-window version
+   * is not here yet; it is hidden by default and toggled with N, so it never reaches
+   * an audience by accident.
+   */
+  .cloth-presenter {
+    position: relative;
+    display: block;
+    width: 100%;
+  }
+
+  .cloth-presenter-notes {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 0.75rem 1rem;
+    background: var(--cloth-surface-elevated);
+    border-top: 1px solid var(--cloth-border);
+    color: var(--cloth-fg);
+    font-size: 0.95rem;
+  }
+
+  .cloth-presenter-notes p {
+    margin: 0 0 0.35rem;
+  }
+
+  .cloth-presenter-step {
+    font-weight: 600;
+    color: var(--cloth-accent);
+  }
+
+  .cloth-presenter-next {
+    color: var(--cloth-muted);
+    font-size: 0.85rem;
+  }
+
+  .cloth-presenter-blackout {
+    position: absolute;
+    inset: 0;
+    background: #000;
+  }
+
   .cloth-embed {
     display: block;
     width: 100%;

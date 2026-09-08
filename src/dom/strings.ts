@@ -103,6 +103,12 @@ export const CLASS = {
    * the stylesheet, and a class that only one of them knows about is either an
    * unstyled element or a dead rule.
    */
+  /** Presenter mode: the shell, the speaker-notes overlay, and the blackout sheet. */
+  presenter: 'cloth-presenter',
+  presenterNotes: 'cloth-presenter-notes',
+  presenterStep: 'cloth-presenter-step',
+  presenterNext: 'cloth-presenter-next',
+  presenterBlackout: 'cloth-presenter-blackout',
   embed: 'cloth-embed',
   embedPoster: 'cloth-embed-poster',
   wrapper: 'cloth-wrapper',
