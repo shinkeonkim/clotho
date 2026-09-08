@@ -10,3 +10,7 @@ schema
 
 # Frozen copy of the engine clotho replaces; reformatting it would defeat the point.
 tests/reference
+
+# Generated from the stylesheet; prettier would reformat it and break
+# styles:inline-check.
+src/styles/inline.ts
