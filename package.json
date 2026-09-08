@@ -39,6 +39,10 @@
       "types": "./dist/svg/index.d.ts",
       "default": "./dist/svg/index.js"
     },
+    "./mdx": {
+      "types": "./dist/mdx/index.d.ts",
+      "default": "./dist/mdx/index.js"
+    },
     "./dom": {
       "types": "./dist/dom/index.d.ts",
       "default": "./dist/dom/index.js"
