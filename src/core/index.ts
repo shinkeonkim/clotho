@@ -33,3 +33,4 @@ export * from './chart';
 export * from './source';
 export * from './performance';
 export * from './lint';
+export * from './diff';
