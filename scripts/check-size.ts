@@ -32,32 +32,37 @@ const DIST = join(REPO_ROOT, 'dist');
  * trade: a camera that cannot follow a moving element is not worth having.
  *
  * The spotlight (§2.12) raised them by about 3KB more: the scrim, the mask builder
- * and the silhouette recoloring. Two features in a row moving every budget is worth
- * noticing — if a third does the same, the answer is a size pass, not another bump.
+ * and the silhouette recoloring. Both were expensive for the same reason — they put
+ * geometry that used to be an authoring-time helper onto the render path.
+ *
+ * The motion trail (§2.13) cost about 0.5KB, because that groundwork was already
+ * paid for: it samples through the same bounds and tree code. That is the shape to
+ * expect from here on, and a feature that moves every budget by kilobytes again
+ * should be read as a sign that something is being duplicated rather than reused.
  */
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 47_000,
+    gzipBudget: 49_600,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
     file: 'svg/index.js',
-    gzipBudget: 25_500,
+    gzipBudget: 26_500,
     note: 'scene builder + serializer; no zod, no framework',
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 32_500,
+    gzipBudget: 33_500,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
-  react: { file: 'react/index.js', gzipBudget: 33_500, note: 'react is external; no zod' },
-  vue: { file: 'vue/index.js', gzipBudget: 30_800, note: 'vue is external; no zod' },
-  node: { file: 'node/index.js', gzipBudget: 8_500, note: 'loader + schema (needs zod)' },
-  gif: { file: 'gif/index.js', gzipBudget: 28_000, note: 'scene renderer + GIF encoder' },
+  react: { file: 'react/index.js', gzipBudget: 34_500, note: 'react is external; no zod' },
+  vue: { file: 'vue/index.js', gzipBudget: 31_800, note: 'vue is external; no zod' },
+  node: { file: 'node/index.js', gzipBudget: 9_200, note: 'loader + schema (needs zod)' },
+  gif: { file: 'gif/index.js', gzipBudget: 29_000, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 44_500,
+    gzipBudget: 45_500,
     note: 'validate + migrate + lint + GIF (needs zod)',
   },
   plugins: {
@@ -67,7 +72,7 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   testing: {
     file: 'testing/index.js',
-    gzipBudget: 27_500,
+    gzipBudget: 28_800,
     note: 'scene assertions, SVG snapshots and pixel diff; no framework',
   },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },

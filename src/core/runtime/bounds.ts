@@ -17,9 +17,17 @@ import {
   type BoundsOptions,
 } from '../geometry/bounds';
 import { elementCenter, resolveEndpoints } from '../geometry/anchors';
-import { applyToPoint, rotation, type Matrix, type Point } from '../geometry/matrix';
-import type { SnapshotMap } from './snapshot';
-import type { ElementTree } from './tree';
+import {
+  applyToPoint,
+  groupMatrix,
+  IDENTITY,
+  multiply,
+  rotation,
+  type Matrix,
+  type Point,
+} from '../geometry/matrix';
+import { elementStateAt, type SnapshotMap } from './snapshot';
+import type { ElementNode, ElementTree } from './tree';
 
 export interface BoundsContext {
   readonly snapshot: SnapshotMap;
@@ -133,4 +141,69 @@ export function elementsRootBounds(
   }
 
   return { bounds: unionBounds(boxes), unresolved };
+}
+
+/**
+ * The group chain above an element, outermost first.
+ *
+ * Walked through the tree rather than through `parentId`, because the tree is what
+ * the renderer uses: an element whose parent is missing or circular is re-rooted by
+ * `buildElementTree`, and following its raw `parentId` here would apply a transform
+ * that never reaches the screen.
+ */
+export function ancestorChain(tree: ElementTree, elementId: string): AnimationElement[] {
+  const found: AnimationElement[] = [];
+  const walk = (node: ElementNode, path: AnimationElement[]): boolean => {
+    if (node.element.id === elementId) {
+      found.push(...path);
+      return true;
+    }
+    const next = [...path, node.element];
+    return node.children.some((child) => walk(child, next));
+  };
+  for (const root of tree.roots) if (walk(root, [])) break;
+  return found;
+}
+
+/**
+ * An element's center in root canvas space at an arbitrary time.
+ *
+ * Unlike `elementRootBounds`, this evaluates the document itself rather than taking
+ * a prepared context, because its callers ask about times other than the one being
+ * rendered — a motion trail wants where the element *was*. Only the element and its
+ * ancestor groups are evaluated, so sampling twelve past instants costs twelve
+ * evaluations of a short chain rather than twelve full snapshots.
+ *
+ * Returns null when the element is missing, has no meaningful center (a group, a
+ * connector without resolved endpoints), or was not on stage at that time —
+ * including because an ancestor group was off stage, since a group takes its whole
+ * subtree with it.
+ */
+export function elementRootCenterAt(
+  tree: ElementTree,
+  elementId: string,
+  time: number,
+  chain?: readonly AnimationElement[],
+): Point | null {
+  const node = tree.byId.get(elementId);
+  if (!node) return null;
+
+  const state = elementStateAt(node.element, time);
+  if (state.visible !== true) return null;
+
+  const center = elementCenter(node.element, state);
+  if (!center) return null;
+
+  // Compose the ancestor chain outward, mirroring accumulatedMatrices along one path.
+  let matrix: Matrix = IDENTITY;
+  for (const ancestor of chain ?? ancestorChain(tree, elementId)) {
+    const ancestorState = elementStateAt(ancestor, time);
+    if (ancestorState.visible !== true) return null;
+    const x = typeof ancestorState.x === 'number' ? ancestorState.x : 0;
+    const y = typeof ancestorState.y === 'number' ? ancestorState.y : 0;
+    const degrees = typeof ancestorState.rotation === 'number' ? ancestorState.rotation : 0;
+    matrix = multiply(matrix, groupMatrix(x, y, degrees));
+  }
+
+  return applyToPoint(matrix, center);
 }

@@ -811,6 +811,118 @@ const SPOTLIGHT: Doc = doc({
 });
 
 // ---------------------------------------------------------------------------
+// 6c. Motion trail
+
+/**
+ * The case the trail exists for: a cursor sweeping an array.
+ *
+ * Two cursors, one blended and one stepped, because that is the whole of the
+ * `auto` decision. The blended one leaves a line; the stepped one leaves dots,
+ * since it was never in between the cells it visits.
+ */
+const TRAIL: Doc = (() => {
+  const CELLS = 7;
+  const CELL = 74;
+  const LEFT = 40;
+  const SPAN = 5600;
+  const stops = Array.from({ length: CELLS }, (_, i) => ({
+    time: Math.round((i * SPAN) / (CELLS - 1)),
+    value: LEFT + i * CELL + CELL / 2,
+  }));
+
+  return doc({
+    id: 'trail',
+    title: 'Motion trail',
+    description: 'a blended sweep leaves a line, a stepped one leaves dots',
+    duration: 6000,
+    canvas: { width: 720, height: 260, background: 'transparent' },
+    elements: [
+      ...Array.from({ length: CELLS }, (_, i) => ({
+        type: 'rect' as const,
+        id: `tr-cell-${i}`,
+        x: LEFT + i * CELL,
+        y: 96,
+        width: CELL - 8,
+        height: 60,
+        fill: '#eef2ff',
+        stroke: ACCENT,
+        strokeWidth: 1.5,
+        label: String(i),
+        appearances: whole(6000),
+      })),
+      {
+        type: 'circle',
+        id: 'tr-smooth',
+        cx: stops[0]!.value,
+        cy: 66,
+        r: 13,
+        fill: WARM,
+        stroke: WARM,
+        appearances: whole(6000),
+        tracks: [
+          { property: 'cx', keyframes: stops.map((s) => ({ ...s, ease: 'linear' as const })) },
+        ],
+      },
+      {
+        type: 'circle',
+        id: 'tr-stepped',
+        cx: stops[0]!.value,
+        cy: 186,
+        r: 13,
+        fill: GOOD,
+        stroke: GOOD,
+        appearances: whole(6000),
+        tracks: [{ property: 'cx', interpolate: 'discrete' as const, keyframes: stops }],
+      },
+      {
+        type: 'text',
+        id: 'tr-label-a',
+        x: 700,
+        y: 46,
+        content: 'blended → path',
+        fontSize: 13,
+        textAnchor: 'end',
+        appearances: whole(6000),
+      },
+      {
+        type: 'text',
+        id: 'tr-label-b',
+        x: 700,
+        y: 232,
+        content: 'stepped → dots',
+        fontSize: 13,
+        textAnchor: 'end',
+        appearances: whole(6000),
+      },
+    ],
+    effects: [
+      {
+        type: 'trail',
+        id: 'tr-1',
+        elementId: 'tr-smooth',
+        time: 0,
+        duration: 6000,
+        window: 2000,
+        samples: 16,
+        color: WARM,
+        width: 3,
+      },
+      {
+        type: 'trail',
+        id: 'tr-2',
+        elementId: 'tr-stepped',
+        time: 0,
+        duration: 6000,
+        window: 2600,
+        samples: 14,
+        color: GOOD,
+        width: 4,
+      },
+    ],
+  });
+})();
+
+// ---------------------------------------------------------------------------
 // 7. Anchors and arrowheads
 
 const ANCHORS = [
@@ -1347,6 +1459,12 @@ export const GALLERY: readonly GalleryEntry[] = [
     title: 'Spotlight',
     note: 'The one effect that dims the stage instead of changing an element. Six identical nodes, so only the scrim can direct the eye.',
     doc: SPOTLIGHT,
+  },
+  {
+    slug: 'trail',
+    title: 'Motion trail',
+    note: 'Trails are re-derived from the document at every frame, never accumulated — which is why seeking backwards does not smear them.',
+    doc: TRAIL,
   },
   {
     slug: 'connectors',

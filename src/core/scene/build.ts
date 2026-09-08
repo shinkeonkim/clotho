@@ -28,6 +28,7 @@ import { buildArrow, buildLine, collectUsedHeads } from './elements/connectors';
 import { buildImage, buildPath, buildPolygon, buildText } from './elements/text-image';
 import { buildCode } from './elements/code';
 import { buildFlowParticles } from './elements/particles';
+import { buildTrails } from './elements/trail';
 import { compileResponsiveStage } from '../responsive';
 import { computeCamera } from '../camera';
 import { activeSpotlights } from '../runtime/effects';
@@ -64,7 +65,10 @@ export function buildScene(
     monospaceFamily: options.monospaceFamily ?? DEFAULT_MONOSPACE_FAMILY,
   };
 
-  let nodes = buildNodes(ctx, tree.roots);
+  // Trails go under the elements they follow — a trail drawn on top would obscure
+  // the very thing it is tracking — and flow particles stay above their connector.
+  let nodes: SceneNode[] = buildTrails(ctx);
+  nodes.push(...buildNodes(ctx, tree.roots));
   nodes.push(...buildFlowParticles(ctx));
 
   // The camera is resolved after the nodes because it reuses the snapshot, tree

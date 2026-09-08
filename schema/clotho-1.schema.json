@@ -2061,6 +2061,69 @@
                   "time"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "trail"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "elementId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "time": {
+                    "$ref": "#/definitions/ClothoDocument/properties/effects/items/anyOf/0/properties/time"
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 3000
+                  },
+                  "window": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "default": 1200
+                  },
+                  "samples": {
+                    "type": "integer",
+                    "minimum": 2,
+                    "maximum": 32,
+                    "default": 12
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "auto",
+                      "path",
+                      "dots"
+                    ],
+                    "default": "auto"
+                  },
+                  "fade": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "color": {
+                    "type": "string",
+                    "default": "#94a3b8"
+                  },
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 2
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "elementId",
+                  "time"
+                ],
+                "additionalProperties": false
               }
             ]
           },
