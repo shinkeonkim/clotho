@@ -13,13 +13,16 @@
 // Paths may be files or directories; directories are scanned for *.json.
 
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import { formatFindings, validateDocument, type Finding } from '../core/validate/validate';
 import { migrateLegacyDocument, needsMigration } from '../core/migrate/legacy';
 import { stripBom } from '../core/text/base64';
 import { animationDocumentSchema } from '../core/schema/document';
 import { writeDocumentGif } from '../node/gif';
 import { autofixDocument, lintDocument, type LintFinding } from '../core/lint';
+import { createDebouncer, listDocuments, runtimeDirFrom, startDevServer } from '../node/dev';
 
 const USAGE = `clotho — JSON-defined visualization animations
 
@@ -28,6 +31,7 @@ Usage:
   clotho lint <path...> [--fix]         Check readability, accessibility, and authoring quality
   clotho migrate  <path...> [options]   Convert legacy (version 3/4) documents to v1
   clotho gif <input.json> <output.gif>   Render a document as an animated GIF
+  clotho dev <dir> [options]            Serve a directory of documents with live reload
 
 Options:
   --write     migrate only: rewrite files in place (default is a dry run)
@@ -39,12 +43,18 @@ Options:
   --width N   gif only: output width in pixels (default: canvas width)
   --once      gif only: play once instead of looping forever
   --background COLOR  gif only: opaque raster background (default: #ffffff)
+  --port N    dev only: port to listen on (default: 4173, 0 picks a free one)
+  --host H    dev only: interface to bind (default: 127.0.0.1 — see below)
+  --headless  dev only: watch and re-check without serving a page
   -h, --help  show this help
 
 Exit codes:
   0  success
   1  problems found
-  2  bad invocation`;
+  2  bad invocation
+
+clotho dev writes the files a browser sends it, so it binds to loopback. Do not put
+it on a network you do not control.`;
 
 interface Args {
   readonly command: string | undefined;
@@ -59,6 +69,9 @@ interface Args {
   readonly width?: number;
   readonly once: boolean;
   readonly background?: string;
+  readonly port?: number;
+  readonly host?: string;
+  readonly headless: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -67,7 +80,13 @@ function parseArgs(argv: string[]): Args {
   const values = new Map<string, string>();
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]!;
-    if (arg === '--fps' || arg === '--width' || arg === '--background') {
+    if (
+      arg === '--fps' ||
+      arg === '--width' ||
+      arg === '--background' ||
+      arg === '--port' ||
+      arg === '--host'
+    ) {
       const value = argv[index + 1];
       if (value === undefined) throw new Error(`${arg} needs a value`);
       values.set(arg, value);
@@ -91,6 +110,9 @@ function parseArgs(argv: string[]): Args {
     width: values.has('--width') ? Number(values.get('--width')) : undefined,
     once: flags.has('--once'),
     background: values.get('--background'),
+    port: values.has('--port') ? Number(values.get('--port')) : undefined,
+    host: values.get('--host'),
+    headless: flags.has('--headless'),
   };
 }
 
@@ -343,6 +365,89 @@ async function runMigrate(args: Args): Promise<number> {
   return failures.length > 0 ? 1 : 0;
 }
 
+/**
+ * Directories for the bare specifiers `dist` leaves external.
+ *
+ * Only `zod` today, and the preview's own entry does not reach it — this is what
+ * keeps a page that imports something heavier from failing on a bare specifier.
+ * Resolved from this package rather than from the served project, so the version the
+ * browser loads is the one the runtime was built against.
+ */
+function resolveRuntimeDeps(): Record<string, string> {
+  const require = createRequire(import.meta.url);
+  const deps: Record<string, string> = {};
+  for (const name of ['zod']) {
+    try {
+      deps[name] = dirname(require.resolve(`${name}/package.json`));
+    } catch {
+      // Absent means the runtime does not need it here; the import map simply omits it.
+    }
+  }
+  return deps;
+}
+
+/**
+ * `clotho dev` — the file-based authoring loop.
+ *
+ * Runs until interrupted, which makes it the one command that does not return a
+ * verdict. `--headless` is the same watcher without the page, for a terminal-only
+ * workflow, CI preview, or a model editing documents and reading the findings back.
+ */
+async function runDev(args: Args): Promise<number> {
+  const dir = resolve(args.paths[0]!);
+  const runtimeDir = runtimeDirFrom(dirname(fileURLToPath(import.meta.url)));
+  if (runtimeDir === null) {
+    console.error('clotho: the built runtime is missing — run `bun run build` first');
+    return 2;
+  }
+
+  const report = async (): Promise<void> => {
+    const documents = await listDocuments(dir);
+    const broken = documents.filter((entry) => !entry.ok);
+    const warnings = documents.reduce((total, entry) => total + entry.warnings, 0);
+    const stamp = new Date().toLocaleTimeString();
+    console.log(
+      `[${stamp}] ${documents.length} document(s), ${broken.length} failing, ${warnings} warning(s)`,
+    );
+    for (const entry of documents) {
+      for (const issue of entry.issues) console.log(`  ${entry.id}: ${issue}`);
+      for (const finding of entry.findings)
+        if (finding.severity === 'error') console.log(`  ${entry.id}: ${finding.message}`);
+    }
+  };
+
+  if (args.headless) {
+    const { watch } = await import('node:fs');
+    await report();
+    const debouncer = createDebouncer(60, () => void report());
+    try {
+      watch(dir, { recursive: true }, (_event, filename) => {
+        if (filename?.toString().endsWith('.json')) debouncer.push(filename.toString());
+      });
+    } catch {
+      console.error('clotho: recursive watching is unavailable here; showing one report only');
+      return 0;
+    }
+    console.log(`watching ${dir} — ctrl+c to stop`);
+    await new Promise(() => {});
+    return 0;
+  }
+
+  const server = await startDevServer({
+    dir,
+    runtimeDir,
+    deps: resolveRuntimeDeps(),
+    port: args.port ?? 4173,
+    host: args.host,
+    onChange: () => void report(),
+  });
+  console.log(`clotho dev → ${server.url}`);
+  console.log(`serving ${dir}`);
+  await report();
+  await new Promise(() => {});
+  return 0;
+}
+
 async function main(): Promise<number> {
   const args = parseArgs(process.argv.slice(2));
 
@@ -355,7 +460,8 @@ async function main(): Promise<number> {
     args.command !== 'validate' &&
     args.command !== 'migrate' &&
     args.command !== 'gif' &&
-    args.command !== 'lint'
+    args.command !== 'lint' &&
+    args.command !== 'dev'
   ) {
     console.error(`unknown command: ${args.command}\n`);
     console.error(USAGE);
@@ -372,6 +478,7 @@ async function main(): Promise<number> {
     if (args.command === 'validate') return await runValidate(args);
     if (args.command === 'migrate') return await runMigrate(args);
     if (args.command === 'lint') return await runLint(args);
+    if (args.command === 'dev') return await runDev(args);
     return await runGif(args);
   } catch (cause) {
     console.error(`clotho: ${(cause as Error).message}`);
