@@ -137,6 +137,17 @@ inside (rect) — not on screen at 1000ms
 
 감축 모션에서는 챕터별 정지 프레임으로 강등한다(§접근성).
 
+## 2.9 재생할 수 없는 자리로 — `clotho storyboard`
+
+```bash
+clotho storyboard doc.json --out sheet.png --per-row 3
+clotho storyboard doc.json --out frames/
+```
+
+컨택트 시트 PNG 한 장, 또는 프레임마다 파일 한 개(슬라이드에 넣을 때). 각 칸에는 챕터 라벨과 시각이 붙는다.
+
+프레임 선택은 `chapters`(기본) · `every` · `count` · `times`. 프레임이 너무 많으면 **고르게 솎아낸다** — 애니메이션의 끝은 대개 요점이 있는 곳이라 뒤를 잘라내는 것이 최악의 자르기다.
+
 ## 3. 요소
 
 요소는 `elements` 배열에 **평평하게** 들어간다. 중첩은 배열 구조가 아니라 `parentId`로 표현한다(§8).

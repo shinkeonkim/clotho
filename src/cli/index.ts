@@ -26,6 +26,8 @@ import { diffDocuments, significantChanges } from '../core/diff';
 import { describeReason, explainElement } from '../core/explain';
 import { createDebouncer, listDocuments, runtimeDirFrom, startDevServer } from '../node/dev';
 import { checkSourceFreshness, syncFile } from '../node/sync';
+import { writeStoryboard } from '../node/storyboard';
+import type { FrameSelection } from '../core/storyboard';
 
 const USAGE = `clotho — JSON-defined visualization animations
 
@@ -38,6 +40,7 @@ Usage:
   clotho sync <path...> [--check]       Refresh source-linked code elements from their files
   clotho diff <before.json> <after.json>  Explain what changed between two documents
   clotho explain <file> --at <ms>       Explain what is on screen at one instant, and why
+  clotho storyboard <file> --out <path>  Export stills: a contact sheet, or one file per frame
 
 Options:
   --write     migrate only: rewrite files in place (default is a dry run)
@@ -58,6 +61,13 @@ Options:
   --format F  diff only: "text" (default) or "md"
   --at MS     explain only: the instant to explain (required)
   --element I explain only: one element instead of all of them
+  --out P     storyboard only: sheet.png / sheet.svg, or a directory for one file per frame
+  --frames M  storyboard only: chapters (default) | every | count | times
+  --every N   storyboard only: interval in ms for --frames every
+  --count N   storyboard only: how many frames for --frames count
+  --times L   storyboard only: comma-separated times for --frames times
+  --per-row N storyboard only: cells per row on the sheet
+  --labels    storyboard only: caption each cell (default on; --no-labels to drop)
   --root DIR  sync/validate: project root that source paths are relative to (default: cwd)
   -h, --help  show this help
 
@@ -92,6 +102,13 @@ interface Args {
   readonly format?: string;
   readonly at?: number;
   readonly element?: string;
+  readonly out?: string;
+  readonly frames?: string;
+  readonly every?: number;
+  readonly count?: number;
+  readonly times?: string;
+  readonly perRow?: number;
+  readonly labels: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -109,7 +126,13 @@ function parseArgs(argv: string[]): Args {
       arg === '--root' ||
       arg === '--format' ||
       arg === '--at' ||
-      arg === '--element'
+      arg === '--element' ||
+      arg === '--out' ||
+      arg === '--frames' ||
+      arg === '--every' ||
+      arg === '--count' ||
+      arg === '--times' ||
+      arg === '--per-row'
     ) {
       const value = argv[index + 1];
       if (value === undefined) throw new Error(`${arg} needs a value`);
@@ -143,6 +166,13 @@ function parseArgs(argv: string[]): Args {
     format: values.get('--format'),
     at: values.has('--at') ? Number(values.get('--at')) : undefined,
     element: values.get('--element'),
+    out: values.get('--out'),
+    frames: values.get('--frames'),
+    every: values.has('--every') ? Number(values.get('--every')) : undefined,
+    count: values.has('--count') ? Number(values.get('--count')) : undefined,
+    times: values.get('--times'),
+    perRow: values.has('--per-row') ? Number(values.get('--per-row')) : undefined,
+    labels: !flags.has('--no-labels'),
     root: values.get('--root'),
   };
 }
@@ -402,6 +432,59 @@ async function runMigrate(args: Args): Promise<number> {
   }
 
   return failures.length > 0 ? 1 : 0;
+}
+
+/**
+ * `clotho storyboard` — stills for the places an animation cannot play.
+ *
+ * A printed page, a paper, a slide, a review comment. One frame cannot show a
+ * process and a GIF cannot be pasted into most of them.
+ */
+async function runStoryboard(args: Args): Promise<number> {
+  if (args.paths.length !== 1) {
+    console.error('storyboard needs exactly one file\n');
+    console.error(USAGE);
+    return 2;
+  }
+  if (!args.out) {
+    console.error('storyboard needs --out <path>\n');
+    console.error(USAGE);
+    return 2;
+  }
+
+  const animation = animationDocumentSchema.parse(
+    readJson(await readFile(args.paths[0]!, 'utf-8')),
+  );
+
+  const selection: FrameSelection | undefined =
+    args.frames === 'every'
+      ? { mode: 'every', interval: args.every ?? 1000 }
+      : args.frames === 'count'
+        ? { mode: 'count', count: args.count ?? 6 }
+        : args.frames === 'times'
+          ? {
+              mode: 'times',
+              times: (args.times ?? '')
+                .split(',')
+                .map((value) => Number(value.trim()))
+                .filter((value) => Number.isFinite(value)),
+            }
+          : { mode: 'chapters' };
+
+  const result = await writeStoryboard(animation, args.out, {
+    selection,
+    columns: args.perRow,
+    labels: args.labels,
+    width: args.width,
+  });
+
+  if (args.json) {
+    console.log(JSON.stringify({ command: 'storyboard', ...result }, null, 2));
+  } else if (!args.quiet) {
+    for (const file of result.files) console.log(relative(process.cwd(), file));
+    console.log(`${result.frames.length} frame(s) → ${result.files.length} file(s)`);
+  }
+  return 0;
 }
 
 /**
@@ -685,7 +768,8 @@ async function main(): Promise<number> {
     args.command !== 'dev' &&
     args.command !== 'sync' &&
     args.command !== 'diff' &&
-    args.command !== 'explain'
+    args.command !== 'explain' &&
+    args.command !== 'storyboard'
   ) {
     console.error(`unknown command: ${args.command}\n`);
     console.error(USAGE);
@@ -706,6 +790,7 @@ async function main(): Promise<number> {
     if (args.command === 'sync') return await runSync(args);
     if (args.command === 'diff') return await runDiff(args);
     if (args.command === 'explain') return await runExplain(args);
+    if (args.command === 'storyboard') return await runStoryboard(args);
     return await runGif(args);
   } catch (cause) {
     console.error(`clotho: ${(cause as Error).message}`);
