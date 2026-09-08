@@ -202,6 +202,29 @@ handle.player.seek(3000);
 handle.destroy();
 ```
 
+### 마크다운 · MDX
+
+```js
+import { remarkClotho } from '@kokoa/clotho/mdx';
+// remark / MDX 파이프라인에 넣는다
+const plugins = [remarkClotho()];
+```
+
+````md
+```clotho
+{ "clothoVersion": 1, "id": "queue", "duration": 3000, ... }
+```
+````
+
+빌드 시 문서를 **검증하고**(실패하면 빌드가 실패한다) 포스터 프레임 SVG를 마크업에 인라인한다. JS 없이도 그림이 보이고, 테마 토큰이 살아 있어 다크 모드를 따라간다.
+
+```ts
+import { hydrateClothoEmbeds } from '@kokoa/clotho/mdx';
+hydrateClothoEmbeds(); // 뷰포트에 들어오는 것부터 플레이어로 승격
+```
+
+프레임워크 컴포넌트가 아니라 **HTML**을 내보내므로 Astro·Next(MDX)·Docusaurus·Vitepress·순수 마크다운이 모두 같은 경로를 탄다.
+
 ### 정적 SVG (SSR·썸네일·정적 내보내기)
 
 ```ts
@@ -279,6 +302,7 @@ const doc = defineAnimation({
 | `…/vue` | Vue 3 어댑터 + 컴포넌트 | vue | 20KB |
 | `…/node` | 파일시스템 문서 로더 | 없음 | 별도 진입점 |
 | `…/gif` | Node/Bun용 애니메이션 GIF 렌더러 | 없음 | 별도 진입점 |
+| `…/mdx` | 마크다운 embed 빌더 + hydration | 없음 | 별도 진입점 |
 | `…/styles.css` | 스타일시트 | 없음 | 4KB |
 | `…/schema.json` | v1 JSON Schema (에디터 자동완성용) | — | — |
 

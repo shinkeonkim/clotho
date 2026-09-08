@@ -95,6 +95,16 @@ export const koreanStrings: Strings = {
 
 /** Class names the adapters emit. Style them via `@kokoa/clotho/styles.css`. */
 export const CLASS = {
+  /**
+   * Markdown embed wrapper and its inline poster.
+   *
+   * Emitted by the mdx builder rather than by an adapter, but registered here for
+   * the same reason as everything else: `check:styles` compares this registry with
+   * the stylesheet, and a class that only one of them knows about is either an
+   * unstyled element or a dead rule.
+   */
+  embed: 'cloth-embed',
+  embedPoster: 'cloth-embed-poster',
   wrapper: 'cloth-wrapper',
   header: 'cloth-wrapper-header',
   title: 'cloth-wrapper-title',
