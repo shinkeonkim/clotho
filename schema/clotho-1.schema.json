@@ -1336,6 +1336,82 @@
                   "content"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "math"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "name": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/name"
+                  },
+                  "parentId": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/parentId"
+                  },
+                  "rotation": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/rotation"
+                  },
+                  "appearances": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/appearances"
+                  },
+                  "tracks": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/tracks"
+                  },
+                  "bindings": {
+                    "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/0/properties/bindings"
+                  },
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "tex": {
+                    "type": "string"
+                  },
+                  "display": {
+                    "type": "string",
+                    "enum": [
+                      "block",
+                      "inline"
+                    ],
+                    "default": "block"
+                  },
+                  "fontSize": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "default": 18
+                  },
+                  "color": {
+                    "type": "string",
+                    "default": "#18181b"
+                  },
+                  "textAnchor": {
+                    "type": "string",
+                    "enum": [
+                      "start",
+                      "middle",
+                      "end"
+                    ],
+                    "default": "start"
+                  },
+                  "alt": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "x",
+                  "y",
+                  "tex"
+                ],
+                "additionalProperties": false
               }
             ]
           },

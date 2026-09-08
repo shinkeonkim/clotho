@@ -23,7 +23,7 @@ import {
 } from '../src/core/schema/primitives';
 import { validateDocument } from '../src/core/validate/validate';
 import { buildScene } from '../src/core/scene/build';
-import type { SceneNode } from '../src/core/scene/nodes';
+import type { SceneDiagnosticCode, SceneNode } from '../src/core/scene/nodes';
 import { renderDocumentToSvg } from '../src/svg/render';
 
 const parsed = GALLERY.map((entry) => ({
@@ -160,10 +160,11 @@ describe('the gallery renders', () => {
     '%s builds a scene throughout',
     (_slug, entry) => {
       const options = entry.assetResolver ? { assetResolver: entry.assetResolver } : {};
+      const expected = [...(entry.expectedDiagnostics ?? [])].sort();
       for (let i = 0; i <= 8; i += 1) {
         const time = Math.round((entry.doc.duration * i) / 8);
         const scene = buildScene(entry.doc, time, options);
-        expect(scene.diagnostics).toEqual([]);
+        expect(scene.diagnostics.map((d) => d.code).sort()).toEqual(expected);
         expect(renderDocumentToSvg(entry.doc, time, options)).toContain('<svg');
       }
     },
@@ -174,7 +175,11 @@ describe('the gallery renders', () => {
   it('degrades to a placeholder when a ref asset has no resolver', () => {
     const entry = parsed.find((e) => e.assetResolver)!;
     const scene = buildScene(entry.doc, 0);
-    expect(scene.diagnostics.map((d) => d.code)).toEqual(['unresolved-asset']);
+    const expected: SceneDiagnosticCode[] = [
+      'unresolved-asset',
+      ...(entry.expectedDiagnostics ?? []),
+    ];
+    expect(scene.diagnostics.map((d) => d.code).sort()).toEqual(expected.sort());
     expect(scene.nodes.length).toBe(
       buildScene(entry.doc, 0, {
         assetResolver: entry.assetResolver,

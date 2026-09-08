@@ -36,9 +36,11 @@ const DIST = join(REPO_ROOT, 'dist');
  * geometry that used to be an authoring-time helper onto the render path.
  *
  * The motion trail (§2.13) cost about 0.5KB, because that groundwork was already
- * paid for: it samples through the same bounds and tree code. That is the shape to
- * expect from here on, and a feature that moves every budget by kilobytes again
- * should be read as a sign that something is being duplicated rather than reused.
+ * paid for: it samples through the same bounds and tree code. The math element
+ * (§2.14) cost about 0.2KB, since the typesetter it needs is injected rather than
+ * bundled and only the fallback lives here. That is the shape to expect from here
+ * on, and a feature that moves every budget by kilobytes again should be read as a
+ * sign that something is being duplicated rather than reused.
  *
  * Keep the headroom at a few percent and never shave it to nothing. gzip output is
  * not byte-identical across zlib builds — the same bundle measures a couple of
@@ -49,31 +51,31 @@ const DIST = join(REPO_ROOT, 'dist');
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 49_600,
+    gzipBudget: 49_000,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
     file: 'svg/index.js',
-    gzipBudget: 26_500,
+    gzipBudget: 27_000,
     note: 'scene builder + serializer; no zod, no framework',
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 33_500,
+    gzipBudget: 34_000,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
-  react: { file: 'react/index.js', gzipBudget: 34_500, note: 'react is external; no zod' },
-  vue: { file: 'vue/index.js', gzipBudget: 31_800, note: 'vue is external; no zod' },
-  node: { file: 'node/index.js', gzipBudget: 9_200, note: 'loader + schema (needs zod)' },
-  gif: { file: 'gif/index.js', gzipBudget: 29_000, note: 'scene renderer + GIF encoder' },
+  react: { file: 'react/index.js', gzipBudget: 35_000, note: 'react is external; no zod' },
+  vue: { file: 'vue/index.js', gzipBudget: 32_300, note: 'vue is external; no zod' },
+  node: { file: 'node/index.js', gzipBudget: 9_000, note: 'loader + schema (needs zod)' },
+  gif: { file: 'gif/index.js', gzipBudget: 29_500, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 47_200,
+    gzipBudget: 47_600,
     note: 'validate + migrate + lint + GIF (needs zod)',
   },
   plugins: {
     file: 'plugins/index.js',
-    gzipBudget: 19_600,
+    gzipBudget: 19_900,
     note: 'experimental authoring pipeline; isolated from the default core entry',
   },
   testing: {

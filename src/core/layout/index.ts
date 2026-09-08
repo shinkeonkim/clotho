@@ -1,7 +1,7 @@
 import type { AnimationDocument } from '../schema/document';
 import type { AnimationElement } from '../schema/elements';
 import type { Layout, LayoutConstraint } from '../schema/layout';
-import { estimateTextWidth, type TextMeasurer } from '../text/width';
+import { estimateMonospaceWidth, estimateTextWidth, type TextMeasurer } from '../text/width';
 
 export interface LayoutBox {
   readonly x: number;
@@ -62,6 +62,19 @@ export function measureElementBox(
       const width = estimateTextWidth(element.content, element.fontSize, {
         measurer: options.textMeasurer,
       });
+      const x =
+        element.textAnchor === 'middle'
+          ? element.x - width / 2
+          : element.textAnchor === 'end'
+            ? element.x - width
+            : element.x;
+      return { x, y: element.y - element.fontSize, width, height: element.fontSize * 1.2 };
+    }
+    case 'math': {
+      // Estimated from the source, since the typeset extent belongs to a typesetter
+      // the layout compiler does not have. Close enough to place a block of maths
+      // relative to its neighbours, and honest about being an estimate.
+      const width = estimateMonospaceWidth(element.tex, element.fontSize);
       const x =
         element.textAnchor === 'middle'
           ? element.x - width / 2

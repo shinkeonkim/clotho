@@ -12,6 +12,7 @@
 
 import type { z } from 'zod';
 import type { AssetResolver } from '../../src/core/assets/resolver';
+import type { SceneDiagnosticCode } from '../../src/core/scene/nodes';
 import type { animationDocumentSchema } from '../../src/core/schema/document';
 import type { Ease, EntryMode, ExitMode } from '../../src/core/schema/primitives';
 import { defineAnimation } from '../../src/core/authoring';
@@ -29,6 +30,15 @@ export interface GalleryEntry {
    * its resolver settles — so the gallery page shows both.
    */
   readonly assetResolver?: AssetResolver;
+  /**
+   * Diagnostics this entry raises on purpose.
+   *
+   * Two of the format's fallbacks are worth demonstrating rather than configuring
+   * away — a `ref` asset with no resolver, and a `math` element with no typesetter —
+   * and both report while still rendering something. Listing them keeps the "no
+   * diagnostics" assertion strict for every other entry.
+   */
+  readonly expectedDiagnostics?: readonly SceneDiagnosticCode[];
 }
 
 /**
@@ -64,7 +74,7 @@ function doc(partial: Omit<Doc, 'clothoVersion'>): Doc {
 
 const ELEMENTS: Doc = doc({
   id: 'elements',
-  title: 'Ten element types',
+  title: 'Eleven element types',
   description: 'Every shape the format can draw, on one stage',
   duration: 4000,
   assets: {
@@ -228,6 +238,19 @@ const ELEMENTS: Doc = doc({
       fontSize: 12,
       showLineNumbers: true,
       title: 'code element',
+      appearances: whole(4000),
+    },
+    {
+      // Rendered by whatever typesetter the host injects. The gallery page injects
+      // none, so this draws its own TeX source — which is the documented fallback
+      // and worth seeing rather than hiding behind a configured example.
+      type: 'math',
+      id: 'math',
+      x: 24,
+      y: 296,
+      tex: 'T(n) = 2T(n/2) + O(n)',
+      fontSize: 15,
+      alt: 'T of n equals two T of n over two plus O of n',
       appearances: whole(4000),
     },
   ],
@@ -1576,9 +1599,10 @@ const INCIDENT_WALKTHROUGH: Doc = defineAnimation({
 export const GALLERY: readonly GalleryEntry[] = [
   {
     slug: 'elements',
-    title: 'Ten element types',
+    title: 'Eleven element types',
     assetResolver: galleryResolver,
-    note: 'All ten types, including the two v1 added: a real group, and images through the asset registry. The second image is a `ref` asset with no resolver, so it draws as a placeholder.',
+    expectedDiagnostics: ['unresolved-math'],
+    note: 'All eleven types. Two came with v1 — a real group, and images through the asset registry — and `math` is the newest. The second image is a `ref` asset with no resolver and the math has no typesetter injected, so both draw their documented fallback rather than nothing.',
     doc: ELEMENTS,
   },
   {

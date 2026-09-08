@@ -169,6 +169,33 @@ export const codeElementSchema = z.object({
   title: z.string().optional(),
 });
 
+/**
+ * A TeX expression, typeset by the host rather than by clotho.
+ *
+ * Algorithm and data-structure documents need recurrences, complexity bounds and
+ * invariants, and the two things authors did instead both lose something: unicode in
+ * a `text` element cannot express a fraction or a sum, and a screenshot cannot follow
+ * the theme, survive a zoom, or have one of its terms pulsed.
+ *
+ * `tex` stays in the document even after typesetting, so the expression can be
+ * re-edited and read aloud. Typesetters are large — larger than this whole core — so
+ * one is never bundled; see `MathRenderer` and `bakeMathElements`.
+ */
+export const mathElementSchema = z.object({
+  type: z.literal('math'),
+  ...baseElementProps,
+  x: z.number(),
+  y: z.number(),
+  tex: z.string(),
+  /** `block` centers on its own line's baseline; `inline` sits on the text baseline. */
+  display: z.enum(['block', 'inline']).default('block'),
+  fontSize: z.number().positive().default(18),
+  color: z.string().default('#18181b'),
+  textAnchor: z.enum(['start', 'middle', 'end']).default('start'),
+  /** Spoken form, for readers who cannot see the typeset result. */
+  alt: z.string().optional(),
+});
+
 export const elementSchema = z.discriminatedUnion('type', [
   rectElementSchema,
   circleElementSchema,
@@ -180,6 +207,7 @@ export const elementSchema = z.discriminatedUnion('type', [
   polygonElementSchema,
   groupElementSchema,
   codeElementSchema,
+  mathElementSchema,
 ]);
 
 export type RectElement = z.infer<typeof rectElementSchema>;
@@ -192,11 +220,12 @@ export type PathElement = z.infer<typeof pathElementSchema>;
 export type PolygonElement = z.infer<typeof polygonElementSchema>;
 export type GroupElement = z.infer<typeof groupElementSchema>;
 export type CodeElement = z.infer<typeof codeElementSchema>;
+export type MathElement = z.infer<typeof mathElementSchema>;
 export type AnimationElement = z.infer<typeof elementSchema>;
 export type ElementType = AnimationElement['type'];
 
 /**
- * The ten element type names, as a runtime value.
+ * The eleven element type names, as a runtime value.
  *
  * `ElementType` is a compile-time union; anything that has to *enumerate* the types —
  * an editor's insert menu, a validator, a JSON Schema consumer — needs them at runtime
@@ -213,6 +242,7 @@ export const elementTypeSchema = z.enum([
   'polygon',
   'group',
   'code',
+  'math',
 ]);
 
 export const ELEMENT_TYPES = elementTypeSchema.options;

@@ -2,7 +2,7 @@
 
 **상태: 확정 (2026-08-08).** 기존 legacy v3/v4를 대체하는 새 체계다. 근거는 [`RESEARCH.md`](./RESEARCH.md), 구조 결정은 [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
-설계 태도: **이유 있는 것만 바꾼다.** legacy v4는 383개 실문서로 검증된 포맷이므로 잘 작동하는 부분(요소 10종, `appearances`/`tracks` 타임라인 모델, 이펙트 3종, ms 시간 단위)은 그대로 계승한다. 변경 사항은 아래 §2에 기록한다.
+설계 태도: **이유 있는 것만 바꾼다.** legacy v4는 383개 실문서로 검증된 포맷이므로 잘 작동하는 부분(요소 타입, `appearances`/`tracks` 타임라인 모델, 이펙트 3종, ms 시간 단위)은 그대로 계승한다. 변경 사항은 아래 §2에 기록한다.
 
 ---
 
@@ -297,9 +297,37 @@ wash는 scrim의 역마스크다. 덮개가 검고 대상이 흰 마스크를 �
 
 비용은 과거 시점 재평가다. 전체 스냅샷을 `samples`번 계산하면 요소 40개 문서에서 프레임당 480회가 되므로, 요소와 그 조상 체인만 평가하는 `computeElementState` · `elementRootCenterAt`를 쓴다. `computeSnapshot`도 같은 요소 단위 평가를 호출하므로 둘이 어긋날 수 없다.
 
+### 2.14 math 요소
+
+`math`는 TeX 식을 담는다. 지금까지는 `text`에 유니코드로 우겨넣거나(분수·시그마·아래첨자를 못 쓴다) 수식 이미지를 붙였는데(테마를 못 따르고, 확대하면 깨지고, 식의 한 항을 `pulse`로 지목할 수 없다) 둘 다 잃는 것이 있었다.
+
+```jsonc
+{
+  "type": "math", "id": "recur", "x": 120, "y": 80,
+  "tex": "T(n) = 2T(n/2) + O(n)",
+  "display": "block", "fontSize": 18, "color": "#0f172a",
+  "textAnchor": "start",
+  "alt": "T of n equals two T of n over two plus O of n"
+}
+```
+
+**조판기는 번들에 들어가지 않는다.** KaTeX는 이 코어 전체보다 몇 배 크고, 검증기(zod)조차 렌더 어댑터에서 빼낸 패키지가 조판기를 안고 갈 수는 없다. 대신 host가 주입한다.
+
+```ts
+buildScene(doc, t, { mathRenderer: { name: 'katex', render: (tex, opts) => SceneNode } });
+```
+
+`highlighter`(코드 하이라이팅)와 정확히 같은 패턴이며, 반환하는 서브트리는 **요소의 자기 좌표계**(원점이 앵커)에 있으므로 조판기는 식이 캔버스 어디에 놓이는지 알 필요가 없다.
+
+훅이 없거나 조판에 실패하면 `tex` 원문을 monospace로 그리고 `unresolved-math` diagnostic을 남긴다. 미해결 에셋을 자리표시자로 그리는 처리와 같은 태도다 — 조용히 사라지면 저작자는 요소가 어디 갔는지 알 수 없다. 진단 메시지는 "조판기가 없다"와 "조판기가 이 식을 처리하지 못했다"를 구분한다. 앞은 host 설정 문제고 뒤는 문서 문제다.
+
+`tex`는 조판 후에도 문서에 남는다. 재편집할 수 있어야 하고, `alt`와 함께 읽어줄 수 있어야 한다. `alt`는 `aria-label`로 나간다.
+
+레이아웃 컴파일러(§2.8)의 `math` 박스는 원문 기준 **추정치**다. 조판된 실제 크기는 조판기만 아는데 컴파일러에는 조판기가 없다.
+
 ## 3. 계승하는 부분 (변경 없음)
 
-- **요소 10종**: `rect · circle · line · arrow · text · image · path · polygon · group · code`
+- **요소**: `rect · circle · line · arrow · text · image · path · polygon · group · code` (v1에서 `math` 추가 — §2.14)
 - **`appearances[]`**: `{ start, end, entryMode?, entryDuration, exitMode?, exitDuration }` entry/exit 8종 `instant · fade · slide-{left,right,up,down} · zoom · pop`
 - **`tracks[]`**: `{ property, keyframes: [{ time, value, ease? }] }`, ease 4종
 - **이펙트**: `highlight · pulse · flow` (v1에서 `spotlight` §2.12, `trail` §2.13 추가)

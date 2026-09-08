@@ -12,6 +12,7 @@ import type { ElementTree } from '../runtime/tree';
 import type { AssetResolver } from '../assets/resolver';
 import type { TextMeasurer } from '../text/width';
 import type { CodeHighlighter } from './highlight';
+import type { MathRenderer } from './math';
 import type { SceneDiagnostic } from './nodes';
 
 /** Options a host passes when building a scene. */
@@ -24,6 +25,13 @@ export interface SceneOptions {
   readonly assetCache?: Map<string, string | null>;
   /** Overrides the built-in JavaScript tokenizer for `code` elements. */
   readonly highlighter?: CodeHighlighter;
+  /**
+   * Typesets `math` elements. Without one their TeX source is drawn instead.
+   *
+   * Injected rather than bundled: a typesetter is several times the size of this
+   * whole core, and a document that has been baked ahead of time needs none at all.
+   */
+  readonly mathRenderer?: MathRenderer;
   /** Real font metrics, when the host can measure. */
   readonly measurer?: TextMeasurer;
   /** Overrides the default proportional font stack. */
