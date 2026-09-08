@@ -2021,6 +2021,10 @@
                 "type": "string",
                 "default": ""
               },
+              "notes": {
+                "type": "string",
+                "default": ""
+              },
               "references": {
                 "$ref": "#/definitions/ClothoDocument/properties/elements/items/anyOf/4/properties/references"
               }

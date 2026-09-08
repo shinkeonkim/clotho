@@ -15,6 +15,7 @@ import { serializeSceneBody } from '../src/svg/serialize';
 import { patchScene } from '../src/dom/patch';
 import { mountPlayer, mountStage } from '../src/dom/mount';
 import { mountScrollPlayer, rangeProgress } from '../src/dom/scroll';
+import { mountPresenter } from '../src/dom/presenter';
 import { createManualScheduler } from '../src/core/player/scheduler';
 import { appendAnnotationText, bindAnnotations } from '../src/dom/annotations';
 
@@ -733,5 +734,133 @@ describe('rangeProgress', () => {
     const early = rangeProgress(rect(900, 200), 1000);
     const late = rangeProgress(rect(-100, 200), 1000);
     expect(late).toBeGreaterThan(early);
+  });
+});
+
+/**
+ * Presenter mode.
+ *
+ * The behaviour that matters is that advancing *plays* the segment instead of
+ * jumping to its end — the animation is part of the explanation, and a talk that
+ * skips it shows the room a result with no account of how it happened.
+ */
+describe('mountPresenter', () => {
+  const talk = animationDocumentSchema.parse({
+    clothoVersion: 1,
+    id: 'talk',
+    title: 'Talk',
+    duration: 9000,
+    canvas: { width: 200, height: 100 },
+    chapters: [
+      { id: 'a', time: 0, label: 'One', notes: 'ask about complexity' },
+      { id: 'b', time: 3000, label: 'Two' },
+      { id: 'c', time: 6000, label: 'Three' },
+    ],
+    elements: [
+      {
+        type: 'rect',
+        id: 'r',
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 10,
+        appearances: [{ start: 0, end: 9000, entryDuration: 0, exitDuration: 0 }],
+      },
+    ],
+  });
+
+  function presenter() {
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    const scheduler = createManualScheduler();
+    const handle = mountPresenter(container as unknown as HTMLElement, talk, {
+      player: { scheduler },
+    });
+    return { handle, scheduler, container };
+  }
+
+  it('starts on the first segment, paused at its beginning', () => {
+    const { handle } = presenter();
+    expect(handle.segments).toHaveLength(3);
+    expect(handle.player.getState().time).toBe(0);
+    handle.destroy();
+  });
+
+  it('plays the segment rather than jumping to its end', () => {
+    const { handle, scheduler } = presenter();
+    handle.go(1);
+    expect(handle.player.getState().time).toBe(3000);
+    expect(handle.player.getState().playing).toBe(true);
+
+    // Part-way through, still inside the segment and still running. Advanced in
+    // real frame steps because the player clamps a large delta — a backgrounded tab
+    // must not teleport the playhead.
+    for (let i = 0; i < 20; i += 1) scheduler.advance(16);
+    expect(handle.player.getState().time).toBeGreaterThan(3000);
+    expect(handle.player.getState().time).toBeLessThan(6000);
+    expect(handle.player.getState().playing).toBe(true);
+    handle.destroy();
+  });
+
+  it('stops at the end of the segment instead of running into the next', () => {
+    const { handle, scheduler } = presenter();
+    handle.go(1);
+    for (let i = 0; i < 400; i += 1) scheduler.advance(16);
+    expect(handle.player.getState().playing).toBe(false);
+    expect(handle.player.getState().time).toBe(6000);
+    handle.destroy();
+  });
+
+  it('moves back a segment', () => {
+    const { handle } = presenter();
+    handle.go(2);
+    handle.previous();
+    expect(handle.player.getState().time).toBe(3000);
+    handle.destroy();
+  });
+
+  it('clamps at both ends rather than falling off', () => {
+    const { handle } = presenter();
+    handle.previous();
+    expect(handle.player.getState().time).toBe(0);
+    handle.go(99);
+    expect(handle.player.getState().time).toBe(6000);
+    handle.destroy();
+  });
+
+  it('advances on the arrow key', () => {
+    const { handle, container } = presenter();
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(handle.player.getState().time).toBe(3000);
+    expect(container.textContent).toContain('2 / 3');
+    handle.destroy();
+  });
+
+  /** Notes are for the speaker; they must not reach an audience by accident. */
+  it('hides the speaker notes until asked', () => {
+    const { handle, container } = presenter();
+    const notes = container.querySelector('.cloth-presenter-notes') as unknown as HTMLElement;
+    expect(notes.hidden).toBe(true);
+    handle.toggleNotes();
+    expect(notes.hidden).toBe(false);
+    expect(notes.textContent).toContain('ask about complexity');
+    expect(notes.textContent).toContain('다음 · Two');
+    handle.destroy();
+  });
+
+  it('blacks out and back', () => {
+    const { handle, container } = presenter();
+    const sheet = container.querySelector('.cloth-presenter-blackout') as unknown as HTMLElement;
+    expect(sheet.hidden).toBe(true);
+    handle.toggleBlackout();
+    expect(sheet.hidden).toBe(false);
+    handle.destroy();
+  });
+
+  it('stops listening to the keyboard once destroyed', () => {
+    const { handle } = presenter();
+    handle.destroy();
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    expect(handle.player.getState().time).toBe(0);
   });
 });

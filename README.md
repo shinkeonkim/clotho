@@ -261,6 +261,17 @@ shadow root에 렌더하고 **스타일시트를 함께 들고 간다** — 남�
 
 `el.player`로 `seek`·`play`·`setSpeed`를 부를 수 있고, `clotho-ready` · `clotho-chapterchange` · `clotho-ended` · `clotho-error` 이벤트가 올라온다.
 
+### 발표자 모드
+
+```ts
+import { mountPresenter } from '@kokoa/clotho/dom';
+mountPresenter(document.body, doc);
+```
+
+`→`/`Space` 다음 구간, `←` 이전, `P` 재생/정지, `N` 발표자 노트, `B` 블랙아웃, `F` 전체화면.
+
+챕터를 **구간**으로 다루므로 다음을 누르면 그 구간을 **재생하고 멈춘다.** 챕터 시각으로 점프하지 않는다 — 애니메이션이 설명의 일부라서 건너뛰면 청중은 과정 없는 결과만 본다. 같은 문서가 블로그 글이자 강의 자료가 되므로 내용이 갈라지지 않는다.
+
 ### 스크롤리텔링
 
 ```ts

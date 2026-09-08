@@ -8,5 +8,6 @@ export * from './patch';
 export * from './mount';
 export * from './scroll';
 export * from './urlstate';
+export * from './presenter';
 export * from './strings';
 export * from './annotations';
