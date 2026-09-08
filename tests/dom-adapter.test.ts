@@ -525,3 +525,49 @@ describe('mountStage and reduced motion', () => {
     handle.destroy();
   });
 });
+
+/**
+ * The patcher reuses `<defs>` children between frames by key. A key is stable but a
+ * kind is not guaranteed to be, and reusing a `<marker>` element as a `<mask>` would
+ * silently render nothing at all — the scrim would cover the whole stage.
+ */
+describe('patching defs of different kinds', () => {
+  const spotlit = animationDocumentSchema.parse({
+    clothoVersion: 1,
+    id: 'sp-dom',
+    duration: 1000,
+    canvas: { width: 200, height: 100 },
+    elements: [
+      { type: 'rect', id: 'a', x: 10, y: 10, width: 40, height: 40, appearances: ALWAYS },
+      {
+        type: 'arrow',
+        id: 'ar',
+        x1: 0,
+        y1: 90,
+        x2: 190,
+        y2: 90,
+        headEnd: 'arrow',
+        appearances: ALWAYS,
+      },
+    ],
+    effects: [
+      { type: 'spotlight', id: 'sp', elementIds: ['a'], time: 200, duration: 400, fadeIn: 0 },
+    ],
+  });
+
+  it('creates, keeps and removes a mask as the effect comes and goes', () => {
+    const svg = svgElement();
+    const tags = (): string[] =>
+      Array.from(svg.querySelector('defs')?.children ?? []).map((child) => child.tagName);
+
+    patchScene(svg, buildScene(spotlit, 0));
+    expect(tags()).toEqual(['marker']);
+
+    patchScene(svg, buildScene(spotlit, 300));
+    expect(tags().sort()).toEqual(['marker', 'mask']);
+    expect(svg.querySelector('mask')?.children.length).toBeGreaterThan(1);
+
+    patchScene(svg, buildScene(spotlit, 900));
+    expect(tags()).toEqual(['marker']);
+  });
+});

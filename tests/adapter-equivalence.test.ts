@@ -323,3 +323,56 @@ describe('camera viewBox across adapters', () => {
     expect(framed.centerY).toBeCloseTo(250, 6);
   });
 });
+
+/**
+ * `<defs>` held only `<marker>` until the spotlight needed a `<mask>`, and all four
+ * adapters had the tag name hardcoded. They now render `def.kind`, so this checks
+ * the four agree on a scene containing both kinds at once.
+ */
+describe('mask defs across adapters', () => {
+  const maskedDoc = animationDocumentSchema.parse({
+    clothoVersion: 1,
+    id: 'masked',
+    duration: 1000,
+    canvas: { width: 400, height: 200, background: '#ffffff' },
+    elements: [
+      { type: 'circle', id: 'keep', cx: 80, cy: 100, r: 30, appearances: ALWAYS },
+      { type: 'circle', id: 'other', cx: 320, cy: 100, r: 30, appearances: ALWAYS },
+      {
+        type: 'arrow',
+        id: 'link',
+        fromId: 'keep',
+        toId: 'other',
+        headEnd: 'arrow',
+        appearances: ALWAYS,
+      },
+    ],
+    effects: [
+      { type: 'spotlight', id: 'sp', elementIds: ['keep'], time: 0, duration: 1000, fadeIn: 0 },
+    ],
+  });
+
+  const scene = buildScene(maskedDoc, 500);
+
+  it('produces a marker and a mask in the same defs block', () => {
+    expect(scene.defs.map((def) => def.kind).sort()).toEqual(['marker', 'mask']);
+  });
+
+  it('serializes identically through svg, react and vue', async () => {
+    const expected = comparableTree(normalize(serializeScene(scene)));
+    expect(comparableTree(normalize(renderToStaticMarkup(SceneSvg({ scene }))))).toEqual(expected);
+    expect(comparableTree(normalize(await renderVue(scene)))).toEqual(expected);
+  });
+
+  it('emits a real <mask> element rather than a marker', async () => {
+    const vueMarkup = await renderVue(scene);
+    for (const markup of [
+      serializeScene(scene),
+      renderToStaticMarkup(SceneSvg({ scene })),
+      vueMarkup,
+    ]) {
+      expect(markup).toContain('<mask');
+      expect(markup).toContain('mask="url(#cloth-spot-masked)"');
+    }
+  });
+});

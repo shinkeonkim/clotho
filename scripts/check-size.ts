@@ -30,40 +30,44 @@ const DIST = join(REPO_ROOT, 'dist');
  * all ten element types, connector endpoint resolution and group unioning are now on
  * the render path rather than being authoring-time helpers. That is a deliberate
  * trade: a camera that cannot follow a moving element is not worth having.
+ *
+ * The spotlight (§2.12) raised them by about 3KB more: the scrim, the mask builder
+ * and the silhouette recoloring. Two features in a row moving every budget is worth
+ * noticing — if a third does the same, the answer is a size pass, not another bump.
  */
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 45_000,
+    gzipBudget: 47_000,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
     file: 'svg/index.js',
-    gzipBudget: 22_500,
+    gzipBudget: 25_500,
     note: 'scene builder + serializer; no zod, no framework',
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 29_500,
+    gzipBudget: 32_500,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
-  react: { file: 'react/index.js', gzipBudget: 30_500, note: 'react is external; no zod' },
-  vue: { file: 'vue/index.js', gzipBudget: 27_500, note: 'vue is external; no zod' },
-  node: { file: 'node/index.js', gzipBudget: 8_000, note: 'loader + schema (needs zod)' },
-  gif: { file: 'gif/index.js', gzipBudget: 24_000, note: 'scene renderer + GIF encoder' },
+  react: { file: 'react/index.js', gzipBudget: 33_500, note: 'react is external; no zod' },
+  vue: { file: 'vue/index.js', gzipBudget: 30_800, note: 'vue is external; no zod' },
+  node: { file: 'node/index.js', gzipBudget: 8_500, note: 'loader + schema (needs zod)' },
+  gif: { file: 'gif/index.js', gzipBudget: 28_000, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 42_500,
+    gzipBudget: 44_500,
     note: 'validate + migrate + lint + GIF (needs zod)',
   },
   plugins: {
     file: 'plugins/index.js',
-    gzipBudget: 18_000,
+    gzipBudget: 19_000,
     note: 'experimental authoring pipeline; isolated from the default core entry',
   },
   testing: {
     file: 'testing/index.js',
-    gzipBudget: 24_500,
+    gzipBudget: 27_500,
     note: 'scene assertions, SVG snapshots and pixel diff; no framework',
   },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
