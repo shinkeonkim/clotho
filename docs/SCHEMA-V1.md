@@ -229,12 +229,40 @@ player에서 연결된 문구를 가리키거나 keyboard focus하면 대상 요
 
 `camera`가 바꾸는 것은 `Scene.viewBox` 문자열 하나뿐이다. 그래서 react·vue·dom·svg 네 어댑터와 GIF 렌더러는 카메라 지원을 위해 한 줄도 바뀌지 않았다.
 
+### 2.12 Spotlight 효과
+
+`spotlight`는 대상을 바꾸지 않고 **나머지를 어둡게 해서** 시선을 모은다. `highlight`가 대상의 fill을 갈아끼우느라 요소의 원래 색을 잃는 반면, spotlight는 대상을 그대로 두고 무대에서 대비를 걷어낸다. 색 자체가 정보인 문서에서 강조와 정보가 충돌하지 않게 된다.
+
+```jsonc
+"effects": [{
+  "type": "spotlight",
+  "id": "sp-1",
+  "elementIds": ["n-a", "e-ab"],
+  "time": 2000,
+  "duration": 1200,
+  "dim": 0.72,
+  "shape": "bbox",
+  "padding": 12,
+  "fadeIn": 200
+}]
+```
+
+- **`elementIds`가 복수**인 유일한 효과다. 나머지 셋은 요소 하나를 꾸미지만 spotlight는 그 바깥을 꾸민다. 이 때문에 `elementId` 단수를 가정하던 코드는 `effectTargets(effect)`를 쓴다.
+- `shape`: `bbox`(대상들의 합집합 사각형, 기본) · `circle`(그 외접원) · `elements`(대상의 실루엣 그대로). `elements`에서는 `padding`이 검은 stroke 두께로 변환되어 실루엣을 정확히 그만큼 부풀린다.
+- `fadeIn`은 양 끝에 모두 적용된다. `pulse`의 `sin(πt)`와 같은 이유로 — 효과가 끝난 뒤 무대를 되돌리는 코드가 없으므로 스스로 잔여를 남기지 않아야 한다. 두 램프가 겹칠 만큼 `duration`이 짧으면 각각 절반으로 제한된다.
+- 동시에 활성인 spotlight가 여럿이면 **하나의 scrim을 공유**한다. 각자 scrim을 깔면 겹치는 곳이 두 번 어두워지고, 더 나쁘게는 한쪽의 scrim이 다른 쪽의 대상을 덮는다. 구멍은 합집합, 불투명도는 최댓값이다.
+- 대상이 그 시각에 하나도 무대에 없으면 그 프레임을 건너뛰고 `spotlight-target` diagnostic을 남긴다. 전부 어둡게 하는 것은 아무것도 하지 않는 것보다 말이 안 된다.
+
+렌더는 마스크를 쓴다. scrim 사각형 하나에 `<mask>`를 물려 대상 영역을 검게 뚫으므로, 무대에 요소가 몇 개든 노드는 둘이다. `SceneDef`에 `kind: 'mask'`가 추가되었고 어댑터 4종은 `def.kind`를 태그로 렌더한다. resvg(GIF 래스터라이저)가 중첩 transform 안에서도 마스크를 브라우저와 같게 처리하는 것을 픽셀 테스트로 고정했다.
+
+scrim 색은 `--cloth-scrim` 토큰이며 라이트·다크 모두 near-black이다. 어둡게 한다는 것은 두 테마 모두에서 어둡게 하는 것이고, 다크 테마에 밝은 scrim을 깔면 바닥이 올라가 버린다.
+
 ## 3. 계승하는 부분 (변경 없음)
 
 - **요소 10종**: `rect · circle · line · arrow · text · image · path · polygon · group · code`
 - **`appearances[]`**: `{ start, end, entryMode?, entryDuration, exitMode?, exitDuration }` entry/exit 8종 `instant · fade · slide-{left,right,up,down} · zoom · pop`
 - **`tracks[]`**: `{ property, keyframes: [{ time, value, ease? }] }`, ease 4종
-- **이펙트 3종**: `highlight · pulse · flow`
+- **이펙트**: `highlight · pulse · flow` (v1에서 `spotlight` 추가 — §2.12)
 - **`chapters[]`**, **`settings`**, ms 시간 단위, 앵커 연결(`fromId`/`toId`/`fromAnchor`/`toAnchor`)
 - 시각 상태는 오직 `(문서, t)`의 순수 함수
 

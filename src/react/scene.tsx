@@ -42,7 +42,7 @@ export function renderSceneNode(node: SceneNode): ReactElement {
 
 function renderDef(def: SceneDef): ReactElement {
   return createElement(
-    'marker',
+    def.kind,
     { ...toReactProps(def.attrs), key: def.key },
     def.children.map(renderSceneNode),
   );

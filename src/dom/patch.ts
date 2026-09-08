@@ -170,7 +170,13 @@ function patchDefs(svg: Element, defs: readonly SceneDef[]): void {
   const ordered: Element[] = [];
   for (const def of defs) {
     let element = existing.get(def.key);
-    if (!element) element = createElement('marker');
+    // A def can change kind between frames only by changing identity, but reusing a
+    // <marker> as a <mask> would silently render nothing, so the tag is checked.
+    if (element && element.tagName !== def.kind) {
+      element.remove();
+      element = undefined;
+    }
+    if (!element) element = createElement(def.kind);
     existing.delete(def.key);
     setAttrs(element, def.attrs);
     element.setAttribute(KEY_ATTR, def.key);

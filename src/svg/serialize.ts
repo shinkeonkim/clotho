@@ -93,7 +93,7 @@ function serializeDef(def: SceneDef, depth: number, options: SerializeOptions): 
   const indent = pretty ? '  '.repeat(depth) : '';
   const nl = pretty ? '\n' : '';
   const inner = def.children.map((child) => serializeNode(child, depth + 1, options)).join('');
-  return `${indent}<marker${serializeAttrs(def.attrs)}>${nl}${inner}${indent}</marker>${nl}`;
+  return `${indent}<${def.kind}${serializeAttrs(def.attrs)}>${nl}${inner}${indent}</${def.kind}>${nl}`;
 }
 
 /** Serialize the scene body — defs and nodes, without the enclosing `<svg>`. */

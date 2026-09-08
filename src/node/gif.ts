@@ -38,6 +38,7 @@ const PALETTES = {
     accent: '#6366f1',
     subtle: '#f4f4f5',
     arrow: '#94a3b8',
+    scrim: '#0b1120',
   },
   dark: {
     surface: '#18181b',
@@ -49,6 +50,7 @@ const PALETTES = {
     accent: '#818cf8',
     subtle: '#27272a',
     arrow: '#a5b4cc',
+    scrim: '#000000',
   },
 } as const;
 
@@ -71,6 +73,7 @@ function resolveCssColors(svg: string, theme: 'light' | 'dark'): string {
     '--cloth-border': p.border,
     '--cloth-accent': p.accent,
     '--cloth-arrow': p.arrow,
+    '--cloth-scrim': p.scrim,
   };
   return svg.replace(
     /var\((--[\w-]+)(?:,\s*([^()]+))?\)/g,

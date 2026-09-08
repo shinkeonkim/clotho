@@ -17,6 +17,7 @@
 
 import { parseDocument } from '../schema';
 import type { AnimationDocument } from '../schema/document';
+import { effectTargets } from '../schema/effects';
 import { buildElementTree } from '../runtime/tree';
 import { annotationTokens } from '../annotations';
 import { bindablePropertiesFor, resolveJsonPointer, formatBindingValue } from '../data';
@@ -384,15 +385,21 @@ function checkReferences(doc: AnimationDocument, findings: Finding[]): void {
   });
 
   doc.effects.forEach((effect, index) => {
-    if (!elementIds.has(effect.elementId)) {
+    const field = effect.type === 'spotlight' ? 'elementIds' : 'elementId';
+    effectTargets(effect).forEach((target, targetIndex) => {
+      if (elementIds.has(target)) return;
+      const path =
+        effect.type === 'spotlight'
+          ? `effects.${index}.elementIds.${targetIndex}`
+          : `effects.${index}.${field}`;
       findings.push(
         error(
           'unknown-reference',
-          `effects.${index}.elementId`,
-          `effect "${effect.id}" targets element "${effect.elementId}", which does not exist`,
+          path,
+          `effect "${effect.id}" targets element "${target}", which does not exist`,
         ),
       );
-    }
+    });
   });
 
   doc.layouts.forEach((layout, layoutIndex) => {

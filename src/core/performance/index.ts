@@ -1,5 +1,6 @@
 import type { AnimationDocument } from '../schema/document';
 import type { AnimationElement } from '../schema/elements';
+import { effectTargets } from '../schema/effects';
 import { computeSnapshot } from '../runtime/snapshot';
 import { buildScene } from '../scene/build';
 import type { SceneOptions } from '../scene/context';
@@ -44,7 +45,7 @@ export function compileSceneDependencyPlan(doc: AnimationDocument): SceneDepende
   for (const effect of doc.effects) {
     events.add(effect.time);
     events.add(effect.time + effect.duration);
-    addDependency(effect.elementId, effect.elementId);
+    for (const target of effectTargets(effect)) addDependency(target, target);
   }
   const sortedEvents = [...events].sort((a, b) => a - b);
   const frozenDependencies = new Map([...dependencies].map(([id, values]) => [id, [...values]]));
@@ -75,7 +76,7 @@ export function compileSceneDependencyPlan(doc: AnimationDocument): SceneDepende
           (effect.time + effect.duration > low && effect.time + effect.duration <= high) ||
           (low >= effect.time && low < effect.time + effect.duration)
         )
-          changed.add(effect.elementId);
+          for (const target of effectTargets(effect)) changed.add(target);
       const queue = [...changed];
       for (const id of queue)
         for (const dependent of frozenDependencies.get(id) ?? [])
@@ -138,7 +139,7 @@ export function cullDocumentToViewport(
   return {
     ...doc,
     elements: doc.elements.filter(({ id }) => visible.has(id)),
-    effects: doc.effects.filter(({ elementId }) => visible.has(elementId)),
+    effects: doc.effects.filter((effect) => effectTargets(effect).some((id) => visible.has(id))),
   };
 }
 

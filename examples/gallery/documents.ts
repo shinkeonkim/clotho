@@ -723,6 +723,94 @@ const EFFECTS: Doc = doc({
 });
 
 // ---------------------------------------------------------------------------
+// 6b. Spotlight
+
+/**
+ * The one effect that decorates the stage rather than an element.
+ *
+ * Six identical nodes, so nothing about a node itself can be what draws the eye —
+ * only the scrim can. The three shapes run in turn on the same layout, which is
+ * also the clearest way to see what `padding` does in each.
+ */
+const SPOTLIGHT: Doc = doc({
+  id: 'spotlight',
+  title: 'Spotlight',
+  description: 'bbox, circle and element-shaped focus masks',
+  duration: 6000,
+  canvas: { width: 720, height: 240, background: 'transparent' },
+  elements: [
+    ...Array.from({ length: 6 }, (_, i) => ({
+      type: 'circle' as const,
+      id: `sp-n${i}`,
+      cx: 90 + i * 108,
+      cy: 120,
+      r: 34,
+      fill: '#e0e7ff',
+      stroke: ACCENT,
+      strokeWidth: 2,
+      label: String.fromCharCode(65 + i),
+      appearances: whole(6000),
+    })),
+    ...Array.from({ length: 5 }, (_, i) => ({
+      type: 'line' as const,
+      id: `sp-e${i}`,
+      fromId: `sp-n${i}`,
+      toId: `sp-n${i + 1}`,
+      stroke: ACCENT,
+      strokeWidth: 2,
+      appearances: whole(6000),
+    })),
+    {
+      type: 'text',
+      id: 'sp-caption',
+      x: 360,
+      y: 214,
+      content: 'shape: bbox → circle → elements',
+      fontSize: 15,
+      textAnchor: 'middle',
+      appearances: whole(6000),
+    },
+  ],
+  chapters: [
+    { id: 'sp-c1', time: 200, label: 'bbox' },
+    { id: 'sp-c2', time: 2200, label: 'circle' },
+    { id: 'sp-c3', time: 4200, label: 'elements' },
+  ],
+  effects: [
+    {
+      type: 'spotlight',
+      id: 'sp-bbox',
+      elementIds: ['sp-n1', 'sp-n2'],
+      time: 200,
+      duration: 1700,
+      shape: 'bbox',
+      padding: 18,
+      dim: 0.72,
+    },
+    {
+      type: 'spotlight',
+      id: 'sp-circle',
+      elementIds: ['sp-n3'],
+      time: 2200,
+      duration: 1700,
+      shape: 'circle',
+      padding: 10,
+      dim: 0.72,
+    },
+    {
+      type: 'spotlight',
+      id: 'sp-elements',
+      elementIds: ['sp-n0', 'sp-n5'],
+      time: 4200,
+      duration: 1700,
+      shape: 'elements',
+      padding: 8,
+      dim: 0.72,
+    },
+  ],
+});
+
+// ---------------------------------------------------------------------------
 // 7. Anchors and arrowheads
 
 const ANCHORS = [
@@ -1253,6 +1341,12 @@ export const GALLERY: readonly GalleryEntry[] = [
     title: 'Effects',
     note: 'Effects decorate; they never touch the element timeline. Firing one twice is two effect entries.',
     doc: EFFECTS,
+  },
+  {
+    slug: 'spotlight',
+    title: 'Spotlight',
+    note: 'The one effect that dims the stage instead of changing an element. Six identical nodes, so only the scrim can direct the eye.',
+    doc: SPOTLIGHT,
   },
   {
     slug: 'connectors',

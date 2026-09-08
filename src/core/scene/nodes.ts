@@ -70,15 +70,29 @@ export type SceneNode = SceneGroup | SceneShape | SceneText;
  * Legacy injected these through `dangerouslySetInnerHTML`, which no serializer or
  * DOM patcher could inspect. As nodes they travel the same path as everything else.
  */
+/**
+ * The `<defs>` element names a def can take.
+ *
+ * `marker` was the only one until the spotlight needed a `mask`. Adapters render
+ * `kind` as the tag rather than hardcoding `<marker>`, so a third kind costs
+ * nothing beyond the schema.
+ */
+export type SceneDefKind = 'marker' | 'mask';
+
 export interface SceneDef {
   readonly key: string;
-  readonly kind: 'marker';
+  readonly kind: SceneDefKind;
   readonly attrs: SceneAttrs;
   readonly children: readonly SceneNode[];
 }
 
 export type SceneDiagnosticCode =
-  'unresolved-connector' | 'unresolved-asset' | 'pending-asset' | 'tree-issue' | 'camera-focus';
+  | 'unresolved-connector'
+  | 'unresolved-asset'
+  | 'pending-asset'
+  | 'tree-issue'
+  | 'camera-focus'
+  | 'spotlight-target';
 
 /**
  * Something the scene could not render, reported rather than swallowed.

@@ -30,7 +30,9 @@ import { buildCode } from './elements/code';
 import { buildFlowParticles } from './elements/particles';
 import { compileResponsiveStage } from '../responsive';
 import { computeCamera } from '../camera';
+import { activeSpotlights } from '../runtime/effects';
 import { scaleStrokeWidths } from './stroke-scaling';
+import { buildSpotlights } from './spotlight';
 
 /** Build the scene for one instant. */
 export function buildScene(
@@ -95,6 +97,19 @@ export function buildScene(
     }
   }
 
+  // The scrim covers what is on screen, which is the camera's rectangle when there
+  // is one and the canvas otherwise. Built last so it sits above every element, and
+  // after stroke scaling so its own geometry is untouched by it.
+  const spotlights = buildSpotlights(
+    ctx,
+    activeSpotlights(doc, time),
+    nodes,
+    camera
+      ? { ...camera, approximate: false }
+      : { x: 0, y: 0, width: doc.canvas.width, height: doc.canvas.height, approximate: false },
+  );
+  nodes.push(...spotlights.nodes);
+
   const stage = resolveStageBackground(doc.canvas.background);
 
   return {
@@ -104,7 +119,7 @@ export function buildScene(
     background: stage.svgBackground,
     showMat: stage.showMat,
     title: doc.title,
-    defs: collectMarkerDefs(collectUsedHeads(ctx)),
+    defs: [...collectMarkerDefs(collectUsedHeads(ctx)), ...spotlights.defs],
     nodes,
     camera,
     chapter: currentChapter(doc, time),

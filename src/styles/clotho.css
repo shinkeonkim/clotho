@@ -64,6 +64,13 @@
     --cloth-control-size-touch: 2.75rem;
     --cloth-control-icon: 1.05rem;
 
+    /*
+     * Scrim laid over the stage by a spotlight effect. Dimming means darkening in
+     * both themes — a light scrim over a dark stage would raise the floor rather
+     * than lower it — so this stays near-black either way and only the depth moves.
+     */
+    --cloth-scrim: #0b1120;
+
     /* Enlarged viewer */
     --cloth-viewer-backdrop: rgba(0, 0, 0, 0.85);
     --cloth-viewer-pad: clamp(0.5rem, 2.5vw, 1.5rem);
@@ -88,6 +95,7 @@
       --cloth-border: #3f3f46;
       --cloth-accent: #a5b4fc;
       --cloth-stage-mat: var(--cloth-surface-subtle);
+      --cloth-scrim: #000000;
       --cloth-viewer-backdrop: rgba(0, 0, 0, 0.9);
     }
   }
@@ -103,6 +111,7 @@
     --cloth-accent: #6366f1;
     --cloth-stage-mat: var(--cloth-surface-elevated);
     --cloth-stage-mat-border: var(--cloth-border);
+    --cloth-scrim: #0b1120;
     color-scheme: light;
   }
 
@@ -115,6 +124,7 @@
     --cloth-border: #3f3f46;
     --cloth-accent: #a5b4fc;
     --cloth-stage-mat: var(--cloth-surface-subtle);
+    --cloth-scrim: #000000;
     --cloth-viewer-backdrop: rgba(0, 0, 0, 0.9);
     color-scheme: dark;
   }

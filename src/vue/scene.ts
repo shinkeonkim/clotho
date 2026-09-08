@@ -37,7 +37,7 @@ export function renderSceneNode(node: SceneNode): VNode {
 }
 
 function renderDef(def: SceneDef): VNode {
-  return h('marker', { ...def.attrs, key: def.key }, def.children.map(renderSceneNode));
+  return h(def.kind, { ...def.attrs, key: def.key }, def.children.map(renderSceneNode));
 }
 
 /** The scene as an `<svg>` vnode. */

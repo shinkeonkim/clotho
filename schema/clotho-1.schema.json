@@ -1988,6 +1988,66 @@
                   "time"
                 ],
                 "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "spotlight"
+                  },
+                  "id": {
+                    "$ref": "#/definitions/ClothoDocument/properties/id"
+                  },
+                  "elementIds": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/definitions/ClothoDocument/properties/id"
+                    },
+                    "minItems": 1
+                  },
+                  "time": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 1200
+                  },
+                  "dim": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.7
+                  },
+                  "shape": {
+                    "type": "string",
+                    "enum": [
+                      "bbox",
+                      "circle",
+                      "elements"
+                    ],
+                    "default": "bbox"
+                  },
+                  "padding": {
+                    "type": "number",
+                    "minimum": 0,
+                    "default": 12
+                  },
+                  "fadeIn": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 200
+                  }
+                },
+                "required": [
+                  "type",
+                  "id",
+                  "elementIds",
+                  "time"
+                ],
+                "additionalProperties": false
               }
             ]
           },
