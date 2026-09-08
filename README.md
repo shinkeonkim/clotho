@@ -225,6 +225,19 @@ hydrateClothoEmbeds(); // 뷰포트에 들어오는 것부터 플레이어로 �
 
 프레임워크 컴포넌트가 아니라 **HTML**을 내보내므로 Astro·Next(MDX)·Docusaurus·Vitepress·순수 마크다운이 모두 같은 경로를 탄다.
 
+### 딥링크
+
+```ts
+import { bindUrlState, shareUrl } from '@kokoa/clotho/dom';
+
+const unbind = bindUrlState(handle.player, doc);
+shareUrl(handle.player, doc); // https://…/knapsack?c=swap
+```
+
+`/animations/knapsack?c=swap&speed=1.5` 처럼 **특정 순간을 가리키는 링크**를 만든다. 시각(`t`)보다 **챕터(`c`)를 권장**한다 — 문서를 고치면 `t=3200`은 조금씩 어긋나지만 챕터 id는 저작자가 이름 붙인 그 순간을 계속 가리킨다.
+
+URL은 **일시정지·seek·속도 변경 같은 조작에만** 기록되고 재생 중에는 건드리지 않는다. `replaceState`를 쓰므로 뒤로 가기가 애니메이션 히스토리로 채워지지 않는다.
+
 ### 웹 컴포넌트 (번들러 없이)
 
 ```html
