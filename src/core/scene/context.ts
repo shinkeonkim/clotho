@@ -38,6 +38,15 @@ export interface SceneOptions {
   readonly rawColors?: boolean;
   /** Container width used to select an authored responsive variant. */
   readonly viewportWidth?: number;
+  /**
+   * The reader has asked for reduced motion.
+   *
+   * Only the camera reads this today: a moving viewport is the one thing in a
+   * clotho document that moves the reader's whole field of view, so it degrades to
+   * cuts rather than merely slowing down. Adapters decide the value, because only
+   * they can observe the media query.
+   */
+  readonly reducedMotion?: boolean;
 }
 
 /** Internal build context, assembled once per frame. */

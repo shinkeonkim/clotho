@@ -17,37 +17,43 @@ const REPO_ROOT = resolve(import.meta.dir, '..');
 const DIST = join(REPO_ROOT, 'dist');
 
 /**
- * Budgets in gzipped bytes, set from measured sizes with roughly 20% headroom.
+ * Budgets in gzipped bytes, set from measured sizes with a few percent of headroom.
  *
  * The shared bulk is the scene builder — geometry, theme, text metrics, asset
  * resolution, runtime, and the element converters — which every rendering path needs
  * and which no adapter can avoid. What each adapter *can* avoid is zod, and the
  * budgets are tight enough that a document-parsing import creeping into a rendering
  * path shows up here as a ~9KB jump.
+ *
+ * The camera (docs/SCHEMA-V1.md §2.11) raised every rendering budget by about 3KB.
+ * `focus` resolves against live element bounds every frame, so bounds geometry for
+ * all ten element types, connector endpoint resolution and group unioning are now on
+ * the render path rather than being authoring-time helpers. That is a deliberate
+ * trade: a camera that cannot follow a moving element is not worth having.
  */
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 40_500,
+    gzipBudget: 45_000,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
     file: 'svg/index.js',
-    gzipBudget: 20_000,
+    gzipBudget: 22_500,
     note: 'scene builder + serializer; no zod, no framework',
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 25_500,
+    gzipBudget: 29_500,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
-  react: { file: 'react/index.js', gzipBudget: 27_000, note: 'react is external; no zod' },
-  vue: { file: 'vue/index.js', gzipBudget: 24_000, note: 'vue is external; no zod' },
+  react: { file: 'react/index.js', gzipBudget: 30_500, note: 'react is external; no zod' },
+  vue: { file: 'vue/index.js', gzipBudget: 27_500, note: 'vue is external; no zod' },
   node: { file: 'node/index.js', gzipBudget: 8_000, note: 'loader + schema (needs zod)' },
   gif: { file: 'gif/index.js', gzipBudget: 24_000, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 38_500,
+    gzipBudget: 42_500,
     note: 'validate + migrate + lint + GIF (needs zod)',
   },
   plugins: {
@@ -57,7 +63,7 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   testing: {
     file: 'testing/index.js',
-    gzipBudget: 21_000,
+    gzipBudget: 24_500,
     note: 'scene assertions, SVG snapshots and pixel diff; no framework',
   },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },

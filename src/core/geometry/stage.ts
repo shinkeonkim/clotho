@@ -35,3 +35,29 @@ export function aspectRatioStyle(size: Size): string {
 export function viewBox(size: Size): string {
   return `0 0 ${size.width} ${size.height}`;
 }
+
+export interface ViewRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * `viewBox` for an arbitrary rectangle, as the camera produces.
+ *
+ * Numbers are trimmed to six decimals for the same reason scene attributes are:
+ * without it React and the DOM adapter would emit the raw float where the string
+ * serializer emits a rounded one, and the adapters would stop agreeing byte for
+ * byte.
+ */
+export function viewBoxFromRect(rect: ViewRect): string {
+  return [rect.x, rect.y, rect.width, rect.height].map(formatViewBoxNumber).join(' ');
+}
+
+function formatViewBoxNumber(n: number): string {
+  if (!Number.isFinite(n)) return '0';
+  if (Number.isInteger(n)) return String(n === 0 ? 0 : n);
+  const rounded = Number(n.toFixed(6));
+  return String(Object.is(rounded, -0) ? 0 : rounded);
+}

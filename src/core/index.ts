@@ -28,5 +28,6 @@ export * from './interactions/session';
 export * from './data';
 export * from './story';
 export * from './responsive';
+export * from './camera';
 export * from './performance';
 export * from './lint';

@@ -11,6 +11,7 @@
 // camelCase names like `preserveAspectRatio` alone, since they contain no dash).
 
 import type { Size } from '../geometry/stage';
+import type { CameraView } from '../camera';
 import type { Chapter } from '../schema/document';
 import type { ActiveChapter } from '../runtime/chapters';
 
@@ -77,7 +78,7 @@ export interface SceneDef {
 }
 
 export type SceneDiagnosticCode =
-  'unresolved-connector' | 'unresolved-asset' | 'pending-asset' | 'tree-issue';
+  'unresolved-connector' | 'unresolved-asset' | 'pending-asset' | 'tree-issue' | 'camera-focus';
 
 /**
  * Something the scene could not render, reported rather than swallowed.
@@ -93,7 +94,11 @@ export interface SceneDiagnostic {
 
 export interface Scene {
   readonly canvas: Size;
-  /** `0 0 <width> <height>`. */
+  /**
+   * The visible rectangle. `0 0 <width> <height>` for a document without a camera,
+   * and the camera's rectangle otherwise — which is the whole of what a camera
+   * changes about a frame, and why no adapter needed a change to support one.
+   */
   readonly viewBox: string;
   /** CSS `aspect-ratio` value for the stage element. */
   readonly aspectRatio: string;
@@ -105,6 +110,8 @@ export interface Scene {
   readonly title: string;
   readonly defs: readonly SceneDef[];
   readonly nodes: readonly SceneNode[];
+  /** Resolved camera, or null when the document has none. */
+  readonly camera: CameraView | null;
   readonly chapter: ActiveChapter | null;
   readonly chapters: readonly Chapter[];
   readonly time: number;

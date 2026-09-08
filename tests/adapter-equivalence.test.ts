@@ -266,3 +266,60 @@ describe('adapter equivalence', () => {
     }
   });
 });
+
+/**
+ * The camera changes exactly one thing about a frame: `Scene.viewBox`. That is the
+ * claim the camera design rests on — no adapter was modified to support it — so it
+ * needs the same four-way check the rest of the scene gets.
+ */
+describe('camera viewBox across adapters', () => {
+  const cameraDoc = animationDocumentSchema.parse({
+    clothoVersion: 1,
+    id: 'camera-doc',
+    duration: 2000,
+    canvas: { width: 800, height: 500, background: '#ffffff' },
+    elements: [
+      {
+        type: 'circle',
+        id: 'node-a',
+        cx: 150,
+        cy: 250,
+        r: 40,
+        appearances: [{ start: 0, end: 2000, entryDuration: 0, exitDuration: 0 }],
+      },
+    ],
+    camera: {
+      tracks: [
+        {
+          property: 'zoom',
+          keyframes: [
+            { time: 0, value: 1 },
+            { time: 1000, value: 3, ease: 'linear' },
+          ],
+        },
+      ],
+      focus: [{ time: 1200, duration: 400, elementIds: ['node-a'], padding: 20 }],
+    },
+  });
+
+  it('emits an identical viewBox through svg, react and vue at every sampled time', async () => {
+    const viewBoxOf = (markup: string): string | undefined => /viewBox="([^"]+)"/.exec(markup)?.[1];
+
+    for (const time of [0, 500, 1000, 1400, 2000]) {
+      const frame = buildScene(cameraDoc, time);
+      const expected = viewBoxOf(serializeScene(frame));
+      expect(expected).toBe(frame.viewBox);
+      expect(viewBoxOf(renderToStaticMarkup(SceneSvg({ scene: frame })))).toBe(expected);
+      expect(viewBoxOf(await renderVue(frame))).toBe(expected);
+    }
+  });
+
+  it('moves the viewBox over time rather than leaving it at the canvas', () => {
+    expect(buildScene(cameraDoc, 0).viewBox).toBe('0 0 800 500');
+    expect(buildScene(cameraDoc, 1000).viewBox).not.toBe('0 0 800 500');
+    // The focus at 1200ms frames node-a, so the camera ends centered on it.
+    const framed = buildScene(cameraDoc, 1600).camera!;
+    expect(framed.centerX).toBeCloseTo(150, 6);
+    expect(framed.centerY).toBeCloseTo(250, 6);
+  });
+});

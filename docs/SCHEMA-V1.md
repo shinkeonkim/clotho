@@ -23,6 +23,7 @@
   "assets": {/* §2.3 */},
   "elements": [/* §2.1, §2.2 */],
   "layouts": [/* §2.8 */],
+  "camera": {/* §2.11 */},
   "chapters": [{ "id": "c1", "time": 2000, "label": "Round 1", "subtitle": "" }],
   "effects": [{ "type": "pulse", "id": "p1", "elementId": "n-a", "time": 2000 }],
   "settings": {
@@ -200,6 +201,33 @@ player에서 연결된 문구를 가리키거나 keyboard focus하면 대상 요
 ```
 
 정답은 JSON에 넣을 수 있는 `equals`, `oneOf`, `range` predicate로 판정하거나 host의 `evaluate` callback으로 판정한다. `select-element.elementIds`는 선택 가능한 장면 요소를 제한한다. SVG와 GIF 같은 비대화형 출력에는 `initialAnswers`로 결정적인 session 상태를 제공할 수 있다.
+
+### 2.11 카메라
+
+`camera`는 시청자가 캔버스의 어느 부분을 보고 있는지를 시간축 데이터로 표현한다. 없으면 지금까지처럼 캔버스 전체가 보이고, `Scene.viewBox`는 `0 0 <width> <height>` 상수 그대로다.
+
+```jsonc
+"camera": {
+  "tracks": [
+    { "property": "zoom", "keyframes": [{ "time": 0, "value": 1 }, { "time": 1500, "value": 2.4, "ease": "easeInOut" }] },
+    { "property": "x", "keyframes": [{ "time": 0, "value": 400 }, { "time": 1500, "value": 210 }] },
+    { "property": "y", "keyframes": [{ "time": 0, "value": 230 }, { "time": 1500, "value": 180 }] }
+  ],
+  "focus": [
+    { "time": 3000, "duration": 700, "elementIds": ["n-a", "n-b"], "padding": 40, "maxZoom": 4 }
+  ],
+  "strokeScaling": "scale"
+}
+```
+
+- `x`·`y`는 캔버스 좌표계의 **주시점**, `zoom`은 배율이다. 보이는 사각형은 `width = canvas.width / zoom`, 좌상단은 `(x - width/2, y - height/2)`다. 트랙이 없는 축은 캔버스 중심과 배율 1을 쓴다.
+- 키프레임·`ease`는 요소 트랙과 같은 규칙이며 값은 숫자만 받는다. 카메라 전용 타이밍 개념은 없다.
+- `focus`는 대상 요소들의 루트 좌표 bounding box에 `padding`을 더해 그것을 채우는 `(x, y, zoom)`으로 푸는 단축 표기다. 프레임마다 다시 계산하므로 **움직이는 대상을 따라간다**. `duration` 동안 직전 카메라 상태에서 전이하고, 그 뒤 다음 `focus`가 시작할 때까지 유지한다. `maxZoom`은 작은 대상이 화면을 가득 채우는 것을 막는다.
+- `focus` 대상이 그 시각에 무대에 없으면 카메라를 움직이지 않고 `camera-focus` diagnostic을 남긴다. 빈 캔버스를 비추는 것보다 낫고, 조용히 멈추는 것과 구별되어야 한다.
+- `strokeScaling`은 확대 시 선 두께가 함께 굵어질지(`scale`, 기본값) 일정하게 유지될지(`fixed`) 정한다. `fixed`는 `vector-effect` 대신 scene의 `stroke-width` 숫자를 직접 나누므로 네 어댑터와 resvg 기반 GIF가 모두 같은 결과를 낸다.
+- `prefers-reduced-motion`에서는 카메라 이동이 **컷으로 강등**된다. 화면 전체가 움직이는 연출은 멀미를 가장 잘 유발하므로 속도를 늦추는 것으로는 부족하다. 어댑터가 관측한 값을 `SceneOptions.reducedMotion`으로 넘기며, 명시적으로 지정하면 그것이 이긴다.
+
+`camera`가 바꾸는 것은 `Scene.viewBox` 문자열 하나뿐이다. 그래서 react·vue·dom·svg 네 어댑터와 GIF 렌더러는 카메라 지원을 위해 한 줄도 바뀌지 않았다.
 
 ## 3. 계승하는 부분 (변경 없음)
 
