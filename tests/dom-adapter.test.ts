@@ -14,6 +14,7 @@ import { buildScene } from '../src/core/scene/build';
 import { serializeSceneBody } from '../src/svg/serialize';
 import { patchScene } from '../src/dom/patch';
 import { mountPlayer, mountStage } from '../src/dom/mount';
+import { mountScrollPlayer, rangeProgress } from '../src/dom/scroll';
 import { createManualScheduler } from '../src/core/player/scheduler';
 import { appendAnnotationText, bindAnnotations } from '../src/dom/annotations';
 
@@ -569,5 +570,168 @@ describe('patching defs of different kinds', () => {
 
     patchScene(svg, buildScene(spotlit, 900));
     expect(tags()).toEqual(['marker']);
+  });
+});
+
+/**
+ * Scroll-driven playback.
+ *
+ * The interesting part is what it does *not* do: no clock, no play state, and under
+ * reduced motion no scroll listener at all — a reader with a vestibular disorder
+ * should not have the page move under them, and slowing it down does not help.
+ */
+describe('mountScrollPlayer', () => {
+  const scrollDoc = animationDocumentSchema.parse({
+    clothoVersion: 1,
+    id: 'scrolled',
+    duration: 10_000,
+    canvas: { width: 200, height: 100 },
+    chapters: [
+      { id: 'a', time: 2000, label: 'A' },
+      { id: 'b', time: 8000, label: 'B' },
+    ],
+    elements: [
+      {
+        type: 'rect',
+        id: 'r',
+        x: 0,
+        y: 0,
+        width: 20,
+        height: 20,
+        appearances: [{ start: 0, end: 10_000, entryDuration: 0, exitDuration: 0 }],
+        tracks: [
+          {
+            property: 'x',
+            keyframes: [
+              { time: 0, value: 0 },
+              { time: 10_000, value: 180, ease: 'linear' },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  function stubMotion(matches: boolean): void {
+    (globalThis as unknown as Record<string, unknown>).matchMedia = () => ({
+      matches,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    });
+  }
+
+  const xAt = (element: HTMLElement): number => {
+    const shape = element.querySelector('rect');
+    return Number(shape?.getAttribute('x') ?? -1);
+  };
+
+  it('draws the frame the scroll position asks for', () => {
+    stubMotion(false);
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    const handle = mountScrollPlayer(container as unknown as HTMLElement, scrollDoc);
+
+    handle.render(0);
+    expect(xAt(container as unknown as HTMLElement)).toBe(0);
+    handle.render(0.5);
+    expect(xAt(container as unknown as HTMLElement)).toBe(90);
+    handle.render(1);
+    expect(xAt(container as unknown as HTMLElement)).toBe(180);
+
+    handle.destroy();
+  });
+
+  it('scrolling back up is a smaller number, not a smear', () => {
+    stubMotion(false);
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    const handle = mountScrollPlayer(container as unknown as HTMLElement, scrollDoc);
+
+    handle.render(0.8);
+    handle.render(0.2);
+    const backwards = xAt(container as unknown as HTMLElement);
+    handle.destroy();
+
+    const fresh = window.document.createElement('div');
+    window.document.body.append(fresh);
+    const second = mountScrollPlayer(fresh as unknown as HTMLElement, scrollDoc);
+    second.render(0.2);
+    expect(xAt(fresh as unknown as HTMLElement)).toBe(backwards);
+    second.destroy();
+  });
+
+  it('honours chapter snapping', () => {
+    stubMotion(false);
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    const handle = mountScrollPlayer(container as unknown as HTMLElement, scrollDoc, {
+      snapToChapters: true,
+    });
+    // Three segments; a third of the way through is the first chapter at 2000ms.
+    handle.render(1 / 3);
+    expect(xAt(container as unknown as HTMLElement)).toBeCloseTo(36, 0);
+    handle.destroy();
+  });
+
+  it('replaces the scroll link with one still per chapter under reduced motion', () => {
+    stubMotion(true);
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    const handle = mountScrollPlayer(container as unknown as HTMLElement, scrollDoc);
+
+    // One still per chapter, and no live stage to scroll.
+    expect(container.querySelectorAll('svg').length).toBe(2);
+    handle.destroy();
+  });
+
+  it('leaves no listeners behind', () => {
+    stubMotion(false);
+    const added: string[] = [];
+    const removed: string[] = [];
+    const originalAdd = window.addEventListener.bind(window);
+    const originalRemove = window.removeEventListener.bind(window);
+    (window as unknown as Record<string, unknown>).addEventListener = (
+      type: string,
+      ...rest: unknown[]
+    ) => {
+      added.push(type);
+      return (originalAdd as (...args: unknown[]) => unknown)(type, ...rest);
+    };
+    (window as unknown as Record<string, unknown>).removeEventListener = (
+      type: string,
+      ...rest: unknown[]
+    ) => {
+      removed.push(type);
+      return (originalRemove as (...args: unknown[]) => unknown)(type, ...rest);
+    };
+
+    const container = window.document.createElement('div');
+    window.document.body.append(container);
+    mountScrollPlayer(container as unknown as HTMLElement, scrollDoc).destroy();
+
+    expect(added.sort()).toEqual(removed.sort());
+    (window as unknown as Record<string, unknown>).addEventListener = originalAdd;
+    (window as unknown as Record<string, unknown>).removeEventListener = originalRemove;
+  });
+});
+
+describe('rangeProgress', () => {
+  const rect = (top: number, height: number) => ({ top, height }) as DOMRect;
+
+  it('is zero at the top of a tall range and one at the bottom', () => {
+    expect(rangeProgress(rect(0, 2000), 1000)).toBe(0);
+    expect(rangeProgress(rect(-1000, 2000), 1000)).toBe(1);
+  });
+
+  it('clamps outside the range', () => {
+    expect(rangeProgress(rect(500, 2000), 1000)).toBe(0);
+    expect(rangeProgress(rect(-9000, 2000), 1000)).toBe(1);
+  });
+
+  it('still progresses for a range shorter than the viewport', () => {
+    // Otherwise a short range would sit at zero forever and never animate.
+    const early = rangeProgress(rect(900, 200), 1000);
+    const late = rangeProgress(rect(-100, 200), 1000);
+    expect(late).toBeGreaterThan(early);
   });
 });
