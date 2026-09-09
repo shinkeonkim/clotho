@@ -6,14 +6,15 @@
 // anyway. v1 stores a flat element array with `parentId` pointers and builds the
 // tree here.
 //
-// Robustness stance: a broken `parentId` (missing, cyclic, or pointing at a
-// non-group) must not stop the animation from rendering. Such elements are
+// Robustness stance: a broken `parentId` (missing, cyclic, or pointing at an element
+// that cannot hold children) must not stop the animation from rendering. Such elements are
 // re-rooted and the problem is reported as an issue, which core/validate turns
 // into an error for authors. A malformed document degrading to a visible-but-flat
 // render beats a blank stage with the reason hidden in a console.
 
 import type { AnimationDocument } from '../schema/document';
 import type { AnimationElement } from '../schema/elements';
+import { canContainChildren } from '../schema/containers';
 import { IDENTITY, groupMatrix, multiply, type Matrix } from '../geometry/matrix';
 import type { SnapshotMap } from './snapshot';
 
@@ -83,12 +84,12 @@ export function buildElementTree(doc: AnimationDocument): ElementTree {
       effectiveParent.set(el.id, undefined);
       continue;
     }
-    if (parent.type !== 'group') {
+    if (!canContainChildren(parent)) {
       issues.push({
         code: 'non-group-parent',
         elementId: el.id,
         parentId,
-        message: `element "${el.id}" has parent "${parentId}" of type "${parent.type}"; only groups may contain children`,
+        message: `element "${el.id}" has parent "${parentId}" of type "${parent.type}"; only groups and math elements may contain children`,
       });
       effectiveParent.set(el.id, undefined);
       continue;

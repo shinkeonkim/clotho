@@ -12,6 +12,7 @@ export * from './chart';
 export * from './style';
 export * from './source';
 export * from './animatable';
+export * from './containers';
 export * from './effects';
 export * from './document';
 

@@ -1467,6 +1467,9 @@
                   },
                   "alt": {
                     "type": "string"
+                  },
+                  "bakedBy": {
+                    "type": "string"
                   }
                 },
                 "required": [

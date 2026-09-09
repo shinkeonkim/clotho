@@ -86,11 +86,11 @@ describe('buildElementTree — malformed links', () => {
     expect(tree.issues[0]).toMatchObject({ code: 'missing-parent', elementId: 'orphan' });
   });
 
-  it('rejects a non-group parent', () => {
+  it('rejects a parent that cannot hold children', () => {
     const tree = buildElementTree(doc([rect({ id: 'box' }), rect({ id: 'kid', parentId: 'box' })]));
     expect(tree.issues[0]).toMatchObject({ code: 'non-group-parent', elementId: 'kid' });
     expect(tree.roots).toHaveLength(2);
-    expect(tree.issues[0]?.message).toContain('only groups may contain children');
+    expect(tree.issues[0]?.message).toContain('only groups and math elements may contain children');
   });
 
   it('rejects self-parenting', () => {

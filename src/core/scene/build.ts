@@ -27,7 +27,7 @@ import { buildCircle, buildRect } from './elements/shapes';
 import { buildArrow, buildLine, collectUsedHeads } from './elements/connectors';
 import { buildImage, buildPath, buildPolygon, buildText } from './elements/text-image';
 import { buildCode } from './elements/code';
-import { buildMath } from './elements/math';
+import { buildBakedMath, buildMath } from './elements/math';
 import { buildFlowParticles } from './elements/particles';
 import { buildTrails } from './elements/trail';
 import { compileResponsiveStage } from '../responsive';
@@ -183,8 +183,8 @@ function buildNodes(ctx: SceneContext, siblings: readonly ElementNode[]): SceneN
 /**
  * One element, wrapped as needed for its transition and its children.
  *
- * Only groups have children: `buildElementTree` re-roots anything whose parent is
- * not a group, so a leaf never arrives here with a subtree.
+ * Groups and baked `math` elements have children; `buildElementTree` re-roots
+ * anything whose parent is neither, so a leaf never arrives here with a subtree.
  *
  * Wrappers are only emitted when they do something. A fully visible, unrotated leaf
  * produces a single node, keeping the output close to what legacy generated — and
@@ -210,6 +210,11 @@ function buildElementNode(
       attrs: compactAttrs({ transform: groupTransformFor(state) }),
       children,
     };
+  } else if (el.type === 'math' && node.children.length > 0) {
+    // Baked: the expression was typeset at authoring time and lowered to `path`
+    // children. The typesetter hook is not consulted and no diagnostic is raised —
+    // that is the whole point of baking.
+    result = buildBakedMath(ctx, el, state, buildNodes(ctx, node.children));
   } else {
     result = buildOwnNode(ctx, el, state);
   }
