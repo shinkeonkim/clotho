@@ -2,7 +2,7 @@
 
 import type { AnimationDocument } from '../schema/document';
 import type { AnimationEffect, ElementEffect, SpotlightEffect } from '../schema/effects';
-import { isElementEffect } from '../schema/effects';
+import { isElementEffect } from '../schema/effect-targets';
 
 /**
  * Effects whose window contains `time`.

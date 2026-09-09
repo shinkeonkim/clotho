@@ -17,7 +17,7 @@
 
 import { parseDocument } from '../schema';
 import type { AnimationDocument } from '../schema/document';
-import { effectTargets } from '../schema/effects';
+import { effectTargets } from '../schema/effect-targets';
 import { buildElementTree } from '../runtime/tree';
 import { annotationTokens } from '../annotations';
 import { bindablePropertiesFor, resolveJsonPointer, formatBindingValue } from '../data';

@@ -1,6 +1,6 @@
 import type { AnimationDocument } from '../schema/document';
 import type { AnimationElement } from '../schema/elements';
-import { effectTargets } from '../schema/effects';
+import { effectTargets } from '../schema/effect-targets';
 import { computeSnapshot } from '../runtime/snapshot';
 import { buildScene } from '../scene/build';
 import type { SceneOptions } from '../scene/context';
