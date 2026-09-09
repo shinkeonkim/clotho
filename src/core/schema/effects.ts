@@ -58,6 +58,26 @@ export const spotlightEffectSchema = z.object({
   /** Opacity of the scrim over everything else. 0 does nothing, 1 hides it entirely. */
   dim: z.number().min(0).max(1).default(0.7),
   /**
+   * Colour of the scrim.
+   *
+   * Defaults to the theme token, which is a near-black in both themes: dimming
+   * means darkening either way, and a light scrim over a dark stage would raise the
+   * floor rather than lower it. Authored values are used as given, which is how a
+   * document tints the surround — a blue-black for a night scene, a sepia for a
+   * document that is otherwise warm.
+   */
+  dimColor: z.string().optional(),
+  /**
+   * Opacity of a wash laid over the lit area, like a coloured gel on a real lamp.
+   *
+   * Zero by default, so a spotlight changes nothing about its targets unless asked.
+   * The targets keep their own colours, which is the whole reason this effect
+   * exists instead of `highlight`.
+   */
+  lit: z.number().min(0).max(1).default(0),
+  /** Colour of that wash. Only meaningful when `lit` is above zero. */
+  litColor: z.string().default('#fde68a'),
+  /**
    * `bbox` frames the targets' combined box, `circle` its circumcircle, and
    * `elements` cuts the targets' own silhouettes out of the scrim.
    */

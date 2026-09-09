@@ -7,7 +7,7 @@ import type { AnimationDocument } from '../schema/document';
 import type { SpotlightEffect } from '../schema/effects';
 import { buildScene } from './build';
 import type { SceneDef, SceneNode } from './nodes';
-import { SPOTLIGHT_ID_PREFIX, spotlightOpacity } from './spotlight';
+import { SPOTLIGHT_ID_PREFIX, spotlightLitOpacity, spotlightOpacity } from './spotlight';
 
 const ALWAYS = [{ start: 0, end: 10_000, entryDuration: 0, exitDuration: 0 }];
 
@@ -43,8 +43,10 @@ function spot(over: Record<string, unknown> = {}) {
 
 const maskOf = (defs: readonly SceneDef[]): SceneDef | undefined =>
   defs.find((def) => def.kind === 'mask');
+// The scrim and the lit wash are both masked rectangles; the wash's mask id says
+// which is which.
 const scrimOf = (nodes: readonly SceneNode[]): SceneNode | undefined =>
-  nodes.find((node) => typeof node.attrs.mask === 'string');
+  nodes.find((node) => typeof node.attrs.mask === 'string' && !node.attrs.mask.includes('-lit-'));
 
 describe('spotlightOpacity', () => {
   const effect = (over: Partial<SpotlightEffect> = {}): SpotlightEffect =>
@@ -168,6 +170,78 @@ describe('spotlight in the scene', () => {
     });
   });
 
+  // The mask's children hang off the mask, not off the group the element lives in,
+  // so a nested target had its hole punched at the group's origin: empty canvas lit
+  // and the target left dark.
+  it('punches a grouped silhouette where the element actually is', () => {
+    const scene = buildScene(
+      animation({
+        elements: [
+          { type: 'group', id: 'g', x: 300, y: 200 },
+          { type: 'rect', id: 'inside', parentId: 'g', x: 0, y: 0, width: 60, height: 40 },
+        ],
+        effects: [spot({ elementIds: ['inside'], shape: 'elements' })],
+      }),
+      500,
+    );
+    const hole = maskOf(scene.defs)!.children[1]!;
+    expect(hole.attrs.transform).toBe('matrix(1 0 0 1 300 200)');
+  });
+
+  // An element part way through a slide is drawn inside its phase wrapper. Taking
+  // the inner node instead punched the hole where the element is going to be.
+  it('follows a target through its entry transition', () => {
+    const doc = animation({
+      elements: [
+        {
+          type: 'rect',
+          id: 'a',
+          x: 500,
+          y: 400,
+          width: 50,
+          height: 50,
+          appearances: [
+            { start: 0, end: 10_000, entryMode: 'slide-left', entryDuration: 600, exitDuration: 0 },
+          ],
+        },
+      ],
+      effects: [spot({ elementIds: ['a'], shape: 'elements' })],
+    });
+    const moving = maskOf(buildScene(doc, 200).defs)!.children[1]!;
+    const settled = maskOf(buildScene(doc, 800).defs)!.children[1]!;
+    expect(moving.attrs.transform).toMatch(/^matrix\(1 0 0 1 -\d/);
+    expect(settled.attrs.transform).toBeUndefined();
+  });
+
+  // Targets scattered across the stage, not lined up: the box has to be their union
+  // and the silhouettes have to stay apart.
+  it('handles targets in different places, not only ones in a row', () => {
+    const scattered = {
+      elements: [
+        { type: 'rect', id: 'a', x: 40, y: 40, width: 60, height: 60 },
+        { type: 'rect', id: 'b', x: 600, y: 60, width: 60, height: 60 },
+        { type: 'rect', id: 'c', x: 320, y: 380, width: 60, height: 60 },
+      ],
+    };
+    const box = maskOf(
+      buildScene(animation({ ...scattered, effects: [spot({ elementIds: ['a', 'b', 'c'] })] }), 500)
+        .defs,
+    )!;
+    expect(box.children[1]!.attrs).toMatchObject({ x: 40, y: 40, width: 620, height: 400 });
+
+    const silhouettes = maskOf(
+      buildScene(
+        animation({
+          ...scattered,
+          effects: [spot({ elementIds: ['a', 'b', 'c'], shape: 'elements' })],
+        }),
+        500,
+      ).defs,
+    )!;
+    // One hole per target, and nothing joining them: the space between stays dark.
+    expect(silhouettes.children).toHaveLength(4);
+  });
+
   it('shares one scrim between overlapping spotlights instead of stacking them', () => {
     const scene = buildScene(
       animation({
@@ -249,5 +323,85 @@ describe('spotlight in the scene', () => {
       width: 40,
       height: 40,
     });
+  });
+});
+
+describe('colours', () => {
+  const litOf = (nodes: readonly SceneNode[]): SceneNode[] =>
+    nodes.filter((node) => String(node.attrs.mask ?? '').includes('-lit-'));
+
+  it('dims with the theme token by default, so both themes darken', () => {
+    const scene = buildScene(animation({ effects: [spot()] }), 500);
+    expect(scrimOf(scene.nodes)!.attrs.fill).toBe('var(--cloth-scrim, #0b1120)');
+  });
+
+  it('uses an authored scrim colour as given', () => {
+    const scene = buildScene(animation({ effects: [spot({ dimColor: '#1e1b4b' })] }), 500);
+    expect(scrimOf(scene.nodes)!.attrs.fill).toBe('#1e1b4b');
+    // Authored means authored: a static export gets the same value, not a fallback.
+    const exported = buildScene(animation({ effects: [spot({ dimColor: '#1e1b4b' })] }), 500, {
+      rawColors: true,
+    });
+    expect(scrimOf(exported.nodes)!.attrs.fill).toBe('#1e1b4b');
+  });
+
+  // Two scrims in different colours cannot be one rectangle, and stacking them
+  // would darken the overlap twice.
+  it('takes the scrim colour from the strongest spotlight', () => {
+    const scene = buildScene(
+      animation({
+        effects: [
+          spot({ id: 'weak', dim: 0.3, dimColor: '#111111' }),
+          spot({ id: 'strong', elementIds: ['b'], dim: 0.8, dimColor: '#4c1d95' }),
+        ],
+      }),
+      500,
+    );
+    expect(scrimOf(scene.nodes)!.attrs).toMatchObject({ fill: '#4c1d95', opacity: 0.8 });
+  });
+
+  it('adds no wash unless one is asked for', () => {
+    const scene = buildScene(animation({ effects: [spot()] }), 500);
+    expect(litOf(scene.nodes)).toHaveLength(0);
+  });
+
+  it('washes the lit area with its own colour, through the inverse mask', () => {
+    const scene = buildScene(
+      animation({ effects: [spot({ lit: 0.3, litColor: '#fde68a' })] }),
+      500,
+    );
+    const [wash] = litOf(scene.nodes);
+    expect(wash!.attrs).toMatchObject({ fill: '#fde68a', opacity: 0.3 });
+    const mask = scene.defs.find(
+      (def) => def.attrs.id === wash!.attrs.mask?.toString().slice(5, -1),
+    )!;
+    // Inverse of the scrim mask: black cover, white targets.
+    expect(mask.children[0]!.attrs.fill).toBe('#000000');
+    expect(mask.children[1]!.attrs.fill).toBe('#ffffff');
+  });
+
+  // A lamp with a gel and no dimming is a legitimate document, and it has to ramp
+  // like any other — which the scrim's own opacity cannot provide, being zero.
+  it('ramps a wash-only spotlight, where the scrim has nothing to ramp', () => {
+    const effect = { ...spot({ dim: 0, lit: 0.4, fadeIn: 200 }) } as unknown as SpotlightEffect;
+    expect(spotlightOpacity(effect, 100)).toBe(0);
+    expect(spotlightLitOpacity(effect, 100)).toBeCloseTo(0.2, 6);
+    expect(spotlightLitOpacity(effect, 500)).toBeCloseTo(0.4, 6);
+    const scene = buildScene(animation({ effects: [spot({ dim: 0, lit: 0.4 })] }), 500);
+    expect(scrimOf(scene.nodes)).toBeUndefined();
+    expect(litOf(scene.nodes)).toHaveLength(1);
+  });
+
+  it('gives each spotlight its own wash, since two gels are two colours', () => {
+    const scene = buildScene(
+      animation({
+        effects: [
+          spot({ id: 'warm', lit: 0.3, litColor: '#fde68a' }),
+          spot({ id: 'cool', elementIds: ['b'], lit: 0.3, litColor: '#bfdbfe' }),
+        ],
+      }),
+      500,
+    );
+    expect(litOf(scene.nodes).map((node) => node.attrs.fill)).toEqual(['#fde68a', '#bfdbfe']);
   });
 });

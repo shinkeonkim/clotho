@@ -2021,6 +2021,19 @@
                     "maximum": 1,
                     "default": 0.7
                   },
+                  "dimColor": {
+                    "type": "string"
+                  },
+                  "lit": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0
+                  },
+                  "litColor": {
+                    "type": "string",
+                    "default": "#fde68a"
+                  },
                   "shape": {
                     "type": "string",
                     "enum": [

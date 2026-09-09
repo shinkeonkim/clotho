@@ -19,6 +19,7 @@ import type { SpotlightEffect } from '../schema/effects';
 import { padBounds, type Bounds } from '../geometry/bounds';
 import { elementsRootBounds } from '../runtime/bounds';
 import { clamp } from '../timing/ease';
+import { isIdentity, toSvgTransform, type Matrix } from '../geometry/matrix';
 import { compactAttrs, type SceneDef, type SceneNode, type SceneAttrs } from './nodes';
 import { report, type SceneContext } from './context';
 
@@ -43,28 +44,42 @@ export interface SpotlightOutput {
 const EMPTY: SpotlightOutput = { defs: [], nodes: [] };
 
 /**
- * Scrim opacity at `time`, ramping in and out over `fadeIn`.
+ * How far into the effect's ramp `time` is, from 0 to 1.
  *
  * The ramp is applied at both ends for the same reason `pulse` uses a half sine:
  * an effect that ends must leave no residue, and nothing resets the stage after it.
  * When the two ramps would overlap they are each capped at half the duration, so a
- * short spotlight becomes a quick swell rather than snapping to full dim.
+ * short spotlight becomes a quick swell rather than snapping to full strength.
+ *
+ * Separate from the opacities so that the scrim and the lit wash share one curve.
+ * A spotlight that only tints — `dim: 0`, `lit: 0.3` — has to ramp too, and that
+ * cannot come from the scrim's own opacity, which is zero throughout.
  */
-export function spotlightOpacity(effect: SpotlightEffect, time: number): number {
-  if (effect.duration <= 0 || effect.dim <= 0) return 0;
+export function spotlightProgress(effect: SpotlightEffect, time: number): number {
+  if (effect.duration <= 0) return 0;
   const elapsed = time - effect.time;
   if (elapsed < 0 || elapsed >= effect.duration) return 0;
 
   const ramp = Math.min(effect.fadeIn, effect.duration / 2);
-  if (ramp <= 0) return effect.dim;
+  if (ramp <= 0) return 1;
 
   const rising = clamp(elapsed / ramp, 0, 1);
   const falling = clamp((effect.duration - elapsed) / ramp, 0, 1);
-  return effect.dim * Math.min(rising, falling);
+  return Math.min(rising, falling);
 }
 
-/** A black shape that punches `bounds` out of the scrim. */
-function holeForBounds(effect: SpotlightEffect, bounds: Bounds): SceneNode {
+/** Scrim opacity at `time`. */
+export function spotlightOpacity(effect: SpotlightEffect, time: number): number {
+  return effect.dim <= 0 ? 0 : effect.dim * spotlightProgress(effect, time);
+}
+
+/** Opacity of the wash over the lit area at `time`. */
+export function spotlightLitOpacity(effect: SpotlightEffect, time: number): number {
+  return effect.lit <= 0 ? 0 : effect.lit * spotlightProgress(effect, time);
+}
+
+/** A shape that punches `bounds` out of the scrim, painted in the mask's ink. */
+function holeForBounds(effect: SpotlightEffect, bounds: Bounds, paint: string): SceneNode {
   if (effect.shape === 'circle') {
     const cx = bounds.x + bounds.width / 2;
     const cy = bounds.y + bounds.height / 2;
@@ -72,7 +87,7 @@ function holeForBounds(effect: SpotlightEffect, bounds: Bounds): SceneNode {
     return {
       kind: 'circle',
       key: `${effect.id}-hole`,
-      attrs: compactAttrs({ cx, cy, r: radius, fill: '#000000' }),
+      attrs: compactAttrs({ cx, cy, r: radius, fill: paint }),
     };
   }
   const padded = padBounds(bounds, effect.padding);
@@ -84,7 +99,7 @@ function holeForBounds(effect: SpotlightEffect, bounds: Bounds): SceneNode {
       y: padded.y,
       width: padded.width,
       height: padded.height,
-      fill: '#000000',
+      fill: paint,
     }),
   };
 }
@@ -97,7 +112,12 @@ function holeForBounds(effect: SpotlightEffect, bounds: Bounds): SceneNode {
  * every opacity is dropped. `padding` becomes a black stroke of twice its width,
  * which dilates the silhouette by exactly the padding on every side.
  */
-function toMaskShape(node: SceneNode, padding: number, keyPrefix: string): SceneNode {
+function toMaskShape(
+  node: SceneNode,
+  padding: number,
+  keyPrefix: string,
+  paint: string,
+): SceneNode {
   const attrs: SceneAttrs = { ...node.attrs };
   delete attrs.opacity;
   delete attrs['fill-opacity'];
@@ -106,13 +126,13 @@ function toMaskShape(node: SceneNode, padding: number, keyPrefix: string): Scene
 
   const paints: SceneAttrs = {};
   if (node.kind !== 'g') {
-    paints.fill = '#000000';
+    paints.fill = paint;
     if (padding > 0) {
-      paints.stroke = '#000000';
+      paints.stroke = paint;
       paints['stroke-width'] = padding * 2;
       paints['stroke-linejoin'] = 'round';
     } else if (attrs.stroke !== undefined) {
-      paints.stroke = '#000000';
+      paints.stroke = paint;
     }
   }
 
@@ -122,22 +142,49 @@ function toMaskShape(node: SceneNode, padding: number, keyPrefix: string): Scene
       kind: 'g',
       key,
       attrs: { ...attrs, ...paints },
-      children: node.children.map((child) => toMaskShape(child, padding, key)),
+      children: node.children.map((child) => toMaskShape(child, padding, key, paint)),
     };
   }
   return { ...node, key, attrs: { ...attrs, ...paints } };
 }
 
-/** Find the built node for an element, which is keyed by the element id. */
+/**
+ * The built node for an element, keyed by its id.
+ *
+ * The phase wrapper is preferred over the element's own node. An element part way
+ * through a slide or a zoom is drawn inside `${id}-phase`, which carries the
+ * transition's transform, and taking the inner node instead would punch the hole
+ * where the element is going to be rather than where it currently is.
+ */
 function findNode(nodes: readonly SceneNode[], elementId: string): SceneNode | null {
+  const phaseKey = `${elementId}-phase`;
   for (const node of nodes) {
-    if (node.key === elementId) return node;
+    if (node.key === phaseKey || node.key === elementId) return node;
     if (node.kind === 'g') {
       const found = findNode(node.children, elementId);
       if (found) return found;
     }
   }
   return null;
+}
+
+/**
+ * Move a mask shape into root space.
+ *
+ * The mask's children hang off the mask, not off the group the element lives in, so
+ * an element drawn inside `<g transform="translate(300 200)">` would have its hole
+ * punched at the group's origin — lighting empty canvas while the target stays
+ * dark. `accumulatedMatrices` already knows every element's ancestor transform, so
+ * the shape is wrapped in it.
+ */
+function inRootSpace(shape: SceneNode, matrix: Matrix | undefined): SceneNode {
+  if (!matrix || isIdentity(matrix)) return shape;
+  return {
+    kind: 'g',
+    key: `${shape.key}-at`,
+    attrs: { transform: toSvgTransform(matrix) },
+    children: [shape],
+  };
 }
 
 /**
@@ -156,12 +203,44 @@ export function buildSpotlights(
 ): SpotlightOutput {
   if (spotlights.length === 0) return EMPTY;
 
-  const holes: SceneNode[] = [];
+  const cover = compactAttrs({
+    x: view.x,
+    y: view.y,
+    width: view.width,
+    height: view.height,
+  });
+
+  /** Holes for one effect, painted in whichever ink the mask needs. */
+  const holesFor = (
+    effect: SpotlightEffect,
+    bounds: Bounds,
+    paint: string,
+    keySuffix: string,
+  ): SceneNode[] => {
+    if (effect.shape !== 'elements') return [holeForBounds(effect, bounds, paint)];
+    const shapes = effect.elementIds
+      .map((id) => {
+        const node = findNode(nodes, id);
+        return node
+          ? inRootSpace(
+              toMaskShape(node, effect.padding, `${effect.id}${keySuffix}`, paint),
+              ctx.matrices.get(id),
+            )
+          : null;
+      })
+      .filter((node): node is SceneNode => node !== null);
+    // A target with no drawn node (an empty group) still deserves its area lit.
+    return shapes.length > 0 ? shapes : [holeForBounds(effect, bounds, paint)];
+  };
+
+  const scrimHoles: SceneNode[] = [];
+  const washes: { effect: SpotlightEffect; opacity: number; holes: SceneNode[] }[] = [];
   let opacity = 0;
+  let dimColor: string | undefined;
 
   for (const effect of spotlights) {
-    const strength = spotlightOpacity(effect, ctx.time);
-    if (strength <= 0) continue;
+    const progress = spotlightProgress(effect, ctx.time);
+    if (progress <= 0) continue;
 
     const { bounds, unresolved } = elementsRootBounds(
       effect.elementIds,
@@ -186,50 +265,80 @@ export function buildSpotlights(
     // everything says less than doing nothing, so the effect sits this frame out.
     if (!bounds) continue;
 
-    opacity = Math.max(opacity, strength);
+    const scrimOpacity = effect.dim * progress;
+    if (scrimOpacity > 0) {
+      scrimHoles.push(...holesFor(effect, bounds, '#000000', ''));
+      // The strongest spotlight decides the colour as well as the opacity. Two
+      // scrims in different colours cannot be one rectangle, and stacking them
+      // would darken the overlap twice — which is the thing sharing a scrim exists
+      // to prevent.
+      if (scrimOpacity > opacity) dimColor = effect.dimColor;
+      opacity = Math.max(opacity, scrimOpacity);
+    }
 
-    if (effect.shape === 'elements') {
-      const shapes = effect.elementIds
-        .map((id) => findNode(nodes, id))
-        .filter((node): node is SceneNode => node !== null)
-        .map((node) => toMaskShape(node, effect.padding, effect.id));
-      // A target with no drawn node (an empty group) still deserves its area lit.
-      holes.push(...(shapes.length > 0 ? shapes : [holeForBounds(effect, bounds)]));
-    } else {
-      holes.push(holeForBounds(effect, bounds));
+    const litOpacity = effect.lit * progress;
+    if (litOpacity > 0) {
+      washes.push({
+        effect,
+        opacity: litOpacity,
+        holes: holesFor(effect, bounds, '#ffffff', '-lit'),
+      });
     }
   }
 
-  if (holes.length === 0 || opacity <= 0) return EMPTY;
+  const defs: SceneDef[] = [];
+  const out: SceneNode[] = [];
+  const maskBase = `${SPOTLIGHT_ID_PREFIX}-${ctx.doc.id}`;
 
-  // Ids are global to the page, so they carry the document id: two players showing
-  // different documents can each have a spotlight called `sp-1`.
-  const maskId = `${SPOTLIGHT_ID_PREFIX}-${ctx.doc.id}`;
-  const cover = compactAttrs({
-    x: view.x,
-    y: view.y,
-    width: view.width,
-    height: view.height,
-  });
+  if (scrimHoles.length > 0 && opacity > 0) {
+    // Ids are global to the page, so they carry the document id: two players
+    // showing different documents can each have a spotlight called `sp-1`.
+    defs.push({
+      key: maskBase,
+      kind: 'mask',
+      attrs: compactAttrs({ id: maskBase, maskUnits: 'userSpaceOnUse', ...cover }),
+      children: [{ kind: 'rect', key: 'lit', attrs: { ...cover, fill: '#ffffff' } }, ...scrimHoles],
+    });
+    out.push({
+      kind: 'rect',
+      key: maskBase,
+      attrs: compactAttrs({
+        ...cover,
+        fill: dimColor ?? (ctx.options.rawColors ? SCRIM_RAW : SCRIM_VAR),
+        opacity,
+        mask: `url(#${maskBase})`,
+        'pointer-events': 'none',
+      }),
+    });
+  }
 
-  const def: SceneDef = {
-    key: maskId,
-    kind: 'mask',
-    attrs: compactAttrs({ id: maskId, maskUnits: 'userSpaceOnUse', ...cover }),
-    children: [{ kind: 'rect', key: 'lit', attrs: { ...cover, fill: '#ffffff' } }, ...holes],
-  };
+  // The wash is the inverse: black cover, white targets, so only the lit area is
+  // painted. One per effect rather than one shared, because two coloured gels are
+  // two colours — and unlike scrims, two washes overlapping is what a viewer would
+  // expect from two lamps.
+  for (const wash of washes) {
+    const maskId = `${maskBase}-lit-${wash.effect.id}`;
+    defs.push({
+      key: maskId,
+      kind: 'mask',
+      attrs: compactAttrs({ id: maskId, maskUnits: 'userSpaceOnUse', ...cover }),
+      children: [
+        { kind: 'rect', key: 'unlit', attrs: { ...cover, fill: '#000000' } },
+        ...wash.holes,
+      ],
+    });
+    out.push({
+      kind: 'rect',
+      key: maskId,
+      attrs: compactAttrs({
+        ...cover,
+        fill: wash.effect.litColor,
+        opacity: wash.opacity,
+        mask: `url(#${maskId})`,
+        'pointer-events': 'none',
+      }),
+    });
+  }
 
-  const scrim: SceneNode = {
-    kind: 'rect',
-    key: maskId,
-    attrs: compactAttrs({
-      ...cover,
-      fill: ctx.options.rawColors ? SCRIM_RAW : SCRIM_VAR,
-      opacity,
-      mask: `url(#${maskId})`,
-      'pointer-events': 'none',
-    }),
-  };
-
-  return { defs: [def], nodes: [scrim] };
+  return out.length > 0 ? { defs, nodes: out } : EMPTY;
 }
