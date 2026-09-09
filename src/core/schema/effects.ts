@@ -84,18 +84,6 @@ export type ElementEffect = HighlightEffect | PulseEffect | FlowEffect;
 export type AnimationEffect = z.infer<typeof effectSchema>;
 export type EffectType = AnimationEffect['type'];
 
-/**
- * The elements an effect targets, whether it names one or many.
- *
- * Every caller that indexed effects by `elementId` needs this now that one effect
- * type carries a list. Returning an array in both cases keeps those call sites from
- * having to branch on the type.
- */
-export function effectTargets(effect: AnimationEffect): readonly string[] {
-  return effect.type === 'spotlight' ? effect.elementIds : [effect.elementId];
-}
-
-/** Narrow to the effects that decorate a single element. */
-export function isElementEffect(effect: AnimationEffect): effect is ElementEffect {
-  return effect.type !== 'spotlight';
-}
+// Re-exported so the public API is one import, while the render path can reach the
+// zod-free module directly (see ./effect-targets.ts).
+export { effectTargets, isElementEffect } from './effect-targets';

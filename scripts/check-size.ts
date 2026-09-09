@@ -11,7 +11,7 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 import { gzipSync } from 'node:zlib';
-import { join, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
 const REPO_ROOT = resolve(import.meta.dir, '..');
 const DIST = join(REPO_ROOT, 'dist');
@@ -92,7 +92,25 @@ const FORBIDDEN_IMPORTS: Record<string, RegExp[]> = {
  * only renders — and it is the kind of thing one convenience import quietly undoes.
  */
 const ZOD_FREE = ['svg', 'dom', 'react', 'vue', 'testing'] as const;
+/**
+ * Markers for zod's *code*, which only appear if it were bundled.
+ *
+ * On their own these prove nothing, because zod is an external dependency: it is
+ * never inlined, so this pattern was satisfied by every build regardless of what the
+ * entries actually imported. That is precisely how a leak went unnoticed — see
+ * ZOD_IMPORT below, which is the check this was always meant to be.
+ */
 const ZOD_MARKERS = [/ZodError/, /ZodType/, /invalid_union/];
+
+/**
+ * The real test: a bare `zod` specifier anywhere in the entry's closure.
+ *
+ * A consumer's bundler follows that import and puts zod in their bundle, so an
+ * adapter that merely *imports* zod costs them exactly as much as one that inlines
+ * it — and, since a browser cannot resolve a bare specifier, it also makes `dist`
+ * unusable from a plain module script.
+ */
+const ZOD_IMPORT = /(?:from|import)\s*['"]zod['"]/;
 
 if (!existsSync(DIST)) {
   console.error('dist/ not found. Run: bun run build');
@@ -159,12 +177,19 @@ for (const [name, spec] of Object.entries(BUDGETS)) {
   }
 
   if ((ZOD_FREE as readonly string[]).includes(name)) {
+    if (ZOD_IMPORT.test(text)) {
+      const culprits = files
+        .filter((file) => ZOD_IMPORT.test(readFileSync(file, 'utf8')))
+        .map((file) => relative(DIST, file));
+      problems.push(
+        `${name}: imports zod (via ${culprits.join(', ')}) — a rendering adapter takes an ` +
+          'already-parsed document and should not pull in the validator. Usually one ' +
+          'value imported from a schema module where a type would do.',
+      );
+    }
     for (const marker of ZOD_MARKERS) {
       if (marker.test(text)) {
-        problems.push(
-          `${name}: pulls in zod (matched ${marker.source}) — a rendering adapter takes an ` +
-            'already-parsed document and should not bundle a validator',
-        );
+        problems.push(`${name}: has zod's code inlined (matched ${marker.source})`);
         break;
       }
     }
