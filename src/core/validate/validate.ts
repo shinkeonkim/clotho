@@ -12,6 +12,7 @@
 //   - duplicate ids within each namespace (elements / chapters / effects)
 //   - referential integrity (connectors, effects, images, parents)
 //   - temporal bounds (times inside the duration, start before end)
+//   - tracks and bindings naming a property the element type does not have
 //
 // v1 adds parent-link checks and asset resolution, neither of which existed before.
 
@@ -21,6 +22,7 @@ import { effectTargets } from '../schema/effect-targets';
 import { buildElementTree } from '../runtime/tree';
 import { annotationTokens } from '../annotations';
 import { bindablePropertiesFor, resolveJsonPointer, formatBindingValue } from '../data';
+import { animatablePropertiesFor, elementTypesWithProperty } from '../schema/animatable';
 
 export type Severity = 'error' | 'warning';
 
@@ -90,9 +92,53 @@ export function validateDocument(value: unknown): ValidationResult {
   checkLocalization(doc, findings);
   checkAnnotations(doc, findings);
   checkDataBindings(doc, findings);
+  checkTrackProperties(doc, findings);
   checkUnknownProperties(value, doc, findings);
 
   return summarize(findings, doc);
+}
+
+/**
+ * Names the schema models somewhere else entirely.
+ *
+ * Naming the element types that do have the property is the fix for most of these,
+ * but not for `opacity` — which is 14 of the 35 offenders in the corpus. It does
+ * exist, on `image`, `path` and `polygon`, so the owner list fires and is useless:
+ * the author has a rect and wants it to fade, and the answer is an appearance mode.
+ * Both halves are true, so both are said.
+ */
+const ELSEWHERE: Record<string, string> = {
+  opacity: 'fading a shape is expressed with an appearance entry/exit mode, not a track',
+};
+
+/**
+ * Tracks pointing at a property the element type does not have.
+ *
+ * A warning, not an error: the document renders, it just renders less than it says.
+ * `--strict` already fails on warnings, which is the right place for this to bite.
+ */
+function checkTrackProperties(doc: AnimationDocument, findings: Finding[]): void {
+  doc.elements.forEach((element, elementIndex) => {
+    const animatable = animatablePropertiesFor(element);
+    element.tracks.forEach((track, trackIndex) => {
+      if (animatable.has(track.property)) return;
+      const owners = elementTypesWithProperty(track.property);
+      const hints = [
+        owners.length > 0
+          ? `${owners.join(', ')} ${owners.length === 1 ? 'has' : 'have'} it`
+          : undefined,
+        ELSEWHERE[track.property],
+      ].filter((hint): hint is string => hint !== undefined);
+      findings.push(
+        warning(
+          'unknown-track-property',
+          `elements.${elementIndex}.tracks.${trackIndex}.property`,
+          `${element.type} has no property "${track.property}", so this track animates nothing` +
+            (hints.length > 0 ? ` — ${hints.join('; ')}` : ''),
+        ),
+      );
+    });
+  });
 }
 
 function checkDataBindings(doc: AnimationDocument, findings: Finding[]): void {

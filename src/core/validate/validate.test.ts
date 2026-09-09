@@ -369,3 +369,76 @@ describe('result shape', () => {
     expect(lines[0]).toStartWith('ERROR elements.0.parentId:');
   });
 });
+
+// A track pointing at a property the element type does not have parses cleanly and
+// animates nothing. The corpus survey behind #14 found 35 of these in 17 of 383
+// documents, and perturbing every one of them changed not a rendered byte.
+describe('track properties', () => {
+  const track = (property: string) => ({
+    property,
+    keyframes: [
+      { time: 0, value: 0 },
+      { time: 500, value: 1 },
+    ],
+  });
+
+  it('accepts a track on a property the element declares', () => {
+    const result = doc({ elements: [rect({ tracks: [track('width')] })] });
+    expect(codes(result)).not.toContain('unknown-track-property');
+  });
+
+  it('warns about a property the element type does not have', () => {
+    const result = doc({ elements: [rect({ tracks: [track('strokeDasharray')] })] });
+    const finding = result.findings.find((f) => f.code === 'unknown-track-property');
+    expect(finding?.severity).toBe('warning');
+    expect(finding?.path).toBe('elements.0.tracks.0.property');
+    expect(finding?.message).toContain('animates nothing');
+  });
+
+  // The document still renders — it just renders less than it says — so this must
+  // not fail an ordinary validate. `--strict` is where it bites.
+  it('does not fail validation on its own', () => {
+    const result = doc({ elements: [rect({ tracks: [track('strokeDasharray')] })] });
+    expect(result.ok).toBe(true);
+    expect(result.errorCount).toBe(0);
+    expect(result.warningCount).toBeGreaterThan(0);
+  });
+
+  // Three quarters of the corpus offenders name a real property of a *different*
+  // element type, so naming the owner turns the finding into the fix.
+  it('names the element types that do have the property', () => {
+    const text = { type: 'text', id: 't', x: 0, y: 0, content: 'hi', tracks: [track('fill')] };
+    const finding = doc({ elements: [text] }).findings.find(
+      (f) => f.code === 'unknown-track-property',
+    );
+    expect(finding?.message).toContain('rect');
+    expect(finding?.message).not.toContain('text has it');
+  });
+
+  // `opacity` is the one name where the owner list is true and useless: it exists,
+  // on image/path/polygon, but the author has a rect and wants it to fade.
+  it('points opacity at appearances as well as at its owners', () => {
+    const finding = doc({ elements: [rect({ tracks: [track('opacity')] })] }).findings.find(
+      (f) => f.code === 'unknown-track-property',
+    );
+    expect(finding?.message).toContain('path');
+    expect(finding?.message).toContain('appearance');
+  });
+
+  it('rejects a track on structure, which is a property but not an animatable one', () => {
+    const result = doc({ elements: [rect({ tracks: [track('parentId')] })] });
+    expect(codes(result)).toContain('unknown-track-property');
+  });
+
+  it('reports each offending track separately', () => {
+    const result = doc({
+      elements: [rect({ tracks: [track('opacity'), track('width'), track('content')] })],
+    });
+    const found = result.findings.filter((f) => f.code === 'unknown-track-property');
+    expect(found).toHaveLength(2);
+    expect(found.map((f) => f.path)).toEqual([
+      'elements.0.tracks.0.property',
+      'elements.0.tracks.2.property',
+    ]);
+  });
+});
