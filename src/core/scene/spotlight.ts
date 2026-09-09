@@ -124,13 +124,27 @@ function toMaskShape(
   delete attrs['stroke-opacity'];
   delete attrs['data-clotho-id'];
 
+  // Markers do not survive into the mask. They default to `markerUnits:
+  // strokeWidth`, and the mask's stroke *is* the padding — so a connector's
+  // arrowhead came out at multiples of its real size, a huge triangle of lit
+  // canvas hanging off the end of the line. The dilated line already covers where
+  // the head sits, and the head's own def is coloured, which in a luminance mask
+  // would punch a partial hole anyway.
+  delete attrs['marker-start'];
+  delete attrs['marker-mid'];
+  delete attrs['marker-end'];
+
   const paints: SceneAttrs = {};
   if (node.kind !== 'g') {
-    paints.fill = paint;
+    // A shape that does not fill must not fill in the mask either. A curved
+    // connector would otherwise light the whole area between its arc and its
+    // chord, which is nowhere near the shape the reader sees.
+    paints.fill = attrs.fill === 'none' ? 'none' : paint;
     if (padding > 0) {
       paints.stroke = paint;
       paints['stroke-width'] = padding * 2;
       paints['stroke-linejoin'] = 'round';
+      paints['stroke-linecap'] = 'round';
     } else if (attrs.stroke !== undefined) {
       paints.stroke = paint;
     }
