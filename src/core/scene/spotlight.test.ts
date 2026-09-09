@@ -170,6 +170,46 @@ describe('spotlight in the scene', () => {
     });
   });
 
+  // Markers default to `markerUnits: strokeWidth`, and the mask's stroke is the
+  // padding — so a connector's arrowhead was drawn at multiples of its real size,
+  // hanging a large triangle of lit canvas off the end of the line.
+  it("does not carry a connector's arrowhead into the mask", () => {
+    const scene = buildScene(
+      animation({
+        elements: [
+          { type: 'rect', id: 'a', x: 40, y: 120, width: 80, height: 50 },
+          { type: 'rect', id: 'b', x: 420, y: 120, width: 80, height: 50 },
+          { type: 'arrow', id: 'edge', fromId: 'a', toId: 'b', headEnd: 'arrow' },
+        ],
+        effects: [spot({ elementIds: ['edge'], shape: 'elements', padding: 8 })],
+      }),
+      500,
+    );
+    const hole = maskOf(scene.defs)!.children[1]!;
+    const shape = (hole as { children: readonly SceneNode[] }).children[0]!;
+    expect(shape.attrs['marker-end']).toBeUndefined();
+    expect(shape.attrs['stroke-width']).toBe(16);
+  });
+
+  // A curved connector does not fill, so filling it in the mask would light the
+  // whole area between its arc and its chord.
+  it('keeps a shape that does not fill from filling in the mask', () => {
+    const scene = buildScene(
+      animation({
+        elements: [
+          { type: 'rect', id: 'a', x: 40, y: 120, width: 80, height: 50 },
+          { type: 'rect', id: 'b', x: 420, y: 120, width: 80, height: 50 },
+          { type: 'arrow', id: 'edge', fromId: 'a', toId: 'b', curvature: 0.4 },
+        ],
+        effects: [spot({ elementIds: ['edge'], shape: 'elements', padding: 6 })],
+      }),
+      500,
+    );
+    const hole = maskOf(scene.defs)!.children[1]!;
+    const shape = (hole as { children: readonly SceneNode[] }).children[0]!;
+    expect(shape.attrs.fill).toBe('none');
+  });
+
   // The mask's children hang off the mask, not off the group the element lives in,
   // so a nested target had its hole punched at the group's origin: empty canvas lit
   // and the target left dark.
