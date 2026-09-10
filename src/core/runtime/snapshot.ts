@@ -116,32 +116,53 @@ export function activeAppearance(el: AnimationElement, time: number): ActiveAppe
  */
 export function computeSnapshot(doc: AnimationDocument, time: number): SnapshotMap {
   const snapshot: SnapshotMap = new Map();
+  for (const el of doc.elements) snapshot.set(el.id, elementStateAt(el, time));
+  return snapshot;
+}
 
-  for (const el of doc.elements) {
-    const state: ElementVisualState = {
-      ...(el as unknown as Record<string, unknown>),
-      visible: false,
-    };
+/**
+ * One element's state, without evaluating the rest of the document.
+ *
+ * `computeSnapshot` is the right shape for rendering a frame, where every element
+ * is needed anyway. It is the wrong shape for asking about one element at many
+ * times — a motion trail sampling twelve past instants would evaluate a
+ * forty-element document four hundred and eighty times to use twelve answers.
+ *
+ * This is the same evaluation, which is what `computeSnapshot` now calls, so the
+ * two cannot drift.
+ */
+export function elementStateAt(el: AnimationElement, time: number): ElementVisualState {
+  const state: ElementVisualState = {
+    ...(el as unknown as Record<string, unknown>),
+    visible: false,
+  };
 
-    for (const track of el.tracks) {
-      const value = trackValueAt(track, time);
-      if (value !== undefined) state[track.property] = value;
-    }
-
-    const active = activeAppearance(el, time);
-    if (active) {
-      state.visible = true;
-      if (active.phase === 'entry' && active.appearance.entryMode) {
-        state.__entryMode = active.appearance.entryMode;
-        state.__entryProgress = active.phaseProgress;
-      } else if (active.phase === 'exit' && active.appearance.exitMode) {
-        state.__exitMode = active.appearance.exitMode;
-        state.__exitProgress = active.phaseProgress;
-      }
-    }
-
-    snapshot.set(el.id, state);
+  for (const track of el.tracks) {
+    const value = trackValueAt(track, time);
+    if (value !== undefined) state[track.property] = value;
   }
 
-  return snapshot;
+  const active = activeAppearance(el, time);
+  if (active) {
+    state.visible = true;
+    if (active.phase === 'entry' && active.appearance.entryMode) {
+      state.__entryMode = active.appearance.entryMode;
+      state.__entryProgress = active.phaseProgress;
+    } else if (active.phase === 'exit' && active.appearance.exitMode) {
+      state.__exitMode = active.appearance.exitMode;
+      state.__exitProgress = active.phaseProgress;
+    }
+  }
+
+  return state;
+}
+
+/** One element's state by id, or null when the document has no such element. */
+export function computeElementState(
+  doc: AnimationDocument,
+  elementId: string,
+  time: number,
+): ElementVisualState | null {
+  const el = doc.elements.find((candidate) => candidate.id === elementId);
+  return el ? elementStateAt(el, time) : null;
 }

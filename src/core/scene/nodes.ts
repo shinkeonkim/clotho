@@ -92,7 +92,8 @@ export type SceneDiagnosticCode =
   | 'pending-asset'
   | 'tree-issue'
   | 'camera-focus'
-  | 'spotlight-target';
+  | 'spotlight-target'
+  | 'trail-target';
 
 /**
  * Something the scene could not render, reported rather than swallowed.
