@@ -923,6 +923,163 @@ const TRAIL: Doc = (() => {
 })();
 
 // ---------------------------------------------------------------------------
+// 6d. Camera
+
+/**
+ * The only feature that moves what the reader sees without moving anything on
+ * the stage.
+ *
+ * A pipeline drawn small enough that its labels are unreadable whole, which is the
+ * case a camera exists for. `focus` names elements and lets the camera work out the
+ * framing, so the four entries here are the four things worth knowing about it: one
+ * element, two at once, a *moving* element, and a pull back to the union of two far
+ * apart.
+ *
+ * The third is the one that cannot be faked with a track. `focus` resolves against
+ * live bounds every frame, so the view follows the packet while it travels rather
+ * than arriving where it will end up.
+ *
+ * `strokeScaling: "fixed"` keeps strokes at their authored width through the zoom.
+ * Scaling them is what a drawing program does; a diagram zoomed to 2.6x with 5px
+ * borders reads as a different diagram.
+ */
+const CAMERA: Doc = doc({
+  id: 'camera',
+  title: 'Camera track',
+  description: 'focus frames named elements, and follows them when they move',
+  duration: 8000,
+  canvas: { width: 720, height: 280, background: 'transparent' },
+  settings: { loop: true, autoplay: true, showCaption: true, showChapterList: false },
+  chapters: [
+    {
+      id: 'c1',
+      time: 0,
+      label: 'whole pipeline',
+      subtitle: 'no camera entry yet — the full canvas',
+    },
+    {
+      id: 'c2',
+      time: 1200,
+      label: 'focus: ingest',
+      subtitle: 'focus frames one element and zooms to fit',
+    },
+    {
+      id: 'c3',
+      time: 3200,
+      label: 'focus: worker',
+      subtitle: 'the retry note is only readable up close',
+    },
+    {
+      id: 'c4',
+      time: 5000,
+      label: 'follow the packet',
+      subtitle: 'focus resolves against live bounds, so it tracks a moving element',
+    },
+    {
+      id: 'c5',
+      time: 6800,
+      label: 'pull back',
+      subtitle: 'two elements at once — the camera frames their union',
+    },
+  ],
+  camera: {
+    strokeScaling: 'fixed',
+    focus: [
+      { time: 1200, duration: 800, elementIds: ['ingest'], padding: 24, maxZoom: 2.6 },
+      { time: 3200, duration: 900, elementIds: ['worker', 'retry'], padding: 22, maxZoom: 2.6 },
+      { time: 5000, duration: 700, elementIds: ['packet'], padding: 55, maxZoom: 2.6 },
+      { time: 6800, duration: 900, elementIds: ['ingest', 'store'], padding: 30, maxZoom: 2.6 },
+    ],
+  },
+  elements: [
+    ...(
+      [
+        { id: 'ingest', cx: 140, cy: 100, fill: '#fde68a' },
+        { id: 'queue', cx: 300, cy: 190, fill: '#bfdbfe' },
+        { id: 'worker', cx: 460, cy: 100, fill: '#bbf7d0' },
+        { id: 'store', cx: 600, cy: 190, fill: '#fbcfe8' },
+      ] as const
+    ).map((node) => ({
+      type: 'circle' as const,
+      id: node.id,
+      cx: node.cx,
+      cy: node.cy,
+      r: 30,
+      fill: node.fill,
+      stroke: INK,
+      strokeWidth: 2,
+      label: node.id,
+      labelSize: 12,
+      // The pastel fills stay pastel in both themes, so the label has to be dark in
+      // both: the default resolves to the theme foreground and goes white on dark.
+      labelColor: '#1e1b4b',
+      appearances: whole(8000),
+    })),
+    ...(
+      [
+        { id: 'e1', fromId: 'ingest', toId: 'queue' },
+        { id: 'e2', fromId: 'queue', toId: 'worker' },
+        { id: 'e3', fromId: 'worker', toId: 'store' },
+      ] as const
+    ).map((edge) => ({
+      type: 'arrow' as const,
+      id: edge.id,
+      fromId: edge.fromId,
+      toId: edge.toId,
+      headEnd: 'arrow' as const,
+      strokeWidth: 2,
+      appearances: whole(8000),
+    })),
+    {
+      type: 'text',
+      id: 'retry',
+      x: 460,
+      y: 52,
+      content: 'retry ×3',
+      fontSize: 11,
+      color: '#7c3aed',
+      textAnchor: 'middle',
+      appearances: whole(8000),
+    },
+    {
+      // Small on purpose: at canvas scale it is a dot, and the whole point of the
+      // third focus entry is that the camera is what makes it legible.
+      type: 'rect',
+      id: 'packet',
+      x: 168,
+      y: 126,
+      width: 22,
+      height: 22,
+      cornerRadius: 5,
+      fill: '#ef4444',
+      stroke: '#b91c1c',
+      strokeWidth: 1.5,
+      appearances: whole(8000),
+      tracks: [
+        {
+          property: 'x',
+          keyframes: [
+            { time: 0, value: 168 },
+            { time: 4600, value: 168 },
+            { time: 6600, value: 560, ease: 'easeInOut' as const },
+            { time: 8000, value: 560 },
+          ],
+        },
+        {
+          property: 'y',
+          keyframes: [
+            { time: 0, value: 126 },
+            { time: 4600, value: 126 },
+            { time: 6600, value: 216, ease: 'easeInOut' as const },
+            { time: 8000, value: 216 },
+          ],
+        },
+      ],
+    },
+  ],
+});
+
+// ---------------------------------------------------------------------------
 // 7. Anchors and arrowheads
 
 const ANCHORS = [
@@ -1465,6 +1622,12 @@ export const GALLERY: readonly GalleryEntry[] = [
     title: 'Motion trail',
     note: 'Trails are re-derived from the document at every frame, never accumulated — which is why seeking backwards does not smear them.',
     doc: TRAIL,
+  },
+  {
+    slug: 'camera',
+    title: 'Camera track',
+    note: 'The only feature that moves what the reader sees without moving anything on the stage. The third focus follows the packet *while* it travels — a track cannot do that.',
+    doc: CAMERA,
   },
   {
     slug: 'connectors',
