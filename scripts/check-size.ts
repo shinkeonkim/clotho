@@ -39,6 +39,12 @@ const DIST = join(REPO_ROOT, 'dist');
  * paid for: it samples through the same bounds and tree code. That is the shape to
  * expect from here on, and a feature that moves every budget by kilobytes again
  * should be read as a sign that something is being duplicated rather than reused.
+ *
+ * Keep the headroom at a few percent and never shave it to nothing. gzip output is
+ * not byte-identical across zlib builds — the same bundle measures a couple of
+ * hundred bytes larger on CI than on macOS — so `cli` and `plugins`, which had been
+ * left within a tenth of a percent of their measurements, failed on CI while passing
+ * locally. A budget that tight reports the platform, not the bundle.
  */
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
@@ -62,12 +68,12 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   gif: { file: 'gif/index.js', gzipBudget: 29_000, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 45_500,
+    gzipBudget: 47_200,
     note: 'validate + migrate + lint + GIF (needs zod)',
   },
   plugins: {
     file: 'plugins/index.js',
-    gzipBudget: 19_000,
+    gzipBudget: 19_600,
     note: 'experimental authoring pipeline; isolated from the default core entry',
   },
   testing: {

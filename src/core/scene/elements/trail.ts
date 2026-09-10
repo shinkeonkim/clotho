@@ -119,8 +119,8 @@ export function buildTrails(ctx: SceneContext): SceneNode[] {
       });
       continue;
     }
-    // One point is a dot on the element itself, which reads as a rendering glitch
-    // rather than as a trail.
+    // One sample is the element itself and nothing else; both builders would also
+    // reject it, but there is no reason to walk it.
     if (samples.length < 2) continue;
 
     const dots =
@@ -132,37 +132,99 @@ export function buildTrails(ctx: SceneContext): SceneNode[] {
 }
 
 /**
- * Opacity for drawn piece `index` of `count` samples, oldest to newest.
+ * Opacity for the piece drawn from sample `index` of `count`, oldest to newest.
  *
- * Both modes draw one fewer piece than there are samples — a segment joins two, and
- * the newest dot would sit under the element itself — so the newest piece is index
- * `count - 2` and lands on a full 1.
+ * Keyed on the sample's position in the original window, not on how many pieces
+ * survived thinning, so a piece says how long ago the element was there. A trail
+ * that stalls therefore keeps fading out instead of resetting to full.
  */
 function sampleOpacity(effect: TrailEffect, index: number, count: number): number {
   if (!effect.fade || count < 2) return 1;
   return Math.min(1, (index + 1) / (count - 1));
 }
 
+/** Below this two samples are the same place, in canvas units. */
+const COINCIDENT = 0.01;
+
+interface Sample {
+  readonly point: Point;
+  /** Position in the original window, which is what `sampleOpacity` reads. */
+  readonly index: number;
+}
+
+const distance = (a: Point, b: Point): number => Math.hypot(a.x - b.x, a.y - b.y);
+
+/**
+ * Samples far enough apart to be worth drawing, newest first, excluding the newest.
+ *
+ * Sampling a window at a fixed rate says nothing about how far the element moved
+ * between the samples, and when it moved little or not at all the samples pile up
+ * on one another. Stacked translucent dots composite: eleven samples on one spot,
+ * fading from 0.08 to 1, paint a solid blob — the fade is drawn but not seen, and a
+ * cursor that has stopped keeps a full-strength smear under it until the window
+ * clears. So walk back from the element's current position and keep a sample only
+ * once it has left the last one kept.
+ *
+ * Walking backwards is what makes the kept sample the *most recent* visit to that
+ * spot, so the fade reads as how long ago the element was last there.
+ */
+function thinSamples(samples: readonly Point[], minGap: number): Sample[] {
+  const kept: Sample[] = [];
+  let last = samples[samples.length - 1]!;
+  for (let i = samples.length - 2; i >= 0; i -= 1) {
+    const point = samples[i]!;
+    if (distance(point, last) < minGap) continue;
+    kept.push({ point, index: i });
+    last = point;
+  }
+  return kept.reverse();
+}
+
+/**
+ * Samples with runs of coincident ones collapsed, oldest first, newest kept.
+ *
+ * A line has to stay joined to the element, so unlike `thinSamples` this keeps the
+ * newest sample and only drops the repeats. Repeats are what a stalled element
+ * produces, and a zero-length segment with a round cap is a filled dot — eleven of
+ * them stacked is the same solid blob.
+ */
+function collapseSamples(samples: readonly Point[]): Sample[] {
+  const kept: Sample[] = [];
+  for (let i = 0; i < samples.length; i += 1) {
+    const point = samples[i]!;
+    const previous = kept[kept.length - 1];
+    if (previous && distance(point, previous.point) < COINCIDENT) kept.pop();
+    kept.push({ point, index: i });
+  }
+  return kept;
+}
+
 function dotNodes(effect: TrailEffect, samples: readonly Point[]): SceneNode[] {
-  // The newest sample sits under the element itself, so drawing it would only
-  // thicken the element's own outline.
-  return samples.slice(0, -1).map((point, i) => ({
+  // The gap is the dot's own radius: nearer than that and the new dot would sit
+  // inside the last one, adding opacity rather than distance. It also stands in for
+  // the old "drop the newest sample" rule — the walk starts from the element's
+  // position, so nothing is drawn underneath the element either.
+  return thinSamples(samples, Math.max(effect.width, COINCIDENT)).map(({ point, index }) => ({
     kind: 'circle' as const,
-    key: `${effect.id}-dot-${i}`,
+    key: `${effect.id}-dot-${index}`,
     attrs: compactAttrs({
       cx: point.x,
       cy: point.y,
       r: effect.width,
       fill: effect.color,
-      opacity: sampleOpacity(effect, i, samples.length),
+      opacity: sampleOpacity(effect, index, samples.length),
       'pointer-events': 'none',
     }),
   }));
 }
 
 function pathNodes(effect: TrailEffect, samples: readonly Point[]): SceneNode[] {
-  const line = (points: readonly Point[]): string =>
-    points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+  const points = collapseSamples(samples);
+  // One point is the element standing still: there is no path to draw, and drawing
+  // it anyway leaves a round-capped dot pinned under the element.
+  if (points.length < 2) return [];
+
+  const line = (from: Point, to: Point): string => `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
 
   // Without fading the whole trail is one path; with it, each segment carries its
   // own opacity, which is the only way an SVG stroke can vary along its length
@@ -173,7 +235,7 @@ function pathNodes(effect: TrailEffect, samples: readonly Point[]): SceneNode[] 
         kind: 'path',
         key: `${effect.id}-path`,
         attrs: compactAttrs({
-          d: line(samples),
+          d: points.map(({ point }, i) => `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' '),
           fill: 'none',
           stroke: effect.color,
           'stroke-width': effect.width,
@@ -185,17 +247,20 @@ function pathNodes(effect: TrailEffect, samples: readonly Point[]): SceneNode[] 
     ];
   }
 
-  return samples.slice(1).map((point, i) => ({
-    kind: 'path' as const,
-    key: `${effect.id}-seg-${i}`,
-    attrs: compactAttrs({
-      d: line([samples[i]!, point]),
-      fill: 'none',
-      stroke: effect.color,
-      'stroke-width': effect.width,
-      'stroke-linecap': 'round',
-      opacity: sampleOpacity(effect, i, samples.length),
-      'pointer-events': 'none',
-    }),
-  }));
+  return points.slice(1).map((to, i) => {
+    const from = points[i]!;
+    return {
+      kind: 'path' as const,
+      key: `${effect.id}-seg-${from.index}`,
+      attrs: compactAttrs({
+        d: line(from.point, to.point),
+        fill: 'none',
+        stroke: effect.color,
+        'stroke-width': effect.width,
+        'stroke-linecap': 'round',
+        opacity: sampleOpacity(effect, from.index, samples.length),
+        'pointer-events': 'none',
+      }),
+    };
+  });
 }

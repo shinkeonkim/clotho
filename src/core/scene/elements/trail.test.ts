@@ -201,9 +201,10 @@ describe('trail in the scene', () => {
       elements: [{ type: 'circle', id: 'cursor', cx: 100, cy: 100, r: 10 }],
       effects: [trail()],
     });
-    const nodes = trailNodes(buildScene(still, 500).nodes);
-    // Still two points, but both at the same place: a zero-length path.
-    expect(nodes[0]!.attrs.d).toBe('M 100 100 L 100 100 L 100 100 L 100 100 L 100 100');
+    // Every sample is the same place. Drawing them anyway leaves round-capped
+    // zero-length segments stacked under the element — a solid dot that no amount
+    // of waiting clears, because the element never leaves.
+    expect(trailNodes(buildScene(still, 500).nodes)).toHaveLength(0);
   });
 
   it('draws dots rather than a line when the position steps', () => {
@@ -232,8 +233,9 @@ describe('trail in the scene', () => {
     });
     const nodes = trailNodes(buildScene(stepped, 800).nodes);
     expect(nodes.every((node) => node.kind === 'circle')).toBe(true);
-    // The newest sample sits under the element itself and is not drawn.
-    expect(nodes).toHaveLength(4);
+    // Two cells were visited and left, so two dots — not one per sample. The
+    // newest sample sits under the element itself and is not drawn.
+    expect(nodes.map((node) => node.attrs.cx)).toEqual([0, 100]);
   });
 
   it('honours an explicit mode over the automatic choice', () => {
@@ -347,5 +349,132 @@ describe('trail in the scene', () => {
     for (const at of [0, 100, 200, 900, 400, 700]) buildScene(animated, at);
     const afterScrubbing = buildScene(animated, 700);
     expect(trailNodes(afterScrubbing.nodes)).toEqual(trailNodes(direct.nodes));
+  });
+});
+
+/**
+ * What the fade is supposed to say is "the element was here this long ago". A
+ * sample rate says nothing about distance covered, so when the element moves
+ * slowly — or steps, and waits — several samples land on one spot. Translucent
+ * pieces stacked on one spot composite: eleven of them fading from 0.08 to 1 come
+ * out at full strength, so the oldest end of the trail is as solid as the newest
+ * and the tail reads as a smear that will not clear.
+ */
+describe('samples that land on the same place', () => {
+  const stepped = (over: Record<string, unknown> = {}) =>
+    animation({
+      elements: [
+        {
+          type: 'circle',
+          id: 'cursor',
+          cx: 0,
+          cy: 100,
+          r: 10,
+          tracks: [
+            {
+              property: 'cx',
+              interpolate: 'discrete',
+              keyframes: [
+                { time: 0, value: 0 },
+                { time: 400, value: 100 },
+                { time: 800, value: 200 },
+                { time: 1200, value: 300 },
+              ],
+            },
+          ],
+        },
+      ],
+      effects: [trail({ window: 1200, samples: 13, fade: true, mode: 'dots', ...over })],
+    });
+
+  it('draws one dot per place the element actually visited', () => {
+    const nodes = trailNodes(buildScene(stepped(), 1200).nodes);
+    expect(nodes.map((node) => node.attrs.cx)).toEqual([0, 100, 200]);
+  });
+
+  it('keeps every dot at the opacity it was given', () => {
+    const nodes = trailNodes(buildScene(stepped(), 1200).nodes);
+    // No two dots share a spot, so what the viewer sees is the opacity written on
+    // the dot rather than the composite of a stack of them.
+    const places = nodes.map((node) => `${node.attrs.cx},${node.attrs.cy}`);
+    expect(new Set(places).size).toBe(places.length);
+
+    const opacities = nodes.map((node) => node.attrs.opacity as number);
+    // Increasing towards the element, and the oldest visit genuinely faint — which
+    // is the whole point of the fade.
+    expect(opacities).toEqual([...opacities].sort((a, b) => a - b));
+    expect(opacities[0]!).toBeLessThan(0.4);
+  });
+
+  it('ages the trail of an element that has stopped until it clears', () => {
+    const halts = animation({
+      elements: [
+        {
+          type: 'circle',
+          id: 'cursor',
+          cx: 0,
+          cy: 100,
+          r: 10,
+          tracks: [
+            {
+              property: 'cx',
+              keyframes: [
+                { time: 0, value: 0 },
+                { time: 1000, value: 400, ease: 'linear' },
+                { time: 5000, value: 400 },
+              ],
+            },
+          ],
+        },
+      ],
+      effects: [trail({ window: 1000, samples: 11, fade: true })],
+    });
+
+    const brightest = (at: number): number =>
+      Math.max(
+        0,
+        ...trailNodes(buildScene(halts, at).nodes).map((node) => node.attrs.opacity as number),
+      );
+
+    // Moving: the trail reaches the element at full strength. Stopped: it fades,
+    // because every piece is now older than the moment the element halted.
+    expect(brightest(900)).toBe(1);
+    expect(brightest(1400)).toBeLessThan(1);
+    expect(brightest(1400)).toBeGreaterThan(0);
+    // A full window after the halt there is nothing left of it at all.
+    expect(trailNodes(buildScene(halts, 2200).nodes)).toHaveLength(0);
+  });
+
+  it('leaves no zero-length segment behind a halted element', () => {
+    const halts = animation({
+      elements: [
+        {
+          type: 'circle',
+          id: 'cursor',
+          cx: 0,
+          cy: 100,
+          r: 10,
+          tracks: [
+            {
+              property: 'cx',
+              keyframes: [
+                { time: 0, value: 0 },
+                { time: 500, value: 200, ease: 'linear' },
+                { time: 5000, value: 200 },
+              ],
+            },
+          ],
+        },
+      ],
+      effects: [trail({ window: 400, samples: 9, fade: true })],
+    });
+    for (const at of [600, 700, 800, 900]) {
+      for (const node of trailNodes(buildScene(halts, at).nodes)) {
+        const [x1, y1, x2, y2] = String(node.attrs.d)
+          .match(/-?[\d.]+/g)!
+          .map(Number) as [number, number, number, number];
+        expect(Math.hypot(x2 - x1, y2 - y1)).toBeGreaterThan(0);
+      }
+    }
   });
 });
