@@ -5,7 +5,6 @@
 // the frame still says what the author meant.
 
 import type { MathElement } from '../../schema/elements';
-import { estimateMonospaceWidth } from '../../text/width';
 import { resolveElementColor } from '../../theme/colors';
 import { compactAttrs, type SceneNode } from '../nodes';
 import { report, type ElementState, type SceneContext } from '../context';
@@ -44,11 +43,6 @@ function sourceFallback(el: MathElement, state: ElementState, ctx: SceneContext)
     }),
     content: tex,
   };
-}
-
-/** Width the fallback occupies, so callers that need an extent have an answer. */
-export function estimateMathWidth(el: MathElement, fontSize: number): number {
-  return estimateMonospaceWidth(el.tex, fontSize);
 }
 
 export function buildMath(ctx: SceneContext, el: MathElement, state: ElementState): SceneNode {

@@ -10,6 +10,11 @@ import { buildScene } from '../build';
 import type { MathRenderer } from '../math';
 import type { SceneNode, SceneText } from '../nodes';
 import { measureElementBox } from '../../layout';
+import { computeCamera } from '../../camera';
+import { elementRootBounds, elementRootCenterAt } from '../../runtime/bounds';
+import type { BoundsContext } from '../../runtime/bounds';
+import { accumulatedMatrices, buildElementTree } from '../../runtime/tree';
+import { computeSnapshot } from '../../runtime/snapshot';
 
 const ALWAYS = [{ start: 0, end: 10_000, entryDuration: 0, exitDuration: 0 }];
 
@@ -205,5 +210,112 @@ describe('math as an element', () => {
     const end = measureElementBox(animation({ textAnchor: 'end' }).elements[0]!)!;
     expect(middle.x).toBeCloseTo(start.x - start.width / 2, 6);
     expect(end.x).toBeCloseTo(start.x - start.width, 6);
+  });
+});
+
+function boundsContextFor(doc: AnimationDocument, time: number): BoundsContext {
+  const snapshot = computeSnapshot(doc, time);
+  const tree = buildElementTree(doc);
+  return {
+    snapshot,
+    tree,
+    elementById: new Map(doc.elements.map((element) => [element.id, element])),
+    matrices: accumulatedMatrices(tree, snapshot),
+  };
+}
+
+/**
+ * `math` reaching the features that resolve against bounds.
+ *
+ * The element shipped without a case in `elementLocalBounds` or `elementCenter`, so
+ * it fell through to null in both — and every feature that asks where an element is
+ * refused to work on it *while blaming the element*: the camera said "no visible
+ * target", the spotlight said "not on stage", and a trail reported no position, all
+ * for an equation plainly on screen. The layout compiler had its own `math` case
+ * and worked, which is what made the gap easy to miss.
+ */
+describe('math as something other features can point at', () => {
+  const withTargets = (over: Record<string, unknown> = {}): AnimationDocument =>
+    animationDocumentSchema.parse({
+      clothoVersion: 1,
+      id: 'math-targets',
+      duration: 2000,
+      canvas: { width: 600, height: 300 },
+      camera: { focus: [{ time: 0, duration: 0, elementIds: ['eq'], padding: 20 }] },
+      elements: [
+        {
+          type: 'math',
+          id: 'eq',
+          x: 200,
+          y: 150,
+          tex: 'a^2 + b^2 = c^2',
+          fontSize: 24,
+          appearances: ALWAYS,
+          ...over,
+        },
+      ],
+      effects: [
+        { type: 'spotlight', id: 'sp', elementIds: ['eq'], time: 0, duration: 2000 },
+        { type: 'trail', id: 'tr', elementId: 'eq', time: 0, duration: 2000, window: 600 },
+      ],
+    });
+
+  const moving = withTargets({
+    tracks: [
+      {
+        property: 'x',
+        keyframes: [
+          { time: 0, value: 200 },
+          { time: 2000, value: 420, ease: 'linear' },
+        ],
+      },
+    ],
+  });
+
+  it('has a box, anchored the way its text is', () => {
+    const ctx = boundsContextFor(withTargets(), 1000);
+    const box = elementRootBounds('eq', ctx)!;
+    expect(box).not.toBeNull();
+    expect(box.width).toBeGreaterThan(0);
+    // The baseline sits inside the box rather than on its top edge.
+    expect(box.y).toBeLessThan(150);
+    expect(box.y + box.height).toBeGreaterThan(150);
+
+    const middle = elementRootBounds(
+      'eq',
+      boundsContextFor(withTargets({ textAnchor: 'middle' }), 1000),
+    )!;
+    expect(middle.x).toBeCloseTo(box.x - box.width / 2, 6);
+  });
+
+  it('reports a position, so a trail can follow it', () => {
+    const tree = buildElementTree(moving);
+    const at500 = elementRootCenterAt(tree, 'eq', 500);
+    const at1500 = elementRootCenterAt(tree, 'eq', 1500);
+    expect(at500).not.toBeNull();
+    expect(at1500!.x).toBeGreaterThan(at500!.x);
+
+    const pieces = buildScene(moving, 1000)
+      .nodes.map((node) => String(node.key))
+      .filter((key) => key.startsWith('tr-'));
+    expect(pieces.length).toBeGreaterThan(0);
+  });
+
+  it('can be framed by a camera focus', () => {
+    const camera = computeCamera(moving, 1000)!;
+    expect(camera).not.toBeNull();
+    expect(camera.issues).toHaveLength(0);
+    expect(camera.zoom).toBeGreaterThan(1);
+  });
+
+  it('can be lit by a spotlight', () => {
+    const scene = buildScene(withTargets(), 1000);
+    expect(scene.nodes.some((node) => String(node.key).includes('spot'))).toBe(true);
+    expect(scene.diagnostics.map((d) => d.code)).not.toContain('spotlight-target');
+  });
+
+  it('leaves only the diagnostic that is actually about the element', () => {
+    const codes = buildScene(withTargets(), 1000).diagnostics.map((d) => d.code);
+    expect(codes).toEqual(['unresolved-math']);
   });
 });
