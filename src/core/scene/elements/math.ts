@@ -58,10 +58,16 @@ export function buildMath(ctx: SceneContext, el: MathElement, state: ElementStat
     // therefore unreadable on a dark stage, and making every host reimplement that
     // rule would guarantee some of them get it wrong.
     const authored = str(state, 'color', el.color);
+    const anchor = str(state, 'textAnchor', el.textAnchor);
     inner = ctx.options.mathRenderer.render(tex, {
       fontSize: num(state, 'fontSize', el.fontSize),
       color: ctx.options.rawColors ? authored : (resolveElementColor(authored, 'text') ?? authored),
       display: str(state, 'display', el.display) === 'inline' ? 'inline' : 'block',
+      // Handed over rather than applied here: the core cannot measure the subtree it
+      // is about to receive, and anchoring without a width is guesswork. The
+      // fallback below applies it through `text-anchor`, and bounds shift by it, so
+      // a renderer that drops it puts the expression outside its own box.
+      textAnchor: anchor === 'middle' || anchor === 'end' ? anchor : 'start',
     });
   }
 
@@ -71,9 +77,14 @@ export function buildMath(ctx: SceneContext, el: MathElement, state: ElementStat
     report(ctx, {
       code: 'unresolved-math',
       elementId: el.id,
-      message: ctx.options.mathRenderer
-        ? `math "${el.id}" could not be typeset by ${ctx.options.mathRenderer.name}; showing its source`
-        : `math "${el.id}" has no mathRenderer; showing its source`,
+      message:
+        tex.trim() === ''
+          ? // The renderer is never asked about an empty expression, so naming it
+            // would blame it for something it did not see.
+            `math "${el.id}" has an empty tex expression`
+          : ctx.options.mathRenderer
+            ? `math "${el.id}" could not be typeset by ${ctx.options.mathRenderer.name}; showing its source`
+            : `math "${el.id}" has no mathRenderer; showing its source`,
     });
     inner = sourceFallback(el, state, ctx);
   }

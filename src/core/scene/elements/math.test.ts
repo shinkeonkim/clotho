@@ -11,6 +11,7 @@ import type { MathRenderer } from '../math';
 import type { SceneNode, SceneText } from '../nodes';
 import { measureElementBox } from '../../layout';
 import { computeCamera } from '../../camera';
+import { renderDocumentToSvg } from '../../../svg/index';
 import { elementRootBounds, elementRootCenterAt } from '../../runtime/bounds';
 import type { BoundsContext } from '../../runtime/bounds';
 import { accumulatedMatrices, buildElementTree } from '../../runtime/tree';
@@ -109,7 +110,12 @@ describe('math with a typesetter', () => {
       },
     );
     expect(scene.diagnostics).toEqual([]);
-    expect(seen[0]).toEqual({ fontSize: 36, color: '#ff0000', display: 'inline' });
+    expect(seen[0]).toEqual({
+      fontSize: 36,
+      color: '#ff0000',
+      display: 'inline',
+      textAnchor: 'start',
+    });
   });
 
   it('hands the typesetter a theme-safe color rather than the raw schema default', () => {
@@ -210,6 +216,66 @@ describe('math as an element', () => {
     const end = measureElementBox(animation({ textAnchor: 'end' }).elements[0]!)!;
     expect(middle.x).toBeCloseTo(start.x - start.width / 2, 6);
     expect(end.x).toBeCloseTo(start.x - start.width, 6);
+  });
+});
+
+/**
+ * Two things that look like they work and do not, which is worse than failing.
+ *
+ * Both were found by asking what happens to expressions other than the one in the
+ * QA page, which is the only way this kind of gap shows up.
+ */
+describe('expressions other than the easy one', () => {
+  it('tells the typesetter which side of the origin to work from', () => {
+    const seen: { textAnchor: string }[] = [];
+    const capture = fakeRenderer({
+      render: (tex, options) => {
+        seen.push({ textAnchor: options.textAnchor });
+        return { kind: 'text', key: 't', attrs: {}, content: tex };
+      },
+    });
+    for (const textAnchor of ['start', 'middle', 'end'] as const) {
+      buildScene(animation({ textAnchor }), 0, { mathRenderer: capture });
+    }
+    // The core cannot anchor the subtree itself — it never learns how wide it is —
+    // so a renderer that is not told would leave `textAnchor` doing nothing while
+    // the element's bounds shift by it.
+    expect(seen.map((o) => o.textAnchor)).toEqual(['start', 'middle', 'end']);
+  });
+
+  it('shifts its bounds by the same anchor it hands over', () => {
+    const start = elementRootBounds('eq', boundsContextFor(animation({ textAnchor: 'start' }), 0))!;
+    const middle = elementRootBounds(
+      'eq',
+      boundsContextFor(animation({ textAnchor: 'middle' }), 0),
+    )!;
+    const end = elementRootBounds('eq', boundsContextFor(animation({ textAnchor: 'end' }), 0))!;
+    expect(middle.x).toBeCloseTo(start.x - start.width / 2, 6);
+    expect(end.x).toBeCloseTo(start.x - start.width, 6);
+  });
+
+  it('does not blame the typesetter for an expression it was never shown', () => {
+    for (const tex of ['', '   ']) {
+      const scene = buildScene(animation({ tex }), 0, { mathRenderer: fakeRenderer() });
+      expect(scene.diagnostics).toHaveLength(1);
+      expect(scene.diagnostics[0]!.message).toContain('empty tex expression');
+      expect(scene.diagnostics[0]!.message).not.toContain('fake');
+    }
+  });
+
+  it('still names the typesetter when it actually gave up', () => {
+    const scene = buildScene(animation({ tex: '\\nonsense' }), 0, {
+      mathRenderer: fakeRenderer({ name: 'picky', render: () => null }),
+    });
+    expect(scene.diagnostics[0]!.message).toContain('picky');
+  });
+
+  it('escapes markup characters in the source fallback', () => {
+    // `<`, `>` and `&` are ordinary in TeX — `a < b`, `x &= y` — and would close the
+    // text element early if they reached the serializer raw.
+    const svg = renderDocumentToSvg(animation({ tex: 'a < b & c > d' }), 0, { rawColors: true });
+    expect(svg).toContain('a &lt; b &amp; c &gt; d');
+    expect(svg).not.toContain('a < b & c > d');
   });
 });
 

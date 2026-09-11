@@ -17,6 +17,16 @@ export interface MathRenderOptions {
   readonly fontSize: number;
   readonly color: string;
   readonly display: 'block' | 'inline';
+  /**
+   * Which side of the origin the expression should sit on.
+   *
+   * The typesetter has to apply this because it is the only party that knows how
+   * wide its output is — the core hands over a string and gets back a subtree it
+   * cannot measure. Ignoring it leaves `textAnchor: "middle"` doing nothing while
+   * the element's bounds, which do shift by it, describe a box the expression is
+   * not in.
+   */
+  readonly textAnchor: 'start' | 'middle' | 'end';
 }
 
 /**
@@ -25,6 +35,7 @@ export interface MathRenderOptions {
  * The subtree is in the element's own coordinate space, with the origin at the
  * element's anchor point, so the renderer never has to know where on the canvas the
  * expression sits — exactly as `highlightLine` never has to know where the line is.
+ * `textAnchor` says which side of that origin to lay out from.
  *
  * Returning null means "I could not typeset this", which falls back to the source
  * text rather than drawing nothing.
