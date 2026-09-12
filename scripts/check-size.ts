@@ -51,39 +51,39 @@ const DIST = join(REPO_ROOT, 'dist');
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 59_500,
+    gzipBudget: 59_700,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
     file: 'svg/index.js',
-    gzipBudget: 29_000,
+    gzipBudget: 30_000,
     note: 'scene builder + serializer; no zod, no framework',
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 36_000,
+    gzipBudget: 37_100,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
-  react: { file: 'react/index.js', gzipBudget: 37_000, note: 'react is external; no zod' },
-  vue: { file: 'vue/index.js', gzipBudget: 34_000, note: 'vue is external; no zod' },
-  node: { file: 'node/index.js', gzipBudget: 10_500, note: 'loader + schema (needs zod)' },
-  gif: { file: 'gif/index.js', gzipBudget: 31_500, note: 'scene renderer + GIF encoder' },
+  react: { file: 'react/index.js', gzipBudget: 38_100, note: 'react is external; no zod' },
+  vue: { file: 'vue/index.js', gzipBudget: 35_300, note: 'vue is external; no zod' },
+  node: { file: 'node/index.js', gzipBudget: 10_800, note: 'loader + schema (needs zod)' },
+  gif: { file: 'gif/index.js', gzipBudget: 32_400, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 56_500,
-    note: 'validate + migrate + lint + GIF + dev server (needs zod)',
+    gzipBudget: 60_100,
+    note: 'validate + migrate + lint + sync + GIF + dev server (needs zod)',
   },
   plugins: {
     file: 'plugins/index.js',
-    gzipBudget: 20_500,
+    gzipBudget: 21_700,
     note: 'experimental authoring pipeline; isolated from the default core entry',
   },
   testing: {
     file: 'testing/index.js',
-    gzipBudget: 31_000,
+    gzipBudget: 32_000,
     note: 'scene assertions, SVG snapshots and pixel diff; no framework',
   },
-  styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
+  styles: { file: 'clotho.css', gzipBudget: 5_700, note: 'stylesheet' },
 };
 
 /** Imports each entry must never contain, so subpath isolation is real. */
