@@ -79,7 +79,7 @@ frame(t) = f(document, t)
 
 요소는 `elements` 배열에 **평평하게** 들어간다. 중첩은 배열 구조가 아니라 `parentId`로 표현한다(§8).
 
-열 가지 타입이 있다.
+열한 가지 타입이 있다.
 
 | 타입      | 쓰는 곳                      | 필수 필드                          |
 | --------- | ---------------------------- | ---------------------------------- |
@@ -87,12 +87,13 @@ frame(t) = f(document, t)
 | `circle`  | 노드, 상태, 점               | `cx` `cy` `r`                      |
 | `line`    | 연결선                       | 양 끝 (§7)                         |
 | `arrow`   | 방향 있는 연결, 메시지       | 양 끝 (§7)                         |
-| `text`    | 라벨, 수식, 설명             | `x` `y` `content`                  |
+| `text`    | 라벨, 설명                   | `x` `y` `content`                  |
 | `image`   | 아이콘, 다이어그램, 스크린샷 | `x` `y` `width` `height` `assetId` |
 | `path`    | 곡선, 임의 도형              | `d`                                |
 | `polygon` | 삼각형, 다각형               | `points`                           |
 | `group`   | 함께 움직이는 묶음           | —                                  |
 | `code`    | 코드 블록                    | `x` `y` `width` `height` `content` |
+| `math`    | 점화식, 복잡도, 불변식       | `x` `y` `tex`                      |
 
 모든 요소가 공통으로 갖는 것:
 
@@ -106,6 +107,8 @@ frame(t) = f(document, t)
   "tracks": []
 }
 ```
+
+`math`는 조판기를 host가 주입해야 실제 수식으로 그려진다(`buildScene`의 `mathRenderer`). 주입하지 않으면 `tex` 원문이 monospace로 보이고 진단이 남는다 — 빈자리가 생기는 것보다 낫다.
 
 `name`은 사람이 읽는 별칭이고 렌더에 영향이 없다. 요소가 30개를 넘어가면 `id`만으로는 편집이 어려워진다.
 

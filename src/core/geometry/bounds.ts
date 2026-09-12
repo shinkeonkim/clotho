@@ -12,7 +12,7 @@
 // unaffected by the error; callers that need exactness must inject a measurer.
 
 import type { AnimationElement } from '../schema/elements';
-import { estimateTextWidth } from '../text/width';
+import { estimateMonospaceWidth, estimateTextWidth } from '../text/width';
 import type { TextMeasurer } from '../text/width';
 import { applyToPoint, type Matrix, type Point } from './matrix';
 
@@ -192,6 +192,30 @@ export function elementLocalBounds(
       const x = num(state, 'x');
       const left = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x;
       // `y` is the baseline; ascent is roughly 0.8em and descent 0.2em.
+      return rect(left, num(state, 'y') - fontSize * 0.8, width, fontSize, true);
+    }
+
+    case 'math': {
+      // Measured as the monospace source fallback, because that is the one rendering
+      // the core can predict: a `mathRenderer` returns a subtree the host lays out,
+      // and bounds runs without a scene to measure. So a typeset expression is
+      // usually narrower than this says — `\\frac{-b}{2a}` typesets to about a third
+      // of its source width.
+      //
+      // Reporting a generous box beats reporting none. Without a case here `math`
+      // fell to `default: return null`, and every feature that resolves against
+      // bounds refused to work on it while blaming the element: camera focus said
+      // "no visible target", spotlight said "not on stage", and a trail reported no
+      // position — for an element plainly on screen. Framing slightly wide is a
+      // cosmetic error, and both camera focus and spotlight already have `padding`
+      // for taste.
+      const fontSize = num(state, 'fontSize', 16);
+      const width = estimateMonospaceWidth(str(state, 'tex'), fontSize);
+      const anchor = str(state, 'textAnchor', 'start');
+      const x = num(state, 'x');
+      const left = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x;
+      // Same baseline-relative box as `text`, since the fallback *is* a line of text.
+      // A typeset fraction reaches further above and below; `padding` covers it.
       return rect(left, num(state, 'y') - fontSize * 0.8, width, fontSize, true);
     }
 

@@ -28,7 +28,8 @@ function num(state: State, key: string): number {
  *
  * Kept faithful to legacy, including the quirks: `text` reports its anchor point
  * rather than a visual center (text metrics are not available here), and
- * connectors report the midpoint of their explicit coordinates only.
+ * connectors report the midpoint of their explicit coordinates only. `math` is new
+ * in v1 and follows `text`, being the same kind of thing.
  */
 export function elementCenter(el: AnimationElement, state: State): Point | null {
   if (el.type === 'rect' || el.type === 'image') {
@@ -37,7 +38,13 @@ export function elementCenter(el: AnimationElement, state: State): Point | null 
       y: num(state, 'y') + num(state, 'height') / 2,
     };
   }
-  if (el.type === 'text') return { x: num(state, 'x'), y: num(state, 'y') };
+  // `math` reports its anchor point for the same reason `text` does, and it is the
+  // same kind of thing: an origin the renderer lays content out from. Without this
+  // it fell through to `null`, which reads downstream as "this element has no
+  // position" — a trail following an equation reported exactly that.
+  if (el.type === 'text' || el.type === 'math') {
+    return { x: num(state, 'x'), y: num(state, 'y') };
+  }
   if (el.type === 'circle') return { x: num(state, 'cx'), y: num(state, 'cy') };
   if (el.type === 'line' || el.type === 'arrow') {
     const x1 = state.x1;

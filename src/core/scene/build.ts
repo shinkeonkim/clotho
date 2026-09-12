@@ -27,6 +27,7 @@ import { buildCircle, buildRect } from './elements/shapes';
 import { buildArrow, buildLine, collectUsedHeads } from './elements/connectors';
 import { buildImage, buildPath, buildPolygon, buildText } from './elements/text-image';
 import { buildCode } from './elements/code';
+import { buildMath } from './elements/math';
 import { buildFlowParticles } from './elements/particles';
 import { buildTrails } from './elements/trail';
 import { compileResponsiveStage } from '../responsive';
@@ -257,6 +258,8 @@ function buildOwnNode(
       return buildPath(ctx, el, state);
     case 'polygon':
       return buildPolygon(ctx, el, state);
+    case 'math':
+      return buildMath(ctx, el, state);
     case 'code':
       return buildCode(ctx, el, state);
     case 'group':

@@ -406,7 +406,7 @@ buildScene(doc, t, {
 
 애니메이션을 직접 쓰려면 [`docs/AUTHORING.md`](./docs/AUTHORING.md)부터 읽는다. 필드별 정의는 [`docs/SCHEMA-V1.md`](./docs/SCHEMA-V1.md)에 있다.
 
-요소 10종 (`rect · circle · line · arrow · text · image · path · polygon · group · code`), 등장 구간(`appearances`)과 속성 트랙(`tracks`)으로 이루어진 타임라인, 이펙트 3종 (`highlight · pulse · flow`), 챕터.
+요소 11종 (`rect · circle · line · arrow · text · image · path · polygon · group · code · math`), 등장 구간(`appearances`)과 속성 트랙(`tracks`)으로 이루어진 타임라인, 이펙트 5종 (`highlight · pulse · flow · spotlight · trail`), 챕터, 카메라.
 
 > [!IMPORTANT]
 > legacy v3/v4 문서는 런타임이 직접 받지 않는다. `clotho migrate`를 통과해야 한다.

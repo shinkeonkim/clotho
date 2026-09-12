@@ -93,7 +93,8 @@ export type SceneDiagnosticCode =
   | 'tree-issue'
   | 'camera-focus'
   | 'spotlight-target'
-  | 'trail-target';
+  | 'trail-target'
+  | 'unresolved-math';
 
 /**
  * Something the scene could not render, reported rather than swallowed.
