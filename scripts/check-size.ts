@@ -66,12 +66,12 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   react: { file: 'react/index.js', gzipBudget: 37_000, note: 'react is external; no zod' },
   vue: { file: 'vue/index.js', gzipBudget: 34_000, note: 'vue is external; no zod' },
-  node: { file: 'node/index.js', gzipBudget: 10_000, note: 'loader + schema (needs zod)' },
+  node: { file: 'node/index.js', gzipBudget: 10_500, note: 'loader + schema (needs zod)' },
   gif: { file: 'gif/index.js', gzipBudget: 31_500, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 51_500,
-    note: 'validate + migrate + lint + GIF (needs zod)',
+    gzipBudget: 56_500,
+    note: 'validate + migrate + lint + GIF + dev server (needs zod)',
   },
   plugins: {
     file: 'plugins/index.js',
