@@ -11,6 +11,7 @@ export * from './camera';
 export * from './chart';
 export * from './style';
 export * from './source';
+export * from './animatable';
 export * from './effects';
 export * from './document';
 
