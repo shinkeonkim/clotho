@@ -1,8 +1,10 @@
 // The `math` element.
 //
-// Two paths, and which one runs is the host's choice rather than the document's: a
+// Three paths. Two are the host's choice rather than the document's: a
 // `mathRenderer` typesets, and without one the TeX source is drawn as monospace so
-// the frame still says what the author meant.
+// the frame still says what the author meant. The third is the document's own:
+// `bakeMathElements` typeset it at authoring time and left the result as `path`
+// children, in which case there is nothing to decide at render time.
 
 import type { MathElement } from '../../schema/elements';
 import { resolveElementColor } from '../../theme/colors';
@@ -46,8 +48,6 @@ function sourceFallback(el: MathElement, state: ElementState, ctx: SceneContext)
 }
 
 export function buildMath(ctx: SceneContext, el: MathElement, state: ElementState): SceneNode {
-  const x = num(state, 'x', el.x);
-  const y = num(state, 'y', el.y);
   const tex = str(state, 'tex', el.tex);
   const alt = el.alt;
 
@@ -89,14 +89,58 @@ export function buildMath(ctx: SceneContext, el: MathElement, state: ElementStat
     inner = sourceFallback(el, state, ctx);
   }
 
+  return wrap(el, transformFor(state, el), alt, [inner]);
+}
+
+/**
+ * A baked expression: the children are the typeset result.
+ *
+ * The wrapper is identical to the unbaked one, which is the property that makes
+ * baking invisible to everything downstream — same key, same transform, same
+ * `aria-label` from the same `alt`, because the `math` element is still here.
+ */
+export function buildBakedMath(
+  _ctx: SceneContext,
+  el: MathElement,
+  state: ElementState,
+  children: readonly SceneNode[],
+): SceneNode | null {
+  if (children.length === 0) return null;
+  return wrap(el, transformFor(state, el), el.alt, children);
+}
+
+/**
+ * The wrapper's transform.
+ *
+ * Same composition a group uses, and it has to be: once an element can hold
+ * children, `accumulatedMatrices` composes its transform for them, and anything the
+ * renderer left out would put the camera's idea of where a glyph is somewhere the
+ * glyph is not.
+ */
+function transformFor(state: ElementState, el: MathElement): string | undefined {
+  const x = num(state, 'x', el.x);
+  const y = num(state, 'y', el.y);
+  const rotation = num(state, 'rotation', 0);
+  const parts: string[] = [];
+  if (x !== 0 || y !== 0) parts.push(`translate(${x} ${y})`);
+  if (rotation !== 0) parts.push(`rotate(${rotation})`);
+  return parts.length > 0 ? parts.join(' ') : undefined;
+}
+
+function wrap(
+  el: MathElement,
+  transform: string | undefined,
+  alt: string | undefined,
+  children: readonly SceneNode[],
+): SceneNode {
   return {
     kind: 'g',
     key: el.id,
     attrs: compactAttrs({
-      transform: x !== 0 || y !== 0 ? `translate(${x} ${y})` : undefined,
+      transform,
       role: alt ? 'img' : undefined,
       'aria-label': alt,
     }),
-    children: [inner],
+    children: [...children],
   };
 }

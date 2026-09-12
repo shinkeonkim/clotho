@@ -211,6 +211,14 @@ export const mathElementSchema = z.object({
   textAnchor: z.enum(['start', 'middle', 'end']).default('start'),
   /** Spoken form, for readers who cannot see the typeset result. */
   alt: z.string().optional(),
+  /**
+   * Typesetter that produced this element's baked children, e.g. `katex@0.16.11`.
+   *
+   * Set by `bakeMathElements`. Recorded because a typeset result depends on the
+   * typesetter's version, and a visual regression that moves by half a pixel is
+   * otherwise impossible to attribute.
+   */
+  bakedBy: z.string().optional(),
 });
 
 export const elementSchema = z.discriminatedUnion('type', [
@@ -270,3 +278,7 @@ export const CONNECTOR_TYPES = ['line', 'arrow'] as const;
 export function isConnector(el: AnimationElement): el is LineElement | ArrowElement {
   return el.type === 'line' || el.type === 'arrow';
 }
+
+// Re-exported so the public API is one import, while the render path can reach the
+// zod-free module directly (see ./containers.ts).
+export { canContainChildren } from './containers';
