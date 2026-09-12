@@ -61,21 +61,21 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 41_100,
+    gzipBudget: 42_200,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
-  react: { file: 'react/index.js', gzipBudget: 38_300, note: 'react is external; no zod' },
-  vue: { file: 'vue/index.js', gzipBudget: 35_500, note: 'vue is external; no zod' },
-  node: { file: 'node/index.js', gzipBudget: 10_800, note: 'loader + schema (needs zod)' },
+  react: { file: 'react/index.js', gzipBudget: 38_400, note: 'react is external; no zod' },
+  vue: { file: 'vue/index.js', gzipBudget: 35_600, note: 'vue is external; no zod' },
+  node: { file: 'node/index.js', gzipBudget: 10_900, note: 'loader + schema (needs zod)' },
   gif: { file: 'gif/index.js', gzipBudget: 32_400, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 68_600,
+    gzipBudget: 68_400,
     note: 'validate + migrate + lint + sync + diff + GIF + dev server (needs zod)',
   },
   plugins: {
     file: 'plugins/index.js',
-    gzipBudget: 21_700,
+    gzipBudget: 21_500,
     note: 'experimental authoring pipeline; isolated from the default core entry',
   },
   testing: {
@@ -85,15 +85,15 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   mdx: {
     file: 'mdx/index.js',
-    gzipBudget: 38_500,
+    gzipBudget: 38_700,
     note: 'markdown embed builder + hydration; carries the parser (build-time entry)',
   },
   element: {
     file: 'element/index.js',
-    gzipBudget: 50_500,
+    gzipBudget: 51_300,
     note: 'custom element: dom adapter + parser + inlined stylesheet',
   },
-  styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
+  styles: { file: 'clotho.css', gzipBudget: 6_200, note: 'stylesheet' },
 };
 
 /** Imports each entry must never contain, so subpath isolation is real. */

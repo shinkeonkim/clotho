@@ -32,6 +32,14 @@ export const chapterSchema = z.object({
   time: z.number().int().min(0),
   label: z.string().default(''),
   subtitle: z.string().default(''),
+  /**
+   * Speaker notes, shown only in presenter mode (docs/SCHEMA-V1.md §2.18).
+   *
+   * Separate from `subtitle` because that is caption text the audience reads. A
+   * field that appears on the shared screen cannot double as the thing you wrote to
+   * remind yourself what to say.
+   */
+  notes: z.string().default(''),
   references: annotationReferencesSchema,
 });
 
