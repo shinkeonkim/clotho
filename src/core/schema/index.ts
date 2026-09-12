@@ -9,6 +9,7 @@ export * from './data';
 export * from './responsive';
 export * from './camera';
 export * from './chart';
+export * from './style';
 export * from './effects';
 export * from './document';
 

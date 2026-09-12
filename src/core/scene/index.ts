@@ -7,4 +7,5 @@ export * from './highlight';
 export * from './math';
 export * from './effect-visuals';
 export * from './stroke-scaling';
+export * from './style';
 export * from './build';
