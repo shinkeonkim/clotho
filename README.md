@@ -294,6 +294,8 @@ clotho validate animations/            # 스키마 + 의미 검증
 clotho validate animations/ --strict   # 경고도 실패로
 clotho migrate  animations/ --write    # legacy v3/v4 → v1 변환
 clotho gif animations/a.json a.gif --fps 12 --width 800
+clotho diff before.json after.json      # 무엇이 바뀌었는지 사람 말로
+clotho diff a.json b.json --format md   # PR 코멘트에 붙일 표
 clotho sync animations/                # source 연결된 code 요소를 파일에서 갱신
 clotho sync animations/ --check        # 쓰지 않고, 낡았으면 종료 코드 1
 clotho dev animations/                 # 라이브 리로드 프리뷰 (127.0.0.1 전용)

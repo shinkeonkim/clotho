@@ -22,6 +22,7 @@ import { stripBom } from '../core/text/base64';
 import { animationDocumentSchema } from '../core/schema/document';
 import { writeDocumentGif } from '../node/gif';
 import { autofixDocument, lintDocument, type LintFinding } from '../core/lint';
+import { diffDocuments, significantChanges } from '../core/diff';
 import { createDebouncer, listDocuments, runtimeDirFrom, startDevServer } from '../node/dev';
 import { checkSourceFreshness, syncFile } from '../node/sync';
 
@@ -34,6 +35,7 @@ Usage:
   clotho gif <input.json> <output.gif>   Render a document as an animated GIF
   clotho dev <dir> [options]            Serve a directory of documents with live reload
   clotho sync <path...> [--check]       Refresh source-linked code elements from their files
+  clotho diff <before.json> <after.json>  Explain what changed between two documents
 
 Options:
   --write     migrate only: rewrite files in place (default is a dry run)
@@ -49,6 +51,9 @@ Options:
   --host H    dev only: interface to bind (default: 127.0.0.1 — see below)
   --headless  dev only: watch and re-check without serving a page
   --check     sync only: report what is out of date without writing
+  --all       diff only: include changes folded away as noise
+  --no-rename diff only: report renames as a removal plus an addition
+  --format F  diff only: "text" (default) or "md"
   --root DIR  sync/validate: project root that source paths are relative to (default: cwd)
   -h, --help  show this help
 
@@ -78,6 +83,9 @@ interface Args {
   readonly headless: boolean;
   readonly check: boolean;
   readonly root?: string;
+  readonly all: boolean;
+  readonly noRename: boolean;
+  readonly format?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -92,7 +100,8 @@ function parseArgs(argv: string[]): Args {
       arg === '--background' ||
       arg === '--port' ||
       arg === '--host' ||
-      arg === '--root'
+      arg === '--root' ||
+      arg === '--format'
     ) {
       const value = argv[index + 1];
       if (value === undefined) throw new Error(`${arg} needs a value`);
@@ -121,6 +130,9 @@ function parseArgs(argv: string[]): Args {
     host: values.get('--host'),
     headless: flags.has('--headless'),
     check: flags.has('--check'),
+    all: flags.has('--all'),
+    noRename: flags.has('--no-rename'),
+    format: values.get('--format'),
     root: values.get('--root'),
   };
 }
@@ -383,6 +395,64 @@ async function runMigrate(args: Args): Promise<number> {
 }
 
 /**
+ * `clotho diff` — explain what changed between two documents.
+ *
+ * A companion to the visual regression suite rather than a replacement: that one
+ * answers "did this break", this one answers "what changed", and the answer is meant
+ * for a person reading a pull request.
+ */
+async function runDiff(args: Args): Promise<number> {
+  if (args.paths.length !== 2) {
+    console.error('diff needs exactly two files\n');
+    console.error(USAGE);
+    return 2;
+  }
+
+  const [beforeFile, afterFile] = args.paths as [string, string];
+  const read = async (file: string) =>
+    animationDocumentSchema.parse(readJson(await readFile(file, 'utf-8')));
+  const result = diffDocuments(await read(beforeFile), await read(afterFile), {
+    detectRenames: !args.noRename,
+  });
+  const shown = args.all ? result.changes : significantChanges(result);
+
+  if (args.json) {
+    console.log(JSON.stringify({ command: 'diff', ...result, shown }, null, 2));
+    return shown.length > 0 ? 1 : 0;
+  }
+
+  if (shown.length === 0) {
+    if (!args.quiet) console.log('no differences');
+    return 0;
+  }
+
+  if (args.format === 'md') {
+    console.log(`### ${relative(process.cwd(), afterFile)}`);
+    console.log('');
+    console.log('| 범주 | 변경 | 대상 | 내용 |');
+    console.log('| --- | --- | --- | --- |');
+    for (const change of shown) {
+      const mark = change.inferred ? ' *(추정)*' : '';
+      console.log(
+        `| ${change.scope} | ${change.kind} | \`${change.subject}\`${mark} | ${change.detail} |`,
+      );
+    }
+  } else if (!args.quiet) {
+    for (const change of shown) {
+      const mark = change.inferred ? ' (guessed)' : '';
+      // Scope as well as kind: "changed" on an element and "changed" on its
+      // appearance window read identically otherwise, and they are not the same news.
+      const label = `${change.scope}/${change.kind}`;
+      console.log(`${label.padEnd(20)} ${change.subject}${mark}: ${change.detail}`);
+    }
+    const hidden = result.changes.length - shown.length;
+    if (hidden > 0) console.log(`\n${hidden} minor change(s) hidden — pass --all to see them`);
+  }
+
+  return 1;
+}
+
+/**
  * `clotho sync` — bring source-linked code elements back in line with their files.
  *
  * `--check` is the CI shape: it reports and exits non-zero without touching
@@ -539,7 +609,8 @@ async function main(): Promise<number> {
     args.command !== 'gif' &&
     args.command !== 'lint' &&
     args.command !== 'dev' &&
-    args.command !== 'sync'
+    args.command !== 'sync' &&
+    args.command !== 'diff'
   ) {
     console.error(`unknown command: ${args.command}\n`);
     console.error(USAGE);
@@ -558,6 +629,7 @@ async function main(): Promise<number> {
     if (args.command === 'lint') return await runLint(args);
     if (args.command === 'dev') return await runDev(args);
     if (args.command === 'sync') return await runSync(args);
+    if (args.command === 'diff') return await runDiff(args);
     return await runGif(args);
   } catch (cause) {
     console.error(`clotho: ${(cause as Error).message}`);
