@@ -23,6 +23,7 @@ import { animationDocumentSchema } from '../core/schema/document';
 import { writeDocumentGif } from '../node/gif';
 import { autofixDocument, lintDocument, type LintFinding } from '../core/lint';
 import { diffDocuments, significantChanges } from '../core/diff';
+import { describeReason, explainElement } from '../core/explain';
 import { createDebouncer, listDocuments, runtimeDirFrom, startDevServer } from '../node/dev';
 import { checkSourceFreshness, syncFile } from '../node/sync';
 
@@ -36,6 +37,7 @@ Usage:
   clotho dev <dir> [options]            Serve a directory of documents with live reload
   clotho sync <path...> [--check]       Refresh source-linked code elements from their files
   clotho diff <before.json> <after.json>  Explain what changed between two documents
+  clotho explain <file> --at <ms>       Explain what is on screen at one instant, and why
 
 Options:
   --write     migrate only: rewrite files in place (default is a dry run)
@@ -54,6 +56,8 @@ Options:
   --all       diff only: include changes folded away as noise
   --no-rename diff only: report renames as a removal plus an addition
   --format F  diff only: "text" (default) or "md"
+  --at MS     explain only: the instant to explain (required)
+  --element I explain only: one element instead of all of them
   --root DIR  sync/validate: project root that source paths are relative to (default: cwd)
   -h, --help  show this help
 
@@ -86,6 +90,8 @@ interface Args {
   readonly all: boolean;
   readonly noRename: boolean;
   readonly format?: string;
+  readonly at?: number;
+  readonly element?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -101,7 +107,9 @@ function parseArgs(argv: string[]): Args {
       arg === '--port' ||
       arg === '--host' ||
       arg === '--root' ||
-      arg === '--format'
+      arg === '--format' ||
+      arg === '--at' ||
+      arg === '--element'
     ) {
       const value = argv[index + 1];
       if (value === undefined) throw new Error(`${arg} needs a value`);
@@ -133,6 +141,8 @@ function parseArgs(argv: string[]): Args {
     all: flags.has('--all'),
     noRename: flags.has('--no-rename'),
     format: values.get('--format'),
+    at: values.has('--at') ? Number(values.get('--at')) : undefined,
+    element: values.get('--element'),
     root: values.get('--root'),
   };
 }
@@ -395,6 +405,70 @@ async function runMigrate(args: Args): Promise<number> {
 }
 
 /**
+ * `clotho explain` — why is the frame what it is.
+ *
+ * The terminal face of the same evidence the editor's inspector shows and a test
+ * failure quotes. Visibility comes first because "why can I not see this" is the
+ * question authoring actually produces.
+ */
+async function runExplain(args: Args): Promise<number> {
+  if (args.paths.length !== 1) {
+    console.error('explain needs exactly one file\n');
+    console.error(USAGE);
+    return 2;
+  }
+  if (args.at === undefined || !Number.isFinite(args.at)) {
+    console.error('explain needs --at <ms>\n');
+    console.error(USAGE);
+    return 2;
+  }
+
+  const document = animationDocumentSchema.parse(readJson(await readFile(args.paths[0]!, 'utf-8')));
+  const ids = args.element ? [args.element] : document.elements.map((element) => element.id);
+  const explanations = ids
+    .map((id) => explainElement(document, args.at!, id))
+    .filter((explanation): explanation is NonNullable<typeof explanation> => explanation !== null);
+
+  if (args.element && explanations.length === 0) {
+    console.error(`clotho: no element "${args.element}" in this document`);
+    return 1;
+  }
+
+  if (args.json) {
+    console.log(JSON.stringify({ command: 'explain', at: args.at, explanations }, null, 2));
+    return 0;
+  }
+
+  for (const explanation of explanations) {
+    // "not on screen" rather than "hidden": an element can be perfectly visible by
+    // its own appearance window and still be drawn past the edge of the canvas, and
+    // the reader cares about the outcome rather than the mechanism.
+    const mark = explanation.visible ? 'on screen' : 'not on screen';
+    console.log(`${explanation.elementId} (${explanation.type}) — ${mark} at ${args.at}ms`);
+    for (const reason of explanation.invisibleBecause) {
+      console.log(`  · ${describeReason(reason)}`);
+    }
+    // Only tracked and overridden values: listing every authored constant would bury
+    // the two or three that are actually moving.
+    for (const value of explanation.values) {
+      if (value.source === 'base') continue;
+      const track = value.track;
+      const detail = track
+        ? track.clamped
+          ? `clamped at keyframe ${JSON.stringify(track.to?.value)}`
+          : `${JSON.stringify(track.from?.value)} → ${JSON.stringify(track.to?.value)}, ${Math.round(track.progress * 100)}% through, ${track.ease}, ${track.blend}`
+        : value.contributors.map((c) => `${c.stage}${c.by ? ` (${c.by})` : ''}`).join(' → ');
+      console.log(
+        `  ${value.property} = ${JSON.stringify(value.value)}  [${value.source}] ${detail}`,
+      );
+    }
+    if (args.element === undefined && explanations.length > 1) console.log('');
+  }
+
+  return 0;
+}
+
+/**
  * `clotho diff` — explain what changed between two documents.
  *
  * A companion to the visual regression suite rather than a replacement: that one
@@ -610,7 +684,8 @@ async function main(): Promise<number> {
     args.command !== 'lint' &&
     args.command !== 'dev' &&
     args.command !== 'sync' &&
-    args.command !== 'diff'
+    args.command !== 'diff' &&
+    args.command !== 'explain'
   ) {
     console.error(`unknown command: ${args.command}\n`);
     console.error(USAGE);
@@ -630,6 +705,7 @@ async function main(): Promise<number> {
     if (args.command === 'dev') return await runDev(args);
     if (args.command === 'sync') return await runSync(args);
     if (args.command === 'diff') return await runDiff(args);
+    if (args.command === 'explain') return await runExplain(args);
     return await runGif(args);
   } catch (cause) {
     console.error(`clotho: ${(cause as Error).message}`);
