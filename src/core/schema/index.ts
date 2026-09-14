@@ -10,6 +10,7 @@ export * from './responsive';
 export * from './camera';
 export * from './chart';
 export * from './style';
+export * from './source';
 export * from './effects';
 export * from './document';
 

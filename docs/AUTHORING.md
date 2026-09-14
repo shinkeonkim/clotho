@@ -125,6 +125,8 @@ clotho dev animations/ --headless # 페이지 없이 감시 + 검증만
 }
 ```
 
+`code`는 `source`로 실제 파일의 범위를 가리킬 수 있다(§2.17). `clotho sync`가 내용을 채우고 `clotho validate`가 낡은 것을 잡으므로, 코드가 바뀌었는데 애니메이션이 그대로인 상태를 눈으로 발견하지 않아도 된다. 런타임은 파일을 읽지 않는다 — `content`가 언제나 진실이다.
+
 `math`는 조판기를 host가 주입해야 실제 수식으로 그려진다(`buildScene`의 `mathRenderer`). 주입하지 않으면 `tex` 원문이 monospace로 보이고 진단이 남는다 — 빈자리가 생기는 것보다 낫다.
 
 `name`은 사람이 읽는 별칭이고 렌더에 영향이 없다. 요소가 30개를 넘어가면 `id`만으로는 편집이 어려워진다.

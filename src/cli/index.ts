@@ -23,6 +23,7 @@ import { animationDocumentSchema } from '../core/schema/document';
 import { writeDocumentGif } from '../node/gif';
 import { autofixDocument, lintDocument, type LintFinding } from '../core/lint';
 import { createDebouncer, listDocuments, runtimeDirFrom, startDevServer } from '../node/dev';
+import { checkSourceFreshness, syncFile } from '../node/sync';
 
 const USAGE = `clotho — JSON-defined visualization animations
 
@@ -32,6 +33,7 @@ Usage:
   clotho migrate  <path...> [options]   Convert legacy (version 3/4) documents to v1
   clotho gif <input.json> <output.gif>   Render a document as an animated GIF
   clotho dev <dir> [options]            Serve a directory of documents with live reload
+  clotho sync <path...> [--check]       Refresh source-linked code elements from their files
 
 Options:
   --write     migrate only: rewrite files in place (default is a dry run)
@@ -46,6 +48,8 @@ Options:
   --port N    dev only: port to listen on (default: 4173, 0 picks a free one)
   --host H    dev only: interface to bind (default: 127.0.0.1 — see below)
   --headless  dev only: watch and re-check without serving a page
+  --check     sync only: report what is out of date without writing
+  --root DIR  sync/validate: project root that source paths are relative to (default: cwd)
   -h, --help  show this help
 
 Exit codes:
@@ -72,6 +76,8 @@ interface Args {
   readonly port?: number;
   readonly host?: string;
   readonly headless: boolean;
+  readonly check: boolean;
+  readonly root?: string;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -85,7 +91,8 @@ function parseArgs(argv: string[]): Args {
       arg === '--width' ||
       arg === '--background' ||
       arg === '--port' ||
-      arg === '--host'
+      arg === '--host' ||
+      arg === '--root'
     ) {
       const value = argv[index + 1];
       if (value === undefined) throw new Error(`${arg} needs a value`);
@@ -113,6 +120,8 @@ function parseArgs(argv: string[]): Args {
     port: values.has('--port') ? Number(values.get('--port')) : undefined,
     host: values.get('--host'),
     headless: flags.has('--headless'),
+    check: flags.has('--check'),
+    root: values.get('--root'),
   };
 }
 
@@ -239,11 +248,19 @@ async function runValidate(args: Args): Promise<number> {
     }
 
     const result = validateDocument(value);
+    // Freshness is a filesystem question, so it cannot live in `validateDocument`
+    // (core reads no files). It belongs in the same report, though: "this document
+    // no longer matches the code it claims to show" is exactly what a validate run
+    // in CI should surface.
+    const freshness = result.document
+      ? await checkSourceFreshness(result.document, resolve(args.root ?? process.cwd()))
+      : [];
+
     reports.push({
       file,
-      findings: result.findings,
-      errorCount: result.errorCount,
-      warningCount: result.warningCount,
+      findings: [...result.findings, ...freshness],
+      errorCount: result.errorCount + freshness.filter((f) => f.severity === 'error').length,
+      warningCount: result.warningCount + freshness.filter((f) => f.severity === 'warning').length,
     });
   }
 
@@ -366,6 +383,66 @@ async function runMigrate(args: Args): Promise<number> {
 }
 
 /**
+ * `clotho sync` — bring source-linked code elements back in line with their files.
+ *
+ * `--check` is the CI shape: it reports and exits non-zero without touching
+ * anything, so a pull request that changed the code and not the animation fails
+ * before anyone has to notice by eye.
+ */
+async function runSync(args: Args): Promise<number> {
+  const root = resolve(args.root ?? process.cwd());
+  const files = await collectFiles(args.paths);
+  const results = await Promise.all(
+    files.map((file) => syncFile(file, root, { write: !args.check })),
+  );
+
+  const stale = results.filter((result) => result.changes.some((change) => change.changed));
+  const problems = results.flatMap((result) =>
+    result.problems.map((problem) => ({ ...problem, document: result.file })),
+  );
+
+  if (args.json) {
+    console.log(
+      JSON.stringify(
+        {
+          command: 'sync',
+          check: args.check,
+          files: results.map((result) => ({
+            file: relative(process.cwd(), result.file),
+            wrote: result.wrote,
+            changed: result.changes.filter((change) => change.changed).map((c) => c.elementId),
+            problems: result.problems,
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+  } else if (!args.quiet) {
+    for (const result of results) {
+      for (const change of result.changes.filter((c) => c.changed)) {
+        const verb = args.check ? 'out of date' : 'updated';
+        console.log(
+          `${relative(process.cwd(), result.file)} · ${change.elementId}: ${verb} from ${change.file}`,
+        );
+      }
+      for (const problem of result.problems) {
+        console.error(
+          `${relative(process.cwd(), result.file)} · ${problem.elementId}: ${problem.message}`,
+        );
+      }
+    }
+    const summary = args.check
+      ? `${stale.length} document(s) out of date`
+      : `${results.filter((r) => r.wrote).length} document(s) updated`;
+    console.log(`${summary}, ${problems.length} problem(s)`);
+  }
+
+  if (problems.length > 0) return 1;
+  return args.check && stale.length > 0 ? 1 : 0;
+}
+
+/**
  * Directories for the bare specifiers `dist` leaves external.
  *
  * Only `zod` today, and the preview's own entry does not reach it — this is what
@@ -461,7 +538,8 @@ async function main(): Promise<number> {
     args.command !== 'migrate' &&
     args.command !== 'gif' &&
     args.command !== 'lint' &&
-    args.command !== 'dev'
+    args.command !== 'dev' &&
+    args.command !== 'sync'
   ) {
     console.error(`unknown command: ${args.command}\n`);
     console.error(USAGE);
@@ -479,6 +557,7 @@ async function main(): Promise<number> {
     if (args.command === 'migrate') return await runMigrate(args);
     if (args.command === 'lint') return await runLint(args);
     if (args.command === 'dev') return await runDev(args);
+    if (args.command === 'sync') return await runSync(args);
     return await runGif(args);
   } catch (cause) {
     console.error(`clotho: ${(cause as Error).message}`);
