@@ -163,6 +163,8 @@ export function buildPath(_ctx: SceneContext, el: PathElement, state: ElementSta
       stroke: str(state, 'stroke'),
       'stroke-width': num(state, 'strokeWidth'),
       'stroke-dasharray': str(state, 'strokeDasharray'),
+      'stroke-dashoffset':
+        typeof state.strokeDashoffset === 'number' ? state.strokeDashoffset : undefined,
       opacity: num(state, 'opacity', 1),
     }),
   };

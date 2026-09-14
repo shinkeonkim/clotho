@@ -126,6 +126,14 @@ export const pathElementSchema = z.object({
   stroke: z.string().default('#6366f1'),
   strokeWidth: z.number().nonnegative().default(2),
   strokeDasharray: z.string().optional(),
+  /**
+   * Offset into the dash pattern.
+   *
+   * On its own it does nothing useful; tracked against a dash the length of the
+   * path, it draws the path on. That is how the chart compiler's `sweep` reveal
+   * works, and it is the one stroke property `strokeDasharray` was missing.
+   */
+  strokeDashoffset: z.number().optional(),
   opacity: z.number().min(0).max(1).default(1),
 });
 

@@ -1131,6 +1131,9 @@
                   "strokeDasharray": {
                     "type": "string"
                   },
+                  "strokeDashoffset": {
+                    "type": "number"
+                  },
                   "opacity": {
                     "type": "number",
                     "minimum": 0,
@@ -1680,6 +1683,257 @@
               "id",
               "elementIds",
               "mode"
+            ],
+            "additionalProperties": false
+          },
+          "default": []
+        },
+        "charts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/ClothoDocument/properties/id"
+              },
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "width": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "height": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "bar",
+                  "line"
+                ]
+              },
+              "data": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                },
+                "default": []
+              },
+              "encode": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "y": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "series": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false
+              },
+              "scale": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "linear"
+                          },
+                          "domain": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 2,
+                            "items": [
+                              {
+                                "anyOf": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "string",
+                                    "const": "auto"
+                                  }
+                                ]
+                              },
+                              {
+                                "$ref": "#/definitions/ClothoDocument/properties/charts/items/properties/scale/properties/x/anyOf/0/properties/domain/items/0"
+                              }
+                            ]
+                          },
+                          "nice": {
+                            "type": "boolean",
+                            "default": true
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "band"
+                          },
+                          "padding": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 0.99,
+                            "default": 0.2
+                          }
+                        },
+                        "required": [
+                          "type"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "y": {
+                    "$ref": "#/definitions/ClothoDocument/properties/charts/items/properties/scale/properties/x"
+                  }
+                },
+                "additionalProperties": false,
+                "default": {}
+              },
+              "axes": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string",
+                        "default": ""
+                      },
+                      "ticks": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 50,
+                        "default": 5
+                      },
+                      "grid": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "hidden": {
+                        "type": "boolean",
+                        "default": false
+                      }
+                    },
+                    "additionalProperties": false,
+                    "default": {}
+                  },
+                  "y": {
+                    "$ref": "#/definitions/ClothoDocument/properties/charts/items/properties/axes/properties/x",
+                    "default": {}
+                  }
+                },
+                "additionalProperties": false,
+                "default": {}
+              },
+              "reveal": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "grow",
+                      "sweep",
+                      "series"
+                    ],
+                    "default": "none"
+                  },
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  "duration": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 1200
+                  },
+                  "stagger": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  "ease": {
+                    "$ref": "#/definitions/ClothoDocument/properties/camera/properties/tracks/items/properties/keyframes/items/properties/ease"
+                  }
+                },
+                "additionalProperties": false,
+                "default": {}
+              },
+              "palette": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "default": []
+              },
+              "legend": {
+                "type": "boolean",
+                "default": false
+              },
+              "appearance": {
+                "type": "object",
+                "properties": {
+                  "start": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  },
+                  "end": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "end"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "width",
+              "height",
+              "kind",
+              "encode"
             ],
             "additionalProperties": false
           },

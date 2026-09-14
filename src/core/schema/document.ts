@@ -15,6 +15,7 @@ import { checkpointSchema } from './checkpoints';
 import { dataValueSchema } from './data';
 import { responsiveVariantSchema } from './responsive';
 import { cameraSchema } from './camera';
+import { chartSchema } from './chart';
 
 /** Current document format version emitted and accepted by this build. */
 export const FORMAT_VERSION = 1;
@@ -82,6 +83,13 @@ export const animationDocumentSchema = z.object({
   elements: z.array(elementSchema).default([]),
   /** Authoring-time placement rules. Compile them to element coordinates before rendering. */
   layouts: z.array(layoutSchema).default([]),
+  /**
+   * Authoring-time chart specs. Compile them to elements before rendering.
+   *
+   * Beside `layouts` rather than inside `elements` on purpose: a chart is a rule for
+   * producing primitives, so the renderer never needs to know the type exists.
+   */
+  charts: z.array(chartSchema).default([]),
   chapters: z.array(chapterSchema).default([]),
   checkpoints: z.array(checkpointSchema).default([]),
   effects: z.array(effectSchema).default([]),

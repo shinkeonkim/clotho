@@ -35,6 +35,9 @@ const NUMERIC_PROPERTIES = new Set([
   'labelSize',
   'subtitleSize',
   'curvature',
+  // New in v1 and tracked by nothing in the corpus, so classifying it numerically
+  // changes no existing document — and a stepped dash offset would not sweep.
+  'strokeDashoffset',
 ]);
 
 const COLOR_PROPERTIES = new Set(['fill', 'stroke', 'color', 'labelColor']);

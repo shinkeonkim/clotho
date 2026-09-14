@@ -16,6 +16,8 @@ import type { SceneDiagnosticCode } from '../../src/core/scene/nodes';
 import type { animationDocumentSchema } from '../../src/core/schema/document';
 import type { Ease, EntryMode, ExitMode } from '../../src/core/schema/primitives';
 import { defineAnimation } from '../../src/core/authoring';
+import { compileCharts } from '../../src/core/chart';
+import { animationDocumentSchema as parseDoc } from '../../src/core/schema/document';
 
 export interface GalleryEntry {
   readonly slug: string;
@@ -1103,6 +1105,72 @@ const CAMERA: Doc = doc({
 });
 
 // ---------------------------------------------------------------------------
+// 6e. Chart
+
+/**
+ * A chart, compiled.
+ *
+ * `charts` is an authoring-time spec, so what the gallery ships is the *result* of
+ * `compileCharts` — ordinary rects, lines and texts. The point of the entry is the
+ * id convention: the pulse below targets `bench__series-value__point-0` by name, with
+ * no chart-specific syntax anywhere.
+ */
+const CHART: Doc = (() => {
+  const spec = doc({
+    id: 'chart',
+    title: 'Chart',
+    description: 'a bar chart compiled to primitives, with one bar pulsed by id',
+    duration: 5000,
+    canvas: { width: 720, height: 340, background: 'transparent' },
+    charts: [
+      {
+        id: 'bench',
+        x: 20,
+        y: 20,
+        width: 660,
+        height: 280,
+        kind: 'bar',
+        data: [
+          { name: 'naive', ms: 120 },
+          { name: 'memo', ms: 45 },
+          { name: 'tabulate', ms: 32 },
+          { name: 'closed form', ms: 4 },
+        ],
+        encode: { x: 'name', y: 'ms' },
+        axes: { x: { label: 'implementation' }, y: { label: 'ms', grid: true, ticks: 4 } },
+        reveal: { mode: 'grow', start: 300, duration: 1100, stagger: 180 },
+        palette: [ACCENT],
+      },
+    ],
+    elements: [
+      {
+        type: 'text',
+        id: 'chart-note',
+        x: 700,
+        y: 330,
+        content: 'lower is better',
+        fontSize: 12,
+        textAnchor: 'end',
+        appearances: whole(5000),
+      },
+    ],
+    effects: [
+      // The whole point: an ordinary effect addressing a generated id.
+      {
+        type: 'pulse',
+        id: 'chart-pulse',
+        elementId: 'bench__series-value__point-3',
+        time: 2600,
+        scale: 1.2,
+        duration: 700,
+      },
+    ],
+  });
+
+  return compileCharts(parseDoc.parse(spec)).document as unknown as Doc;
+})();
+
+// ---------------------------------------------------------------------------
 // 7. Anchors and arrowheads
 
 const ANCHORS = [
@@ -1652,6 +1720,12 @@ export const GALLERY: readonly GalleryEntry[] = [
     title: 'Camera track',
     note: 'The only feature that moves what the reader sees without moving anything on the stage. The third focus follows the packet *while* it travels — a track cannot do that.',
     doc: CAMERA,
+  },
+  {
+    slug: 'chart',
+    title: 'Chart',
+    note: 'Charts compile to ordinary primitives with predictable ids, so the pulse on the last bar is a plain effect naming `bench__series-value__point-3`.',
+    doc: CHART,
   },
   {
     slug: 'connectors',

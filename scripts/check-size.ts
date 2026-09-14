@@ -51,7 +51,7 @@ const DIST = join(REPO_ROOT, 'dist');
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 51_300,
+    gzipBudget: 56_300,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
@@ -66,21 +66,21 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   react: { file: 'react/index.js', gzipBudget: 35_000, note: 'react is external; no zod' },
   vue: { file: 'vue/index.js', gzipBudget: 32_300, note: 'vue is external; no zod' },
-  node: { file: 'node/index.js', gzipBudget: 9_000, note: 'loader + schema (needs zod)' },
+  node: { file: 'node/index.js', gzipBudget: 10_200, note: 'loader + schema (needs zod)' },
   gif: { file: 'gif/index.js', gzipBudget: 29_500, note: 'scene renderer + GIF encoder' },
   cli: {
     file: 'cli/index.js',
-    gzipBudget: 47_600,
+    gzipBudget: 48_800,
     note: 'validate + migrate + lint + GIF (needs zod)',
   },
   plugins: {
     file: 'plugins/index.js',
-    gzipBudget: 19_900,
+    gzipBudget: 20_500,
     note: 'experimental authoring pipeline; isolated from the default core entry',
   },
   testing: {
     file: 'testing/index.js',
-    gzipBudget: 28_800,
+    gzipBudget: 29_500,
     note: 'scene assertions, SVG snapshots and pixel diff; no framework',
   },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },

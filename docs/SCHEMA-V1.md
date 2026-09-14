@@ -23,6 +23,7 @@
   "assets": {/* §2.3 */},
   "elements": [/* §2.1, §2.2 */],
   "layouts": [/* §2.8 */],
+  "charts": [/* §2.15 */],
   "camera": {/* §2.11 */},
   "chapters": [{ "id": "c1", "time": 2000, "label": "Round 1", "subtitle": "" }],
   "effects": [{ "type": "pulse", "id": "p1", "elementId": "n-a", "time": 2000 }],
@@ -324,6 +325,72 @@ buildScene(doc, t, { mathRenderer: { name: 'katex', render: (tex, opts) => Scene
 `tex`는 조판 후에도 문서에 남는다. 재편집할 수 있어야 하고, `alt`와 함께 읽어줄 수 있어야 한다. `alt`는 `aria-label`로 나간다.
 
 레이아웃 컴파일러(§2.8)의 `math` 박스는 원문 기준 **추정치**다. 조판된 실제 크기는 조판기만 아는데 컴파일러에는 조판기가 없다.
+
+### 2.15 chart
+
+`charts`는 **저작 시간 스펙**이며 `compileCharts`가 평범한 v1 요소로 낮춘다. `layouts`와 같은 계층이고, 그래서 **런타임은 차트를 전혀 모른다** — 어댑터 4종·GIF·에디터의 요소 switch 어디에도 12번째 타입이 생기지 않고 렌더 경로의 번들 비용이 0이다.
+
+```jsonc
+"charts": [{
+  "id": "bench", "x": 60, "y": 40, "width": 520, "height": 300,
+  "kind": "bar",
+  "data": [{ "name": "naive", "ms": 120 }, { "name": "memo", "ms": 45 }],
+  "encode": { "x": "name", "y": "ms", "series": "impl" },
+  "scale": { "y": { "type": "linear", "domain": [0, "auto"], "nice": true } },
+  "axes": { "x": { "label": "구현" }, "y": { "label": "ms", "grid": true } },
+  "reveal": { "mode": "grow", "start": 500, "duration": 2500, "stagger": 120 },
+  "legend": true
+}]
+```
+
+#### id 규약이 진짜 계약이다
+
+차트는 새 렌더러가 아니라 **예측 가능한 id를 가진 프리미티브 생성기**다. 이것이 이 기능의 설계 전부다.
+
+```
+bench__plot                    프레임
+bench__grid-y__line-0          격자
+bench__axis-x                  축 선
+bench__axis-x__tick-2__label   눈금 라벨
+bench__series-quick            시리즈 (line의 경우 path 하나)
+bench__series-quick__point-3   막대 하나
+bench__legend__quick           범례 항목
+```
+
+그래서 차트를 위한 특별한 강조 문법이 필요 없다. 기존 문법이 그대로 통한다.
+
+```json
+{ "type": "pulse", "elementId": "bench__series-quick__point-3", "time": 4000 }
+{ "type": "spotlight", "elementIds": ["bench__series-quick"], "time": 5000 }
+{ "camera": { "focus": [{ "time": 6000, "elementIds": ["bench__axis-y"] }] } }
+```
+
+구분자가 `/`가 아니라 `__`인 이유는 단순하다 — id 정규식이 `^[a-z0-9][a-z0-9_-]*$`이고, 이 규칙은 383개 문서와 마이그레이션에 걸려 있어 차트 때문에 넓힐 것이 아니다. 시리즈 이름은 `slugify`를 거치며, `__`는 `_`로 접혀 생성된 이름이 경로 구분자를 위조할 수 없다.
+
+#### reveal
+
+`reveal`은 컴파일러가 만드는 **평범한 트랙과 등장 구간**의 단축 표기다. 컴파일 후 저작자가 그대로 덮어쓸 수 있다.
+
+| mode | 생성물 |
+| --- | --- |
+| `none` | 없음. 처음부터 완성된 차트 |
+| `grow` | 막대의 `height` 0→값과 `y`를 함께 움직인다(rect는 좌상단 기준이라 둘 다 필요하다) |
+| `sweep` | 경로 길이만 한 `strokeDasharray` + `strokeDashoffset` 트랙 |
+| `series` | 시리즈별 `appearances.start`를 `stagger`만큼 민다 |
+
+`stagger`가 `grow`에서는 항목마다, `series`에서는 시리즈마다 적용된다.
+
+#### 스케일
+
+`linear`과 `band`만 있고 `d3-scale`을 쓰지 않는다. 필요한 것이 200줄 남짓의 산술(`nice`·`ticks`·선형 매핑)인데 그것 때문에 보간기·시간 스케일·색 공간을 함께 들여올 이유가 없다. 눈금 간격은 1/2/5×10ⁿ 계열에서 고르며, 경계는 산술 중앙값이 아니라 **기하 평균**(√50·√10·√2)이다 — 2와 5 중 고르는 것은 비율의 문제이기 때문이고, 그래야 `nice`한 도메인과 `ticks`가 서로 어긋나지 않는다.
+
+막대 차트의 값 축은 **0에서 시작한다.** 막대 길이가 곧 인코딩이므로 잘린 축은 길이로 거짓말을 한다.
+
+x축 눈금 라벨은 겹치면 **솎아낸다**(`label-crowding` finding과 함께). 겹친 축은 두 칸 걸러 하나만 이름을 붙인 축보다 읽기 어렵다.
+
+#### 범위
+
+설명용 차트이며 분석용 차트 도구가 아니다. `kind`는 `bar`와 `line` 둘뿐이고, 이 목록은 좁게 유지한다. 외부 차트 라이브러리를 런타임에 임베드하지 않는 이유는 기획서에 있다 — Canvas가 필요하거나 React 전용이고, 자체 애니메이션 상태를 가지므로 `(문서, t) → 화면`이 성립하지 않는다.
 
 ## 3. 계승하는 부분 (변경 없음)
 
