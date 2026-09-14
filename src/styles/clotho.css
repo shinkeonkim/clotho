@@ -133,6 +133,26 @@
 @layer cloth-components {
   /* ── Components ─────────────────────────────────────────────────────────────── */
 
+  /*
+   * A markdown embed before it becomes a player.
+   *
+   * The poster is an inline SVG rather than an image, so it needs the same width
+   * behaviour the stage gets — otherwise it renders at its intrinsic size and a
+   * 720-unit canvas overflows a 640px article column.
+   */
+  .cloth-embed {
+    display: block;
+    width: 100%;
+  }
+
+  .cloth-embed-poster {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    background: var(--cloth-stage-mat);
+  }
+
   .cloth-wrapper {
     margin: 1.5rem 0;
     border: 1px solid var(--cloth-border);

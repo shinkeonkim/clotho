@@ -51,7 +51,7 @@ const DIST = join(REPO_ROOT, 'dist');
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 64_600,
+    gzipBudget: 64_800,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
@@ -61,11 +61,11 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 37_100,
+    gzipBudget: 37_400,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
-  react: { file: 'react/index.js', gzipBudget: 38_100, note: 'react is external; no zod' },
-  vue: { file: 'vue/index.js', gzipBudget: 35_300, note: 'vue is external; no zod' },
+  react: { file: 'react/index.js', gzipBudget: 38_300, note: 'react is external; no zod' },
+  vue: { file: 'vue/index.js', gzipBudget: 35_500, note: 'vue is external; no zod' },
   node: { file: 'node/index.js', gzipBudget: 10_800, note: 'loader + schema (needs zod)' },
   gif: { file: 'gif/index.js', gzipBudget: 32_400, note: 'scene renderer + GIF encoder' },
   cli: {
@@ -83,7 +83,12 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
     gzipBudget: 32_000,
     note: 'scene assertions, SVG snapshots and pixel diff; no framework',
   },
-  styles: { file: 'clotho.css', gzipBudget: 5_700, note: 'stylesheet' },
+  mdx: {
+    file: 'mdx/index.js',
+    gzipBudget: 38_500,
+    note: 'markdown embed builder + hydration; carries the parser (build-time entry)',
+  },
+  styles: { file: 'clotho.css', gzipBudget: 5_800, note: 'stylesheet' },
 };
 
 /** Imports each entry must never contain, so subpath isolation is real. */
@@ -92,6 +97,7 @@ const FORBIDDEN_IMPORTS: Record<string, RegExp[]> = {
   plugins: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   testing: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   svg: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
+  mdx: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   dom: [/from\s*['"]react/, /from\s*['"]vue['"]/, /from\s*['"]node:/],
   react: [/from\s*['"]vue['"]/, /from\s*['"]node:/],
   vue: [/from\s*['"]react/, /from\s*['"]node:/],

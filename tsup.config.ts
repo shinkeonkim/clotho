@@ -12,6 +12,7 @@ export default defineConfig({
     'cli/index': 'src/cli/index.ts',
     'plugins/index': 'src/plugins/index.ts',
     'testing/index': 'src/testing/index.ts',
+    'mdx/index': 'src/mdx/index.ts',
   },
   format: ['esm'],
   target: 'es2022',
