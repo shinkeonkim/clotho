@@ -286,6 +286,18 @@ const svg = renderDocumentToSvg(doc, 6000, { standalone: true });
 
 DOM도 프레임워크도 필요 없다. 프레임 단위로 호출하면 그대로 정지 프레임 시퀀스가 된다.
 
+### 스토리보드 (재생할 수 없는 매체용)
+
+```bash
+clotho storyboard knapsack.json --out sheet.png --per-row 3
+clotho storyboard knapsack.json --out frames/          # 프레임마다 SVG 한 장
+clotho storyboard knapsack.json --out sheet.png --frames count --count 6
+```
+
+인쇄물·논문 PDF·발표 슬라이드·코드 리뷰 코멘트처럼 **애니메이션이 재생될 수 없는 자리**를 위한 정지 이미지 묶음이다. 지금까지 출력은 SVG 한 프레임 아니면 GIF 전체였는데, 전자는 과정을 못 담고 후자는 붙일 수 없는 곳이 많다.
+
+프레임은 기본적으로 **챕터**에서 고른다 — 저작자가 이미 단계를 나눠 놓았으므로 어떤 휴리스틱보다 낫다. 챕터가 없으면 고르게 퍼뜨린다.
+
 ### 애니메이션 GIF 내보내기
 
 ```ts
