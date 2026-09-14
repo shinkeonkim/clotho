@@ -225,6 +225,29 @@ hydrateClothoEmbeds(); // 뷰포트에 들어오는 것부터 플레이어로 �
 
 프레임워크 컴포넌트가 아니라 **HTML**을 내보내므로 Astro·Next(MDX)·Docusaurus·Vitepress·순수 마크다운이 모두 같은 경로를 탄다.
 
+### 웹 컴포넌트 (번들러 없이)
+
+```html
+<script type="module">
+  import { defineClothoPlayer } from '@kokoa/clotho/element';
+  defineClothoPlayer();
+</script>
+
+<clotho-player src="/animations/knapsack.json" theme="dark" autoplay loop></clotho-player>
+```
+
+문서를 인라인으로 넣으면 네트워크 요청도 사라진다.
+
+```html
+<clotho-player>
+  <script type="application/json">{ "clothoVersion": 1, ... }</script>
+</clotho-player>
+```
+
+shadow root에 렌더하고 **스타일시트를 함께 들고 간다** — 남의 페이지에 얹힐 때 호스트 CSS와 충돌하지 않는다. 테마 토큰(`--cloth-*`)은 CSS 변수라 경계를 통과하므로 호스트의 팔레트 오버라이드는 그대로 동작한다.
+
+`el.player`로 `seek`·`play`·`setSpeed`를 부를 수 있고, `clotho-ready` · `clotho-chapterchange` · `clotho-ended` · `clotho-error` 이벤트가 올라온다.
+
 ### 스크롤리텔링
 
 ```ts
@@ -318,6 +341,7 @@ const doc = defineAnimation({
 | `…/node` | 파일시스템 문서 로더 | 없음 | 별도 진입점 |
 | `…/gif` | Node/Bun용 애니메이션 GIF 렌더러 | 없음 | 별도 진입점 |
 | `…/mdx` | 마크다운 embed 빌더 + hydration | 없음 | 별도 진입점 |
+| `…/element` | `<clotho-player>` 커스텀 엘리먼트 | 없음 | 별도 진입점 |
 | `…/styles.css` | 스타일시트 | 없음 | 4KB |
 | `…/schema.json` | v1 JSON Schema (에디터 자동완성용) | — | — |
 

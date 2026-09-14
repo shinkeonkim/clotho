@@ -43,6 +43,10 @@
       "types": "./dist/mdx/index.d.ts",
       "default": "./dist/mdx/index.js"
     },
+    "./element": {
+      "types": "./dist/element/index.d.ts",
+      "default": "./dist/element/index.js"
+    },
     "./dom": {
       "types": "./dist/dom/index.d.ts",
       "default": "./dist/dom/index.js"
@@ -107,7 +111,7 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "bun scripts/generate-style-module.ts && tsup",
     "dev": "tsup --watch",
     "gallery": "bun examples/gallery/index.html",
     "gallery:build": "bun examples/gallery/build.ts",
@@ -120,10 +124,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:core-purity": "bun scripts/check-core-purity.ts",
-    "check:styles": "bun scripts/check-styles.ts",
+    "check:styles": "bun scripts/check-styles.ts && bun scripts/generate-style-module.ts --check",
     "check:size": "bun scripts/check-size.ts",
     "schema:generate": "bun scripts/generate-json-schema.ts",
     "schema:check": "bun scripts/generate-json-schema.ts --check",
+    "styles:generate": "bun scripts/generate-style-module.ts",
+    "styles:inline-check": "bun scripts/generate-style-module.ts --check",
     "check:legacy-equivalence": "bun scripts/verify-legacy-equivalence.ts",
     "check:svg-wellformed": "bun scripts/verify-svg-wellformed.ts",
     "visual:check": "bun scripts/check-visual-baseline.ts",

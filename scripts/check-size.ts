@@ -88,6 +88,11 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
     gzipBudget: 38_500,
     note: 'markdown embed builder + hydration; carries the parser (build-time entry)',
   },
+  element: {
+    file: 'element/index.js',
+    gzipBudget: 50_500,
+    note: 'custom element: dom adapter + parser + inlined stylesheet',
+  },
   styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
 };
 
