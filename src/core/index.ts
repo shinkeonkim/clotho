@@ -39,3 +39,4 @@ export * from './poster';
 export * from './scroll';
 export * from './urlstate';
 export * from './storyboard';
+export * from './presenter';
