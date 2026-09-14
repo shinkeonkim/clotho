@@ -294,7 +294,11 @@ clotho validate animations/            # 스키마 + 의미 검증
 clotho validate animations/ --strict   # 경고도 실패로
 clotho migrate  animations/ --write    # legacy v3/v4 → v1 변환
 clotho gif animations/a.json a.gif --fps 12 --width 800
+clotho dev animations/                 # 라이브 리로드 프리뷰 (127.0.0.1 전용)
+clotho dev animations/ --headless      # 페이지 없이 감시 + 검증
 ```
+
+`clotho dev`는 디렉터리의 문서를 목록으로 띄우고, 파일이 밖에서 바뀌면 **재생 위치를 유지한 채** 다시 그리며, 검증과 린트 결과를 같은 화면에 보여준다. 브라우저는 임의의 로컬 디렉터리를 열 수 없으므로 이 루프는 에디터가 채울 수 없는 자리다.
 
 검증기는 스키마가 잡지 못하는 것들을 본다: 중복 id, 참조 무결성, 시간 범위, `parentId` 순환, 미해결 에셋, 그리고 **스키마에 없는 속성**. 마지막 항목이 특히 쓸모 있다 — 파서는 미지의 키를 조용히 버리므로, 작성자가 `line.label`(라벨은 `arrow`에만 있다)이나 `arrow.arrowEnd`(필드명은 `headEnd`)를 써도 아무 일도 일어나지 않는다. 이 패키지를 추출한 383개 실문서에는 그런 속성이 367개 있었다.
 
