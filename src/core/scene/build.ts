@@ -35,6 +35,7 @@ import { computeCamera } from '../camera';
 import { activeSpotlights } from '../runtime/effects';
 import { scaleStrokeWidths } from './stroke-scaling';
 import { buildSpotlights } from './spotlight';
+import { applyRenderStyle, applyRenderStyleToDefs, retargetMarkers } from './style';
 
 /** Build the scene for one instant. */
 export function buildScene(
@@ -71,6 +72,14 @@ export function buildScene(
   let nodes: SceneNode[] = buildTrails(ctx);
   nodes.push(...buildNodes(ctx, tree.roots));
   nodes.push(...buildFlowParticles(ctx));
+
+  // Style is applied to the drawing, before the camera and the spotlight add their
+  // own machinery on top — a wobbling scrim edge would leave a bright seam, and
+  // stroke compensation should act on the widths the style settled on.
+  const styledDefs = applyRenderStyleToDefs(collectMarkerDefs(collectUsedHeads(ctx)), doc.style);
+  nodes = [
+    ...retargetMarkers(applyRenderStyle(nodes, doc.style, doc.id), styledDefs.renamedMarkers),
+  ];
 
   // The camera is resolved after the nodes because it reuses the snapshot, tree
   // and matrices already assembled above; recomputing them per frame would make a
@@ -124,7 +133,7 @@ export function buildScene(
     background: stage.svgBackground,
     showMat: stage.showMat,
     title: doc.title,
-    defs: [...collectMarkerDefs(collectUsedHeads(ctx)), ...spotlights.defs],
+    defs: [...styledDefs.defs, ...spotlights.defs],
     nodes,
     camera,
     chapter: currentChapter(doc, time),

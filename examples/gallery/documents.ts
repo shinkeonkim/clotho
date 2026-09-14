@@ -1171,6 +1171,105 @@ const CHART: Doc = (() => {
 })();
 
 // ---------------------------------------------------------------------------
+// 6e. Render style
+
+/**
+ * The same drawing under two presets.
+ *
+ * Styles are a scene transform, not a document change: both halves here are the
+ * same shapes with the same ids, and only `style.preset` differs between the two
+ * documents the gallery page renders. The wobble is seeded from element ids rather
+ * than from time, which is why it does not boil as the group slides.
+ */
+function styledScene(preset: 'sketch' | 'mono'): Doc {
+  return doc({
+    id: `style-${preset}`,
+    title: preset === 'sketch' ? 'Sketch' : 'Mono',
+    description:
+      preset === 'sketch'
+        ? 'deterministic jitter, seeded by element id and never by time'
+        : 'greyscale for print, with theme tokens left to the page',
+    duration: 4000,
+    canvas: { width: 720, height: 220, background: 'transparent' },
+    style: { preset, roughness: 1.4 },
+    elements: [
+      {
+        type: 'rect',
+        id: 'st-a',
+        x: 40,
+        y: 60,
+        width: 150,
+        height: 90,
+        fill: '#e0e7ff',
+        stroke: ACCENT,
+        strokeWidth: 2,
+        label: 'input',
+        appearances: whole(4000),
+      },
+      {
+        type: 'circle',
+        id: 'st-b',
+        cx: 360,
+        cy: 105,
+        r: 48,
+        fill: '#fef3c7',
+        stroke: WARM,
+        strokeWidth: 2,
+        label: 'work',
+        appearances: whole(4000),
+      },
+      {
+        type: 'polygon',
+        id: 'st-c',
+        points: '540,60 660,105 540,150',
+        fill: '#dcfce7',
+        stroke: GOOD,
+        strokeWidth: 2,
+        appearances: whole(4000),
+      },
+      {
+        type: 'arrow',
+        id: 'st-ab',
+        fromId: 'st-a',
+        toId: 'st-b',
+        headEnd: 'arrow',
+        appearances: whole(4000),
+      },
+      {
+        type: 'arrow',
+        id: 'st-bc',
+        fromId: 'st-b',
+        toId: 'st-c',
+        headEnd: 'arrow',
+        appearances: whole(4000),
+      },
+      {
+        type: 'circle',
+        id: 'st-runner',
+        cx: 60,
+        cy: 190,
+        r: 12,
+        fill: WARM,
+        stroke: WARM,
+        appearances: whole(4000),
+        tracks: [
+          {
+            property: 'cx',
+            keyframes: [
+              { time: 0, value: 60 },
+              { time: 4000, value: 660, ease: 'linear' as const },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+}
+
+const SKETCH: Doc = styledScene('sketch');
+const MONO: Doc = styledScene('mono');
+
+// ---------------------------------------------------------------------------
 // 7. Anchors and arrowheads
 
 const ANCHORS = [
@@ -1726,6 +1825,18 @@ export const GALLERY: readonly GalleryEntry[] = [
     title: 'Chart',
     note: 'Charts compile to ordinary primitives with predictable ids, so the pulse on the last bar is a plain effect naming `bench__series-value__point-3`.',
     doc: CHART,
+  },
+  {
+    slug: 'sketch',
+    title: 'Sketch style',
+    note: 'A scene transform, not a document change. The jitter is seeded from element ids and never from time, so the moving dot keeps its own wobble instead of boiling.',
+    doc: SKETCH,
+  },
+  {
+    slug: 'mono',
+    title: 'Mono style',
+    note: 'Greyscale by luma for print. Theme tokens are left alone — the page decides those, and they are already monochrome in the sense that matters.',
+    doc: MONO,
   },
   {
     slug: 'connectors',
