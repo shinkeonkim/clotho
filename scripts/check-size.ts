@@ -51,7 +51,7 @@ const DIST = join(REPO_ROOT, 'dist');
 const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }> = {
   core: {
     file: 'core/index.js',
-    gzipBudget: 64_800,
+    gzipBudget: 65_200,
     note: 'everything, zod included — the only entry that parses documents',
   },
   svg: {
@@ -61,7 +61,7 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
   },
   dom: {
     file: 'dom/index.js',
-    gzipBudget: 37_400,
+    gzipBudget: 39_900,
     note: 'scene builder + patcher + player; no zod, no framework',
   },
   react: { file: 'react/index.js', gzipBudget: 38_300, note: 'react is external; no zod' },
@@ -88,7 +88,7 @@ const BUDGETS: Record<string, { file: string; gzipBudget: number; note: string }
     gzipBudget: 38_500,
     note: 'markdown embed builder + hydration; carries the parser (build-time entry)',
   },
-  styles: { file: 'clotho.css', gzipBudget: 5_800, note: 'stylesheet' },
+  styles: { file: 'clotho.css', gzipBudget: 6_000, note: 'stylesheet' },
 };
 
 /** Imports each entry must never contain, so subpath isolation is real. */

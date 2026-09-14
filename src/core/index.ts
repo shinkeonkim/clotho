@@ -36,3 +36,4 @@ export * from './lint';
 export * from './diff';
 export * from './explain';
 export * from './poster';
+export * from './scroll';
